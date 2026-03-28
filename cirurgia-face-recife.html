@@ -44,12 +44,17 @@
         .benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2rem; }
         .benefit-card { background: var(--white); border: 1px solid #e5e0d8; border-radius: 10px; padding: 1.5rem; }
         .benefit-card h3 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .benefit-card p { color: var(--gray); font-size: 0.95rem; }
+        .benefit-card p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
         .timeline { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
         .timeline-item { display: flex; gap: 1.5rem; align-items: flex-start; }
         .timeline-dot { width: 40px; height: 40px; min-width: 40px; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold-light); font-weight: 700; font-size: 0.9rem; }
         .timeline-content h3 { color: var(--navy); font-weight: 600; margin-bottom: 0.3rem; }
-        .timeline-content p { color: var(--gray); font-size: 0.95rem; }
+        .timeline-content p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
+        .faq { margin-top: 2rem; }
+        .faq-item { border-bottom: 1px solid #e5e0d8; padding: 1.5rem 0; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { font-weight: 600; color: var(--navy); margin-bottom: 0.5rem; font-size: 1rem; }
+        .faq-answer { color: var(--gray); font-size: 0.95rem; line-height: 1.7; }
         .cta-section { background: var(--navy); padding: 80px 5%; text-align: center; }
         .cta-section h2 { font-family: 'Playfair Display', serif; color: var(--white); font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 1rem; }
         .cta-section p { color: rgba(255,255,255,0.75); font-size: 1.05rem; max-width: 500px; margin: 0 auto 2rem; }
@@ -100,7 +105,7 @@
             <div class="hero-badge">Procedimento Cirúrgico</div>
             <h1>Cirurgia da Face em <span>Recife</span></h1>
             <p>Rejuvenescimento facial completo com lifting, mentoplastia e otoplastia. Crie harmonia facial e recupere a juventude com resultados naturais e duradouros.</p>
-            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">💬 Consultar via WhatsApp</a>
+            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">📅 Agendar Minha Avaliação</a>
         </div>
     </section>
 
@@ -109,7 +114,9 @@
             <span class="section-tag">O que é</span>
             <h2 class="section-title">Cirurgia da Face: Rejuvenescimento <span style="color: var(--gold);">Facial</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">A cirurgia da face abrange diversos procedimentos de rejuvenescimento e remodelação: lifting (ritidoplastia) que suspende tecidos flácidos, mentoplastia que remodela o queixo, e otoplastia que corrige orelhas proeminentes. Estes procedimentos podem ser realizados isoladamente ou combinados para máxima harmonia facial. O Dr. Felipe Hissa Coelho personaliza cada abordagem para alcançar resultados naturais que respeitam a identidade única de cada paciente.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Cirurgias de rejuvenescimento facial restauram contornos jovens da face e pescoço. Ritidoplastia (lifting facial) reposiciona tecidos caídos, corrige sulcos profundos e elimina excesso de pele — subtraindo 10-15 anos de forma natural e duradoura. Técnicas podem ser combinadas (lifting + blefaroplastia + mentoplastia) para resultado mais completo.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Dr. Felipe usa técnica SMAS (Superficial Musculo-Aponeurotic System) — reposiciona não apenas pele, mas camada muscular profunda. Isso diferencia lifting natural de resultado "esticado". Incisões ao redor das orelhas e na linha do couro cabeludo tornam-se imperceptíveis. Mentoplastia remodela queixo para harmonização proporcional. Otoplastia corrige orelhas proeminentes.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">Outras cirurgias complementares incluem lipofilling facial (reposição de volume com gordura autóloga), que restaura plenitude em bochechas e olheiras. Tudo pode ser realizado isoladamente ou combinado para resultado mais completo e harmonioso, respeitando identidade e características naturais de cada paciente.</p>
         </div>
     </section>
 
@@ -121,27 +128,27 @@
             <div class="benefits-grid">
                 <div class="benefit-card">
                     <h3>Rejuvenescimento Natural</h3>
-                    <p>Aspecto jovem e descansado mantendo sua identidade facial característica.</p>
+                    <p>Aspecto jovem e descansado mantendo identidade facial única e expressão natural — ninguém descobre que foi cirurgia, apenas notam que ficou mais jovem.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Harmonia Facial</h3>
-                    <p>Proporção e simetria das feições melhorada através da remodelação.</p>
+                    <p>Proporção, simetria e equilíbrio das feições melhorado através de remodelação inteligente. Face fica mais balanceada e atraente como um todo.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Contorno Definido</h3>
-                    <p>Definição do contorno facial com suspensão de tecidos flácidos.</p>
+                    <p>Definição clara do contorno facial com suspensão de tecidos flácidos — mandíbula mais definida, pescoço mais jovem, cocurvas faciais realçadas.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Duração Prolongada</h3>
-                    <p>Resultados que duram anos, oferecendo valor a longo prazo.</p>
+                    <p>Resultados que duram 10-15 anos — excelente longevidade. Paciente parte de base muito mais jovem, envelhecendo lentamente daqui em diante.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Melhora Autoestima</h3>
-                    <p>Confiança renovada ao conquistar o rosto rejuvenescido desejado.</p>
+                    <p>Confiança renovada ao conquistar rosto rejuvenescido desejado. Impacto profundo na vida pessoal, relacionamentos, vida profissional e bem-estar geral.</p>
                 </div>
                 <div class="benefit-card">
-                    <h3>Correção Assimetrias</h3>
-                    <p>Correção de assimetrias faciais e proporções melhoradas.</p>
+                    <h3>Correção Completa</h3>
+                    <p>Possibilidade de combinar múltiplos procedimentos em uma sessão para rejuvenescimento facial global e harmonioso, potencializando resultados.</p>
                 </div>
             </div>
         </div>
@@ -152,14 +159,16 @@
             <span class="section-tag">Candidatos</span>
             <h2 class="section-title">Quem é o Candidato <span style="color: var(--gold);">Ideal?</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A cirurgia da face é indicada para adultos que desejam rejuvenescimento e remodelação facial. Os candidatos ideais apresentam:</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A cirurgia da face é indicada para adultos que desejam rejuvenescimento e remodelação facial. Momento ideal é quando sinais de envelhecimento já são bem visíveis (flacidez, rugas profundas) mas saúde geral permite cirurgia maior. Candidatos ideais têm pele com elasticidade adequada e expectativas realistas.</p>
             <ul style="color: var(--gray); max-width: 800px; line-height: 2; margin-left: 1.5rem;">
-                <li>Flacidez facial e rugas profundas</li>
-                <li>Perda de definição do contorno facial</li>
-                <li>Orelhas proeminentes ou desproporcionais</li>
-                <li>Queixo pequeno ou desproporcionado</li>
-                <li>Assimetrias faciais significativas</li>
-                <li>Bom estado geral de saúde e pele adequada para cicatrização</li>
+                <li>Flacidez facial e rugas profundas não corrigidas com procedimentos não-invasivos</li>
+                <li>Perda de definição do contorno facial e mandibular</li>
+                <li>Pescoço flácido ou com "papada" progressiva</li>
+                <li>Orelhas proeminentes ou desproporcionais ao rosto</li>
+                <li>Queixo pequeno, retraído ou desproporcionado</li>
+                <li>Assimetrias faciais significativas e incômodas</li>
+                <li>Bom estado geral de saúde, sem contraindicações cirúrgicas</li>
+                <li>Pele com elasticidade adequada para resultados ótimos</li>
             </ul>
         </div>
     </section>
@@ -174,29 +183,55 @@
                     <div class="timeline-dot">1</div>
                     <div class="timeline-content">
                         <h3>Primeiros 3-7 dias</h3>
-                        <p>Repouso relativo. Edema e roxo são normais. Mantenha a cabeça elevada ao dormir. Aplique gelo conforme orientado.</p>
+                        <p>Repouso em casa com cabeça elevada (2-3 travesseiros) para reduzir edema. Edema e roxo (equimose) são normais e esperados — auge no dia 2-3. Dreno pode ser mantido por 1-2 dias. Aplicar gelo intermitente nas primeiras 48 horas. Medicações conforme prescrição.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">2</div>
                     <div class="timeline-content">
                         <h3>Semana 2-3</h3>
-                        <p>Redução gradual de edema. Maquiagem pode cobrir roxo residual. Retorno lento a atividades leves.</p>
+                        <p>Redução gradual de edema mas inchaço residual esperado até 4-6 semanas. Maquiagem pode cobrir roxo residual após uma semana. Retorno lento a atividades leves. Cicatrizes ao redor das orelhas começam a melhorar gradualmente.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">3</div>
                     <div class="timeline-content">
                         <h3>Mês 1-2</h3>
-                        <p>Edema praticamente desaparecido. Retorno a atividades sociais normais. Cicatriz em fase inicial de maturação.</p>
+                        <p>Edema praticamente desaparecido e resultado inicial bem visível. Retorno a atividades sociais e de trabalho normais (sedentário). Cicatriz em fase inicial de maturação — melhorando diariamente com proteção solar. Endurecimento de cicatriz normal nesta fase.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">4</div>
                     <div class="timeline-content">
-                        <h3>Mês 2-3</h3>
-                        <p>Resultado progressivo visível. Cicatriz continua evoluindo. Retorno a exercícios moderados liberado. Resultado final consolidado em 6-12 meses.</p>
+                        <h3>Mês 2-6 e além</h3>
+                        <p>Resultado progressivamente mais visível conforme edema completa resolução. Cicatriz continua evoluindo (ficando mais fina, acinzentada, imperceptível). Retorno a exercícios moderados após 4-6 semanas com liberação do cirurgião. Resultado final consolidado em 6-12 meses, cicatriz continua melhorando até 18 meses.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-off">
+        <div class="section-inner">
+            <span class="section-tag">Dúvidas Frequentes</span>
+            <h2 class="section-title">Perguntas sobre <span style="color: var(--gold);">Cirurgia Facial</span></h2>
+            <div class="divider"></div>
+            <div class="faq">
+                <div class="faq-item">
+                    <div class="faq-question">O lifting parece natural ou artificial?</div>
+                    <div class="faq-answer">Com técnica SMAS moderna, extremamente natural. Resultado artificial ocorre com técnicas antigas ou excessiva remoção de pele. Boa cirurgia é imperceptível — pessoas notam harmonia e juventude, não que foi operado. Identidade e expressão mantêm-se completamente naturais.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Qual diferença entre lifting cirúrgico e fios de sustentação?</div>
+                    <div class="faq-answer">Fios: resultado temporário (12-18 meses), ideal para ptose leve com recuperação rápida. Lifting: duradouro (10-15 anos), trata ptoses moderadas a intensas, resultado mais completo e transformador. São abordagens para momentos diferentes — fios para teste ou resultado leve, lifting para resultado definitivo.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Quais procedimentos combinam com o lifting?</div>
+                    <div class="faq-answer">Blefaroplastia (rejuvenescimento dos olhos), lipofilling (reposição de volume), rhinoplastia (nariz), mentoplastia (queixo), botox e preenchimento para rejuvenescimento facial global. Combinações ampliam resultados exponencialmente quando bem planejadas.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">A cirurgia "para" o envelhecimento?</div>
+                    <div class="faq-answer">Não para — o processo de envelhecimento continua naturalmente. Porém, paciente parte de base muito mais jovem. Daqui a 15 anos parecerá muito mais jovem do que pareceria sem a cirurgia. É como "resetar" o relógio do tempo — depois continua, mas muito mais atrás.</div>
                 </div>
             </div>
         </div>
@@ -204,8 +239,8 @@
 
     <section class="cta-section">
         <h2>Rejuvenescimento Facial Completo</h2>
-        <p>A cirurgia da face com o Dr. Felipe Hissa Coelho oferece resultados naturais e harmoniosos. Agende sua consulta para explorar as opções ideais para seu rosto.</p>
-        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Consulta via WhatsApp</a>
+        <p>A cirurgia da face com o Dr. Felipe Hissa Coelho oferece resultados naturais, harmoniosos e duradouros. Agende sua consulta presencial para explorar as opções ideais para seu rosto.</p>
+        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Minha Avaliação Presencial</a>
     </section>
 
     <footer>

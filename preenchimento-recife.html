@@ -44,12 +44,17 @@
         .benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2rem; }
         .benefit-card { background: var(--white); border: 1px solid #e5e0d8; border-radius: 10px; padding: 1.5rem; }
         .benefit-card h3 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .benefit-card p { color: var(--gray); font-size: 0.95rem; }
+        .benefit-card p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
         .timeline { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
         .timeline-item { display: flex; gap: 1.5rem; align-items: flex-start; }
         .timeline-dot { width: 40px; height: 40px; min-width: 40px; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold-light); font-weight: 700; font-size: 0.9rem; }
         .timeline-content h3 { color: var(--navy); font-weight: 600; margin-bottom: 0.3rem; }
-        .timeline-content p { color: var(--gray); font-size: 0.95rem; }
+        .timeline-content p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
+        .faq { margin-top: 2rem; }
+        .faq-item { border-bottom: 1px solid #e5e0d8; padding: 1.5rem 0; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { font-weight: 600; color: var(--navy); margin-bottom: 0.5rem; font-size: 1rem; }
+        .faq-answer { color: var(--gray); font-size: 0.95rem; line-height: 1.7; }
         .cta-section { background: var(--navy); padding: 80px 5%; text-align: center; }
         .cta-section h2 { font-family: 'Playfair Display', serif; color: var(--white); font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 1rem; }
         .cta-section p { color: rgba(255,255,255,0.75); font-size: 1.05rem; max-width: 500px; margin: 0 auto 2rem; }
@@ -100,7 +105,7 @@
             <div class="hero-badge">Procedimento Estético</div>
             <h1>Preenchimento Facial em <span>Recife</span></h1>
             <p>Restaure volume facial, defina contornos e suavize sulcos com ácido hialurônico de alta qualidade. Resultado imediato, natural e reversível.</p>
-            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">💬 Consultar via WhatsApp</a>
+            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">📅 Agendar Minha Avaliação</a>
         </div>
     </section>
 
@@ -109,7 +114,9 @@
             <span class="section-tag">O que é</span>
             <h2 class="section-title">Preenchimento Facial: Restauração de <span style="color: var(--gold);">Volume</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">O preenchimento facial é um procedimento não-cirúrgico que utiliza ácido hialurônico para restaurar volume facial perdido, suavizar sulcos e linhas de expressão, e definir contornos faciais. Pode ser aplicado em lábios, maçãs do rosto, olheiras, mentolabial, queixo e outras áreas. O material é absorvido naturalmente pelo corpo, oferecendo resultado temporário que dura 12-18 meses. O Dr. Felipe Hissa Coelho aplica com técnica refinada para resultados naturais e proporcionais.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Preenchimento com ácido hialurônico é um dos procedimentos minimamente invasivos mais versáteis em medicina estética. O ácido hialurônico ocorre naturalmente no organismo — responsável pela hidratação e volume dos tecidos. Com o envelhecimento, sua produção diminui, criando perda de volume e sulcos. O preenchimento restaura esse volume de forma natural e reversível.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Dr. Felipe usa produtos de alta qualidade com registro ANVISA. Aplicação com agulha ou cânula conforme a área. Regiões tratadas: lábios, sulco nasogeniano, olheiras, maçãs do rosto, têmporas, queixo e mandíbula. Planejamento global considera proporções e harmonia facial para resultado mais natural e transformador.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">Aspecto fundamental: reversibilidade. Em caso de resultado insatisfatório, o produto pode ser dissolvido com hialuronidase — grande segurança quando realizado por profissional habilitado. Produtos modernos têm também efeito hidratante e bioestimulador leve, melhorando a qualidade geral da pele além do volume.</p>
         </div>
     </section>
 
@@ -121,27 +128,27 @@
             <div class="benefits-grid">
                 <div class="benefit-card">
                     <h3>Resultado Imediato</h3>
-                    <p>Transformação visível logo após aplicação, sem aguardar semanas por efeito.</p>
+                    <p>Transformação visível logo após aplicação — sem aguardar semanas por efeito. Paciente vê diferença na mesma hora do procedimento.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Sem Cirurgia</h3>
-                    <p>Procedimento não-invasivo sem necessidade de anestesia geral ou internação.</p>
+                    <p>Procedimento não-invasivo sem necessidade de anestesia geral, internação ou cicatrizes. Retorno imediato às atividades normais.</p>
                 </div>
                 <div class="benefit-card">
-                    <h3>Reversível</h3>
-                    <p>Efeito temporário que desaparece naturalmente se não gostar, sem consequências.</p>
+                    <h3>Completamente Reversível</h3>
+                    <p>Efeito temporário que desaparece naturalmente em 12-18 meses se não reaplicar. Se insatisfeito, pode ser revertido com hialuronidase.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Resultado Natural</h3>
-                    <p>Quando aplicado corretamente, cria resultado natural que não aparenta ser artificial.</p>
+                    <p>Quando aplicado corretamente por mão experiente, cria resultado natural que não aparenta ser artificial ou exagerado. Melhora sem ser óbvio.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Múltiplas Aplicações</h3>
-                    <p>Pode ser usado em lábios, maçãs, olheiras, queixo e outras áreas faciais.</p>
+                    <p>Pode ser usado em lábios, sulco nasogeniano, olheiras, maçãs, têmporas, queixo — oferece versatilidade para vários problemas simultaneamente.</p>
                 </div>
                 <div class="benefit-card">
-                    <h3>Durabilidade</h3>
-                    <p>Efeito dura 12-18 meses dependendo do tipo de material e área tratada.</p>
+                    <h3>Longa Duração</h3>
+                    <p>Efeito dura 12-18 meses em média (até 2 anos conforme metabolismo). Reaplicação mantém resultados indefinidamente com agendamento periódico.</p>
                 </div>
             </div>
         </div>
@@ -152,15 +159,15 @@
             <span class="section-tag">Candidatos</span>
             <h2 class="section-title">Quem é o Candidato <span style="color: var(--gold);">Ideal?</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">O preenchimento facial é indicado para adultos que desejam restaurar volume ou definir contornos. Os candidatos ideais apresentam:</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">O preenchimento facial é indicado para adultos que desejam restaurar volume, suavizar sulcos ou definir contornos. Procedimento é seguro para praticamente todas as idades — desde jovens desejando definição até idosos restaurando volume perdido. Candidatos ideais têm pele saudável e expectativas realistas.</p>
             <ul style="color: var(--gray); max-width: 800px; line-height: 2; margin-left: 1.5rem;">
                 <li>Perda de volume facial relacionada ao envelhecimento</li>
-                <li>Sulcos e rugas estáticas profundas</li>
-                <li>Olheiras marcadas</li>
-                <li>Lábios finos ou sem definição</li>
+                <li>Sulcos e rugas estáticas profundas (linhas do riso, nasogeniana)</li>
+                <li>Olheiras marcadas causadas por perda de volume</li>
+                <li>Lábios finos ou sem definição desejando mais plenitude</li>
                 <li>Maçãs do rosto caídas ou pouco proeminentes</li>
-                <li>Queixo fraco ou definiçãomentolabial inadequada</li>
-                <li>Expectativas realistas e bom estado de saúde geral</li>
+                <li>Queixo fraco ou indefinição mentolabial inadequada</li>
+                <li>Expectativas realistas e bom estado geral de saúde</li>
             </ul>
         </div>
     </section>
@@ -175,29 +182,55 @@
                     <div class="timeline-dot">1</div>
                     <div class="timeline-content">
                         <h3>Imediatamente após</h3>
-                        <p>Resultado visível logo após aplicação. Possível edema leve que desaparece em horas. Sem repouso necessário.</p>
+                        <p>Resultado visível logo após aplicação — efeito é imediato. Possível edema leve que desaparece em horas a dias. Sem repouso necessário, sem limitações de atividade.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">2</div>
                     <div class="timeline-content">
                         <h3>Primeiras 24-48 horas</h3>
-                        <p>Edema pode aumentar levemente nos primeiros dias. Aplique gelo se necessário. Evite massagem facial.</p>
+                        <p>Edema pode aumentar levemente nos primeiros 1-2 dias (esperado e normal). Aplique gelo se preferir reduzir. Evite massagem facial agressiva. Resultado refina-se naturalmente.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">3</div>
                     <div class="timeline-content">
                         <h3>Semana 1</h3>
-                        <p>Edema resolve completamente. Material integra-se naturalmente aos tecidos. Resultado refina-se naturalmente.</p>
+                        <p>Edema resolve completamente. Material integra-se naturalmente aos tecidos faciais. Resultado refina-se naturalmente — pode ficar ainda melhor conforme edema resolve.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">4</div>
                     <div class="timeline-content">
                         <h3>Mês 1-18</h3>
-                        <p>Resultado permanece estável por 12-18 meses. Reaplicação quando desejar manter efeito. Sem cicatrizes ou marcas.</p>
+                        <p>Resultado permanece estável por 12-18 meses em média — pode durar até 2 anos. Reaplicação quando desejar manter efeito ou melhorar. Sem cicatrizes, marcas ou complicações esperadas.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-off">
+        <div class="section-inner">
+            <span class="section-tag">Dúvidas Frequentes</span>
+            <h2 class="section-title">Perguntas sobre <span style="color: var(--gold);">Preenchimento</span></h2>
+            <div class="divider"></div>
+            <div class="faq">
+                <div class="faq-item">
+                    <div class="faq-question">O preenchimento de lábios parece natural?</div>
+                    <div class="faq-answer">Sim, com volumes adequados e técnica experiente. Objetivo é valorizar respeitando proporções do rosto. Dr. Felipe planeja volume ideal para cada paciente — lábios ficam mais plenoe definidos mas mantêm aparência natural e proporcional ao rosto.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Posso combinar preenchimento com botox?</div>
+                    <div class="faq-answer">Sim. Botox trata rugas dinâmicas; preenchimento repõe volume e suaviza sulcos estáticos. Muitos pacientes fazem os dois na mesma sessão para resultado rejuvenescedor completo — complementam-se perfeitamente.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">O preenchimento dói?</div>
+                    <div class="faq-answer">Desconforto mínimo. Produtos contêm anestésico local incorporado. Em áreas sensíveis como lábios, anestesia tópica pode ser aplicada antes. Maioria dos pacientes relata procedimento bem tolerável.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Existe risco de rosto ficar "inchado" permanentemente?</div>
+                    <div class="faq-answer">Não. Ácido hialurônico é metabolizado pelo organismo naturalmente. Resultado indesejado pode ser revertido com hialuronidase. Rostos "inchados" permanentes associados a volumes excessivos ou técnica inadequada — Dr. Felipe prioriza naturalidade.</div>
                 </div>
             </div>
         </div>
@@ -205,8 +238,8 @@
 
     <section class="cta-section">
         <h2>Restaure Seu Volume Facial</h2>
-        <p>O preenchimento facial com o Dr. Felipe Hissa Coelho oferece resultados imediatos e naturais. Agende sua aplicação e veja a transformação.</p>
-        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Aplicação via WhatsApp</a>
+        <p>O preenchimento facial com o Dr. Felipe Hissa Coelho oferece resultados imediatos, naturais e reversíveis. Agende sua consulta presencial para avaliação e planejamento personalizado.</p>
+        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Minha Avaliação Presencial</a>
     </section>
 
     <footer>

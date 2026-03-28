@@ -44,12 +44,17 @@
         .benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2rem; }
         .benefit-card { background: var(--white); border: 1px solid #e5e0d8; border-radius: 10px; padding: 1.5rem; }
         .benefit-card h3 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .benefit-card p { color: var(--gray); font-size: 0.95rem; }
+        .benefit-card p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
         .timeline { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
         .timeline-item { display: flex; gap: 1.5rem; align-items: flex-start; }
         .timeline-dot { width: 40px; height: 40px; min-width: 40px; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold-light); font-weight: 700; font-size: 0.9rem; }
         .timeline-content h3 { color: var(--navy); font-weight: 600; margin-bottom: 0.3rem; }
-        .timeline-content p { color: var(--gray); font-size: 0.95rem; }
+        .timeline-content p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
+        .faq { margin-top: 2rem; }
+        .faq-item { border-bottom: 1px solid #e5e0d8; padding: 1.5rem 0; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { font-weight: 600; color: var(--navy); margin-bottom: 0.5rem; font-size: 1rem; }
+        .faq-answer { color: var(--gray); font-size: 0.95rem; line-height: 1.7; }
         .cta-section { background: var(--navy); padding: 80px 5%; text-align: center; }
         .cta-section h2 { font-family: 'Playfair Display', serif; color: var(--white); font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 1rem; }
         .cta-section p { color: rgba(255,255,255,0.75); font-size: 1.05rem; max-width: 500px; margin: 0 auto 2rem; }
@@ -100,7 +105,7 @@
             <div class="hero-badge">Procedimento Estético</div>
             <h1>Toxina Botulínica em <span>Recife</span></h1>
             <p>Suavize rugas de expressão e previna envelhecimento com resultados naturais e imediatos. Sem cirurgia, sem tempo de recuperação.</p>
-            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">💬 Consultar via WhatsApp</a>
+            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">📅 Agendar Minha Avaliação</a>
         </div>
     </section>
 
@@ -109,7 +114,9 @@
             <span class="section-tag">O que é</span>
             <h2 class="section-title">Toxina Botulínica: Rejuvenescimento <span style="color: var(--gold);">Rápido</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">A toxina botulínica é uma proteína que suaviza rugas de expressão causadas pela contração muscular repetida. Aplicada em pequenas doses na testa, entre as sobrancelhas (glabela) e nos olhos (pés de galinha), elimina rugas dinâmicas e previne o envelhecimento precoce. O efeito é natural, reversível e não deixa cicatrizes. O Dr. Felipe Hissa Coelho aplica com precisão para manter expressão natural e harmoniosa.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Toxina botulínica é a substância mais utilizada em medicina estética no mundo, com décadas de estudos comprovando segurança e eficácia. Bloqueia temporariamente a transmissão nervosa para músculos de expressão, reduzindo sua contração e suavizando rugas dinâmicas — linhas da testa, glabela (entre sobrancelhas) e pés de galinha. Aplicada em pequenas doses estratégicas.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Dr. Felipe mapeia a musculatura facial de cada paciente antes de definir pontos de aplicação. Essa personalização garante resultado natural — rosto mantém expressividade enquanto as linhas são suavizadas. Procedimento rápido (15-30 min), praticamente indolor, sem recuperação. O efeito começa em 5-7 dias, consolida em 2 semanas e dura 4-6 meses.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">Além do uso estético, tem aplicações médicas comprovadas: hiperidrose (suor excessivo), bruxismo, cefaleia crônica e gummy smile. Dr. Felipe avalia todas as possibilidades de benefício para cada paciente, criando plano personalizado de rejuvenescimento.</p>
         </div>
     </section>
 
@@ -121,27 +128,27 @@
             <div class="benefits-grid">
                 <div class="benefit-card">
                     <h3>Sem Cirurgia</h3>
-                    <p>Resultado cosmético sem necessidade de procedimento cirúrgico invasivo.</p>
+                    <p>Resultado cosmético completo sem necessidade de procedimento cirúrgico invasivo. Simples, seguro e acessível comparado a alternativas cirúrgicas.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Resultado Rápido</h3>
-                    <p>Procedimento rápido de 10-15 minutos com resultados visíveis em 5-14 dias.</p>
+                    <p>Procedimento rápido de 15-30 minutos com resultados visíveis em 5-7 dias e consolidados em 2 semanas. Não interfere com compromissos.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Sem Tempo de Recuperação</h3>
-                    <p>Retorno imediato às atividades normais, sem repouso necessário.</p>
+                    <p>Retorno imediato às atividades normais, trabalho, exercícios. Sem repouso necessário, sem limitações de rotina. Volte ao trabalho na mesma hora.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Resultado Natural</h3>
-                    <p>Expressão facial mantida de forma natural quando aplicado corretamente.</p>
+                    <p>Expressão facial mantida de forma completamente natural quando aplicado com precisão. Amigos notam "você está bem" mas não "você fez cirurgia".</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Efeito Preventivo</h3>
-                    <p>Previne formação de novas rugas ao relaxar musculatura facial expressiva.</p>
+                    <p>Previne formação de novas rugas ao relaxar musculatura facial expressiva. Quando iniciado cedo, funciona como "prevenção do envelhecimento".</p>
                 </div>
                 <div class="benefit-card">
-                    <h3>Reversível</h3>
-                    <p>Efeito temporário que desaparece naturalmente em 3-4 meses sem efeitos residuais.</p>
+                    <h3>Completamente Reversível</h3>
+                    <p>Efeito temporário que desaparece naturalmente em 3-4 meses sem efeitos residuais. Se não gostar, o resultado resolve sozinho com segurança total.</p>
                 </div>
             </div>
         </div>
@@ -152,14 +159,14 @@
             <span class="section-tag">Candidatos</span>
             <h2 class="section-title">Quem é o Candidato <span style="color: var(--gold);">Ideal?</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A toxina botulínica é indicada para adultos que desejam suavizar rugas ou prevenção do envelhecimento. Os candidatos ideais apresentam:</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A toxina botulínica é indicada para adultos que desejam suavizar rugas ou prevenir envelhecimento. Não há idade mínima definida — inicia-se quando as rugas dinâmicas incomodam ou quando deseja-se prevenção precoce. Funciona melhor em pele bem-cuidada sem rugas muito profundas ou estáticas.</p>
             <ul style="color: var(--gray); max-width: 800px; line-height: 2; margin-left: 1.5rem;">
-                <li>Rugas de expressão visíveis na testa, glabela ou pés de galinha</li>
+                <li>Rugas de expressão visíveis na testa, glabela (entre sobrancelhas) ou pés de galinha</li>
                 <li>Interesse em prevenção do envelhecimento precoce</li>
-                <li>Desejo de resultado natural sem cirurgia</li>
-                <li>Bom estado geral de saúde</li>
-                <li>Expectativas realistas sobre os resultados</li>
-                <li>Disposição para manutenção periódica do tratamento</li>
+                <li>Desejo de resultado natural sem cirurgia ou internação</li>
+                <li>Bom estado geral de saúde sem contraindicações médicas</li>
+                <li>Expectativas realistas sobre os resultados e duração</li>
+                <li>Disposição para manutenção periódica (a cada 4-6 meses) do tratamento</li>
             </ul>
         </div>
     </section>
@@ -174,29 +181,55 @@
                     <div class="timeline-dot">1</div>
                     <div class="timeline-content">
                         <h3>Imediatamente após</h3>
-                        <p>Sem tempo de recuperação. Retorno imediato às atividades normais. Pequenos hematomas podem aparecer mas desaparecem em dias.</p>
+                        <p>Sem tempo de recuperação. Retorno imediato às atividades normais, trabalho, exercícios. Pequenos hematomas podem aparecer mas desaparecem rapidamente em dias. Sem dor ou inchaço significativo.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">2</div>
                     <div class="timeline-content">
                         <h3>Primeiras 4 horas</h3>
-                        <p>Evite deitar-se nos primeiros 4 horas. Não estique os músculos faciais. Evite contato manual na área tratada.</p>
+                        <p>Evite deitar-se nos primeiros 4 horas para facilitar fixação. Não estique excessivamente os músculos faciais (não fazer contraturas exageradas). Evite massagem ou pressão manual na área tratada nos primeiros dias.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">3</div>
                     <div class="timeline-content">
                         <h3>Semana 1</h3>
-                        <p>Resultado começa a aparecer entre 5-7 dias. Evite exercícios intensos se preferir. Mantenha a pele hidratada.</p>
+                        <p>Resultado começa a aparecer entre 5-7 dias. Efeito progressivo — melhora continua até dia 14. Evite exercícios intensos se preferir, embora não seja obrigatório. Mantenha a pele hidratada e proteja com protetor solar.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">4</div>
                     <div class="timeline-content">
-                        <h3>Semana 2 a 3</h3>
-                        <p>Resultado completo estabelecido entre 10-14 dias. Efeito dura 4-6 meses. Reaplicação quando necessário mantém resultados.</p>
+                        <h3>Semana 2-3</h3>
+                        <p>Resultado completo estabelecido entre 10-14 dias. Efeito dura 4-6 meses em média — alguns pacientes 8+ meses com aplicações regulares. Reaplicação quando necessário (a cada 4-6 meses) mantém resultados. Com o tempo duração tende aumentar.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-off">
+        <div class="section-inner">
+            <span class="section-tag">Dúvidas Frequentes</span>
+            <h2 class="section-title">Perguntas sobre <span style="color: var(--gold);">Toxina Botulínica</span></h2>
+            <div class="divider"></div>
+            <div class="faq">
+                <div class="faq-item">
+                    <div class="faq-question">A toxina botulínica é segura?</div>
+                    <div class="faq-answer">Sim. Uma das substâncias mais estudadas em medicina estética com décadas de dados de segurança. Registro FDA e ANVISA comprovando. Produtos utilizados pelo Dr. Felipe têm registro regulatório completo e proveniência garantida de fabricantes de reputação internacional.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Vou parecer artificial ou "congelada"?</div>
+                    <div class="faq-answer">Não, com técnica e doses adequadas. Resultados artificiais ocorrem por doses excessivas ou aplicação imprecisa em locais errados. Dr. Felipe usa doses personalizadas para cada face mantendo expressividade natural — resultado é sutileza e rejuvenescimento, não congelamento.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Com que frequência preciso fazer?</div>
+                    <div class="faq-answer">Em média a cada 4-6 meses. Com o tempo, duração tende a aumentar com aplicações regulares — alguns pacientes chegam a 8+ meses com protocolo de manutenção. Dr. Felipe monitora e personaliza intervalo para cada paciente.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">A partir de que idade devo começar?</div>
+                    <div class="faq-answer">Não há idade mínima definida. Inicia-se quando as rugas dinâmicas incomodam (pode ser aos 25 anos ou aos 50). Funciona como prevenção quando iniciado mais cedo — evita que as rugas se tornem permanentes. Consulta com Dr. Felipe define momento ideal para você.</div>
                 </div>
             </div>
         </div>
@@ -204,8 +237,8 @@
 
     <section class="cta-section">
         <h2>Rejuvenescimento Sem Cirurgia</h2>
-        <p>A toxina botulínica com o Dr. Felipe Hissa Coelho oferece resultados naturais e rápidos. Agende sua aplicação e veja a diferença em dias.</p>
-        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Aplicação via WhatsApp</a>
+        <p>A toxina botulínica com o Dr. Felipe Hissa Coelho oferece resultados naturais, rápidos e reversíveis. Agende sua avaliação presencial e veja a diferença em dias.</p>
+        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Minha Avaliação Presencial</a>
     </section>
 
     <footer>

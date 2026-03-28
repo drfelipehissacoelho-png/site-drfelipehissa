@@ -44,12 +44,17 @@
         .benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2rem; }
         .benefit-card { background: var(--white); border: 1px solid #e5e0d8; border-radius: 10px; padding: 1.5rem; }
         .benefit-card h3 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .benefit-card p { color: var(--gray); font-size: 0.95rem; }
+        .benefit-card p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
         .timeline { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
         .timeline-item { display: flex; gap: 1.5rem; align-items: flex-start; }
         .timeline-dot { width: 40px; height: 40px; min-width: 40px; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold-light); font-weight: 700; font-size: 0.9rem; }
         .timeline-content h3 { color: var(--navy); font-weight: 600; margin-bottom: 0.3rem; }
-        .timeline-content p { color: var(--gray); font-size: 0.95rem; }
+        .timeline-content p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
+        .faq { margin-top: 2rem; }
+        .faq-item { border-bottom: 1px solid #e5e0d8; padding: 1.5rem 0; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { font-weight: 600; color: var(--navy); margin-bottom: 0.5rem; font-size: 1rem; }
+        .faq-answer { color: var(--gray); font-size: 0.95rem; line-height: 1.7; }
         .cta-section { background: var(--navy); padding: 80px 5%; text-align: center; }
         .cta-section h2 { font-family: 'Playfair Display', serif; color: var(--white); font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 1rem; }
         .cta-section p { color: rgba(255,255,255,0.75); font-size: 1.05rem; max-width: 500px; margin: 0 auto 2rem; }
@@ -100,7 +105,7 @@
             <div class="hero-badge">Procedimento Cirúrgico</div>
             <h1>Blefaroplastia em <span>Recife</span></h1>
             <p>Rejuvenescimento ocular que elimina bolsas, pele flácida e restaura o olhar jovem e descansado. Resultado rápido e transformador para a região dos olhos.</p>
-            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">💬 Consultar via WhatsApp</a>
+            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">📅 Agendar Minha Avaliação</a>
         </div>
     </section>
 
@@ -109,7 +114,9 @@
             <span class="section-tag">O que é</span>
             <h2 class="section-title">Blefaroplastia: Cirurgia das <span style="color: var(--gold);">Pálpebras</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">A blefaroplastia é um procedimento cirúrgico que remove excesso de pele e gordura das pálpebras, seja superiores ou inferiores. Remove bolsas sob os olhos, elimina pele flácida e melhora o campo visual. O resultado é um olhar mais jovem, descansado e alerta. O Dr. Felipe Hissa Coelho realiza este procedimento com precisão, mantendo a naturalidade e proporção das pálpebras.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Blefaroplastia rejuvenesceia as pálpebras — a região que mais sofre com o envelhecimento. Pele excedente, bolsas de gordura e músculos enfraquecidos criam aparência de cansaço crônico que não melhora com sono. A cirurgia corrige esses três elementos com precisão cirúrgica, devolvendo o brilho e a vivacidade ao olhar.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Pode ser superior (pálpebras superiores), inferior (inferiores) ou combinada. Na superior, remove excesso de pele na dobra natural — cicatriz imperceptível. Na inferior, abordagem transcutânea ou transconjuntival (sem cicatriz externa) dependendo da quantidade de pele excedente e necessidade de remoção de gordura.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">Em casos graves, pálpebra superior caída interfere no campo visual — indicação funcional além da estética. Dr. Felipe avalia completamente antes para definir melhor abordagem e garantir resultado harmonioso que mantém a expressão natural do olhar.</p>
         </div>
     </section>
 
@@ -121,27 +128,27 @@
             <div class="benefits-grid">
                 <div class="benefit-card">
                     <h3>Olhar Jovem</h3>
-                    <p>Eliminação de sinais de cansaço e envelhecimento ao redor dos olhos.</p>
+                    <p>Eliminação completa de sinais de cansaço, envelhecimento e fadiga ao redor dos olhos. Resultado: olhar luminoso, descansado e muito mais jovem aparentemente.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Sem Bolsas</h3>
-                    <p>Remoção completa de bolsas palpebral superior e inferior que marcam a idade.</p>
+                    <p>Remoção completa de bolsas palpebrais superiores e/ou inferiores que marcam a idade e causam aparência de edema permanente mesmo sem inchaço.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Melhora Visual</h3>
-                    <p>Aumento do campo visual ao remover pele que pesa sobre a pálpebra superior.</p>
+                    <p>Aumento do campo visual ao remover pele que pesa sobre a pálpebra superior — especialmente importante em casos de ptose significativa com impacto funcional.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Aspecto Descansado</h3>
-                    <p>Olhar mais alerta e descansado mesmo sem dormir bem.</p>
+                    <p>Olhar mais alerta, brilhante e descansado que persiste o tempo todo — não apenas alguns momentos do dia. Melhora qualidade de vida e autoconfiança.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Cicatriz Discreta</h3>
-                    <p>Cicatriz bem escondida nas linhas naturais das pálpebras.</p>
+                    <p>Cicatriz bem escondida nas linhas e dobras naturais das pálpebras — torna-se imperceptível após alguns meses com cuidados simples de proteção solar.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Recuperação Rápida</h3>
-                    <p>Recuperação mais rápida comparada a outras cirurgias faciais.</p>
+                    <p>Recuperação mais rápida comparada a outras cirurgias faciais. Inchaço principal resolve em 1-2 semanas, permitindo retorno a atividades normais rapidamente.</p>
                 </div>
             </div>
         </div>
@@ -152,14 +159,15 @@
             <span class="section-tag">Candidatos</span>
             <h2 class="section-title">Quem é o Candidato <span style="color: var(--gold);">Ideal?</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A blefaroplastia é indicada para adultos que apresentam sinais de envelhecimento nas pálpebras. Os candidatos ideais apresentam:</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A blefaroplastia é indicada para adultos que apresentam sinais visíveis de envelhecimento nas pálpebras. O procedimento funciona melhor em pessoas com pele de qualidade razoável que não sofrem ressecamento ocular significativo. Pacientes com doenças autoimunes oftalmológicas (síndrome do olho seco severa, Graves) precisam de avaliação cuidadosa antes.</p>
             <ul style="color: var(--gray); max-width: 800px; line-height: 2; margin-left: 1.5rem;">
-                <li>Pálpebras superiores caídas (ptose palpebral)</li>
-                <li>Bolsas nas pálpebras inferiores</li>
-                <li>Excesso de pele nas pálpebras</li>
-                <li>Aparência crônica de cansaço</li>
-                <li>Restrição do campo visual pela pele caída</li>
-                <li>Bom estado geral de saúde e expectativas realistas</li>
+                <li>Pálpebras superiores caídas (ptose palpebral) com impacto visual ou estético</li>
+                <li>Bolsas nas pálpebras inferiores visivamente incômodas</li>
+                <li>Excesso de pele nas pálpebras superiores e/ou inferiores</li>
+                <li>Aparência crônica de cansaço apesar de sono adequado</li>
+                <li>Restrição do campo visual causada por pele caída</li>
+                <li>Bom estado geral de saúde e sem ressecamento ocular severo</li>
+                <li>Expectativas realistas sobre resultados e cicatrização</li>
             </ul>
         </div>
     </section>
@@ -174,29 +182,55 @@
                     <div class="timeline-dot">1</div>
                     <div class="timeline-content">
                         <h3>Primeiras 48 horas</h3>
-                        <p>Aplique compressas frias regularmente para reduzir inchaço e equimose. Mantenha a cabeça elevada ao dormir.</p>
+                        <p>Aplique compressas frias (gelo envolvido em pano) por 15-20 minutos a cada 2 horas para reduzir inchaço e equimose (roxos). Mantenha cabeça elevada ao dormir (2-3 travesseiros). Colírio oftalmológico conforme recomendação para lubrificação ocular.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">2</div>
                     <div class="timeline-content">
                         <h3>Semana 1</h3>
-                        <p>Edema e equimose (roxos) são normais e diminuem gradualmente. Evite atividades que aumentem a pressão ocular.</p>
+                        <p>Edema e equimose (roxos) são normais e diminuem gradualmente — auge no dia 2-3, depois melhora progressiva. Evite tocar, coçar ou exercer pressão nos olhos. Atividades leves apenas. Use óculos escuros ao sair ao ar livre para proteção e evitar exposição.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">3</div>
                     <div class="timeline-content">
                         <h3>Semana 2-3</h3>
-                        <p>Maquiagem pode ser usada para cobrir edema residual. Retorno a atividades normais. Evite exercícios intensos.</p>
+                        <p>Maquiagem pode ser usada para cobrir edema residual e roxos — recomendado aguardar pelo menos 1 semana. Retorno a atividades normais de trabalho. Evite exercícios intensos, levantar peso ou atividades que aumentem pressão ocular.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">4</div>
                     <div class="timeline-content">
                         <h3>Mês 1-3</h3>
-                        <p>Resultado final aparece entre 1-3 meses. Edema residual resolve completamente. Retorno a exercícios intensos liberado.</p>
+                        <p>Resultado final aparece entre 4-8 semanas. Edema residual resolve completamente. Retorno a exercícios intensos, esportes e academia liberados após 4-6 semanas. Cicatriz continua melhorando até 6-12 meses — mantenha proteção solar e use cremes cicatrizantes.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-off">
+        <div class="section-inner">
+            <span class="section-tag">Dúvidas Frequentes</span>
+            <h2 class="section-title">Perguntas sobre <span style="color: var(--gold);">Blefaroplastia</span></h2>
+            <div class="divider"></div>
+            <div class="faq">
+                <div class="faq-item">
+                    <div class="faq-question">A blefaroplastia muda a forma dos meus olhos?</div>
+                    <div class="faq-answer">Não necessariamente. Objetivo é rejuvenescer pálpebras sem alterar expressão ou forma do olhar. Cirurgião experiente preserva identidade do olhar enquanto remove sinais de envelhecimento. A forma dos olhos mantém-se, apenas a área fica mais jovem.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Posso fazer blefaroplastia e botox juntos?</div>
+                    <div class="faq-answer">Sim. Blefaroplastia corrige estrutura (pele, músculos, gordura); botox suaviza rugas dinâmicas ao redor dos olhos (pés de galinha). Complementam-se perfeitamente. Muitos pacientes fazem os dois na mesma sessão para resultado rejuvenescedor completo.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Os resultados duram para sempre?</div>
+                    <div class="faq-answer">Em média 10-15 anos — excelente longevidade comparado a procedimentos não cirúrgicos. Envelhecimento continua após a cirurgia, mas de base muito mais jovem. Com cuidados de pele e proteção solar, durabilidade tende a ser máxima.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">É feita com anestesia geral?</div>
+                    <div class="faq-answer">Geralmente não. Anestesia local com sedação leve é suficiente e mais segura na maioria dos casos. Paciente permanece acordado mas relaxado, sem dor. Alguns casos podem necessitar anestesia geral — avaliado na consulta pré-operatória.</div>
                 </div>
             </div>
         </div>
@@ -204,8 +238,8 @@
 
     <section class="cta-section">
         <h2>Recupere Seu Olhar Jovem</h2>
-        <p>A blefaroplastia com o Dr. Felipe Hissa Coelho oferece resultados rápidos e transformadores. Agende sua consulta e recupere a juventude ao redor dos seus olhos.</p>
-        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Consulta via WhatsApp</a>
+        <p>A blefaroplastia com o Dr. Felipe Hissa Coelho oferece resultados rápidos, transformadores e duradouros. Agende sua consulta presencial para avaliação completa.</p>
+        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Minha Avaliação Presencial</a>
     </section>
 
     <footer>

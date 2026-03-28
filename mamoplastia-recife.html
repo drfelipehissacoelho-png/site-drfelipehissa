@@ -44,12 +44,17 @@
         .benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2rem; }
         .benefit-card { background: var(--white); border: 1px solid #e5e0d8; border-radius: 10px; padding: 1.5rem; }
         .benefit-card h3 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .benefit-card p { color: var(--gray); font-size: 0.95rem; }
+        .benefit-card p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
         .timeline { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
         .timeline-item { display: flex; gap: 1.5rem; align-items: flex-start; }
         .timeline-dot { width: 40px; height: 40px; min-width: 40px; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold-light); font-weight: 700; font-size: 0.9rem; }
         .timeline-content h3 { color: var(--navy); font-weight: 600; margin-bottom: 0.3rem; }
-        .timeline-content p { color: var(--gray); font-size: 0.95rem; }
+        .timeline-content p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
+        .faq { margin-top: 2rem; }
+        .faq-item { border-bottom: 1px solid #e5e0d8; padding: 1.5rem 0; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { font-weight: 600; color: var(--navy); margin-bottom: 0.5rem; font-size: 1rem; }
+        .faq-answer { color: var(--gray); font-size: 0.95rem; line-height: 1.7; }
         .cta-section { background: var(--navy); padding: 80px 5%; text-align: center; }
         .cta-section h2 { font-family: 'Playfair Display', serif; color: var(--white); font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 1rem; }
         .cta-section p { color: rgba(255,255,255,0.75); font-size: 1.05rem; max-width: 500px; margin: 0 auto 2rem; }
@@ -100,7 +105,7 @@
             <div class="hero-badge">Procedimento Cirúrgico</div>
             <h1>Mamoplastia em <span>Recife</span></h1>
             <p>Aumente, reduza ou levante suas mamas com proporção e naturalidade. Resultados harmônicos com seu corpo que melhoram a autoestima e o bem-estar.</p>
-            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">💬 Consultar via WhatsApp</a>
+            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">📅 Agendar Minha Avaliação</a>
         </div>
     </section>
 
@@ -109,7 +114,9 @@
             <span class="section-tag">O que é</span>
             <h2 class="section-title">Mamoplastia: Remodelação <span style="color: var(--gold);">Mamária</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">A mamoplastia é um procedimento que permite aumentar, reduzir ou elevar as mamas conforme seus desejos. Pode ser realizada com próteses de silicone para aumento, remoção de tecido para redução, ou apenas elevação da mama (lifting ou mastopexia). O Dr. Felipe Hissa Coelho personaliza cada procedimento para criar resultados que harmonizem com sua estrutura corporal e atender aos seus objetivos estéticos.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Mamoplastia engloba aumento (prótese de silicone), redução e mastopexia (levantamento). Técnicas podem ser combinadas (mastopexia + prótese). Uma das cirurgias mais realizadas no mundo com altos índices de satisfação. Permite criar mamas que harmonizam com sua estrutura corporal e realizam seus desejos estéticos.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">No aumento, o Dr. Felipe usa próteses de silicone gel coesivo de última geração. Posicionamento (submuscular, dual plane, subfascial), tipo de incisão (inframamária, periareolar, axilar) e perfil do implante escolhidos individualmente. Planejamento cuidadoso garante resultado natural que se integra harmonicamente ao corpo.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">Na redução, além de diminuir volume, corrige ptose e reposiciona o complexo aréolo-papilar. Melhora dor cervical, postura e qualidade de vida. Mastopexia indicada quando há queda sem necessidade de redução de volume — frequente após amamentação ou perda de peso, restaurando o contorno jovem das mamas.</p>
         </div>
     </section>
 
@@ -121,27 +128,27 @@
             <div class="benefits-grid">
                 <div class="benefit-card">
                     <h3>Mamas Proporcionais</h3>
-                    <p>Tamanho e forma que harmonizam com seu corpo, criando simetria e beleza natural.</p>
+                    <p>Tamanho e forma que harmonizam perfeitamente com seu corpo, criando simetria, beleza natural e equilíbrio das proporções faciais e corporais.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Melhora da Autoestima</h3>
-                    <p>Confiança renovada ao alcançar o visual mamário que sempre desejou.</p>
+                    <p>Confiança renovada ao alcançar o visual mamário que sempre desejou. Impacto positivo na vida pessoal, relacionamentos e bem-estar emocional duradouro.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Roupas Caem Melhor</h3>
-                    <p>Proporção corporal equilibrada facilita o uso de diferentes estilos de roupas.</p>
+                    <p>Proporção corporal equilibrada facilita o uso de diferentes estilos de roupas, biquínis e decotes — maior versatilidade e conforto ao se vestir.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Alívio de Dores</h3>
-                    <p>Em caso de redução, elimina dores no pescoço, costas e ombros causadas pelo peso.</p>
+                    <p>Em caso de redução, elimina completamente dores cervicais, posturais e nos ombros causadas pelo peso excessivo das mamas — melhoria na qualidade de vida.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Resultados Naturais</h3>
-                    <p>Técnica especializada cria mamas que parecem naturais e se movem naturalmente.</p>
+                    <p>Técnica especializada do Dr. Felipe cria mamas que parecem naturais, movem-se naturalmente e envelhecem naturalmente ao longo dos anos.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Simetria Corrigida</h3>
-                    <p>Correção de assimetrias e volumes diferentes nas mamas.</p>
+                    <p>Correção de assimetrias, volumes diferentes e posicionamento inadequado das mamas — resultado harmonioso quando observado de frente e de perfil.</p>
                 </div>
             </div>
         </div>
@@ -152,14 +159,15 @@
             <span class="section-tag">Candidatos</span>
             <h2 class="section-title">Quem é o Candidato <span style="color: var(--gold);">Ideal?</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A mamoplastia é indicada para mulheres adultas que desejam alterar o tamanho, forma ou posição das mamas. Os candidatos ideais apresentam:</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A mamoplastia é indicada para mulheres adultas que desejam alterar o tamanho, forma ou posição das mamas. O momento ideal é quando as mamas finalizaram seu desenvolvimento (após os 18 anos) e a expectativa estética está bem definida. Pacientes ideais compreendem os resultados possíveis e fazem a cirurgia por desejo pessoal, não pressão externa.</p>
             <ul style="color: var(--gray); max-width: 800px; line-height: 2; margin-left: 1.5rem;">
                 <li>Mamas assimétricas ou desproporcionais ao corpo</li>
-                <li>Ptose (queda ou descaída das mamas)</li>
-                <li>Volume insuficiente ou excessivo</li>
-                <li>Mamas caídas após gravidez ou amamentação</li>
-                <li>Bom estado geral de saúde</li>
-                <li>Expectativas realistas e bem definidas</li>
+                <li>Ptose (queda significativa) ou falta de sustentação mamária</li>
+                <li>Volume insuficiente ou excessivo gerando desconforto</li>
+                <li>Mamas caídas após gestações ou amamentação</li>
+                <li>Bom estado geral de saúde e sem contraindicações cirúrgicas</li>
+                <li>Expectativas realistas e bem definidas com o cirurgião</li>
+                <li>Comprometimento com cuidados pós-operatórios</li>
             </ul>
         </div>
     </section>
@@ -174,29 +182,55 @@
                     <div class="timeline-dot">1</div>
                     <div class="timeline-content">
                         <h3>Primeiros 3-5 dias</h3>
-                        <p>Repouso em casa. Use o sutiã cirúrgico recomendado constantemente. Aplique gelo as primeiras 48 horas para reduzir inchaço.</p>
+                        <p>Repouso em casa em posição semi-deitada (30-45 graus) para reduzir edema. Use sutiã cirúrgico recomendado constantemente — não remover nem mesmo à noite. Aplicar gelo as primeiras 48 horas para reduzir inchaço e hematomas. Medicações conforme prescrição.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">2</div>
                     <div class="timeline-content">
                         <h3>Primeira semana</h3>
-                        <p>Continue com o sutiã cirúrgico por 6-8 semanas. Retorno a atividades leves. Evite levantar os braços acima dos ombros.</p>
+                        <p>Continue com sutiã cirúrgico por 6-8 semanas, mesmo para dormir. Retorno a atividades leves de casa. Evite levantar os braços acima dos ombros, carregar pesos ou fazer movimentos bruscos. Incisões podem ser limpas delicadamente com higiene reforçada.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">3</div>
                     <div class="timeline-content">
                         <h3>Semanas 2-4</h3>
-                        <p>Inchaço reduz gradualmente. Retorno ao trabalho se for de escritório. Evite ainda exercícios e esportes.</p>
+                        <p>Inchaço reduz gradualmente, embora edema residual permaneça. Retorno ao trabalho se for de escritório e sem esforço físico. Continue evitando exercícios, esportes e movimentos que estiquem o peito. Proteja as incisões do sol com protetor solar.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">4</div>
                     <div class="timeline-content">
-                        <h3>Semanas 4-6</h3>
-                        <p>Retorno gradual a exercícios leves. Esportes de impacto após 4-6 semanas. Resultado final em 3 meses.</p>
+                        <h3>Semanas 4-8</h3>
+                        <p>Retorno gradual a exercícios leves — caminhada, yoga suave. Esportes de impacto após 4-6 semanas com aprovação do cirurgião. Resultado inicial avaliável com redução de inchaço em 6-8 semanas. Resultado final consolida-se entre 3-6 meses quando todo edema se resolve.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-off">
+        <div class="section-inner">
+            <span class="section-tag">Dúvidas Frequentes</span>
+            <h2 class="section-title">Perguntas sobre <span style="color: var(--gold);">Mamoplastia</span></h2>
+            <div class="divider"></div>
+            <div class="faq">
+                <div class="faq-item">
+                    <div class="faq-question">Próteses têm prazo de validade?</div>
+                    <div class="faq-answer">Não há troca obrigatória com próteses íntegras. Acompanhamento com ultrassom periódico recomendado. Troca apenas se ruptura, contratura capsular sintomática ou desejo da paciente. Próteses modernas duram 20+ anos.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">O resultado parece natural?</div>
+                    <div class="faq-answer">Sim, quando bem planejado. Depende de volume, perfil e posicionamento corretos. Dr. Felipe usa medidas precisas, análise digital e testes intraoperatórios para resultado proporcional, simétrico e naturalmente integrado ao corpo.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Posso amamentar após a cirurgia?</div>
+                    <div class="faq-answer">Na maioria dos casos sim. Técnica preserva estruturas glandulares, especialmente com incisão axilar ou inframamária. Capacidade de amamentar é frequentemente mantida. Discutido individualmente na consulta conforme seu planejamento reprodutivo.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Quanto dura o resultado da mastopexia?</div>
+                    <div class="faq-answer">Em média 10-15 anos — novas gestações e variações de peso influenciam. Evitar gestações não planejadas e manter peso estável preserva o resultado por tempo prolongado. Segunda mastopexia é possível se necessário.</div>
                 </div>
             </div>
         </div>
@@ -204,8 +238,8 @@
 
     <section class="cta-section">
         <h2>Crie as Mamas dos Seus Sonhos</h2>
-        <p>O Dr. Felipe Hissa Coelho especializa-se em criar resultados mamários naturais e proporcionais. Agende sua consulta e descubra suas possibilidades.</p>
-        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Consulta via WhatsApp</a>
+        <p>O Dr. Felipe Hissa Coelho especializa-se em criar resultados mamários naturais, proporcionais e duradouros. Agende sua consulta presencial para avaliação completa e personalizada.</p>
+        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Minha Avaliação Presencial</a>
     </section>
 
     <footer>

@@ -44,12 +44,17 @@
         .benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2rem; }
         .benefit-card { background: var(--white); border: 1px solid #e5e0d8; border-radius: 10px; padding: 1.5rem; }
         .benefit-card h3 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .benefit-card p { color: var(--gray); font-size: 0.95rem; }
+        .benefit-card p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
         .timeline { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
         .timeline-item { display: flex; gap: 1.5rem; align-items: flex-start; }
         .timeline-dot { width: 40px; height: 40px; min-width: 40px; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold-light); font-weight: 700; font-size: 0.9rem; }
         .timeline-content h3 { color: var(--navy); font-weight: 600; margin-bottom: 0.3rem; }
-        .timeline-content p { color: var(--gray); font-size: 0.95rem; }
+        .timeline-content p { color: var(--gray); font-size: 0.95rem; line-height: 1.6; }
+        .faq { margin-top: 2rem; }
+        .faq-item { border-bottom: 1px solid #e5e0d8; padding: 1.5rem 0; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { font-weight: 600; color: var(--navy); margin-bottom: 0.5rem; font-size: 1rem; }
+        .faq-answer { color: var(--gray); font-size: 0.95rem; line-height: 1.7; }
         .cta-section { background: var(--navy); padding: 80px 5%; text-align: center; }
         .cta-section h2 { font-family: 'Playfair Display', serif; color: var(--white); font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 1rem; }
         .cta-section p { color: rgba(255,255,255,0.75); font-size: 1.05rem; max-width: 500px; margin: 0 auto 2rem; }
@@ -100,7 +105,7 @@
             <div class="hero-badge">Procedimento Cirúrgico</div>
             <h1>Abdominoplastia em <span>Recife</span></h1>
             <p>Crie um abdômen plano, firme e definido removendo excesso de pele e gordura enquanto reforça a musculatura abdominal. Um procedimento transformador para quem deseja recuperar a silhueta.</p>
-            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">💬 Consultar via WhatsApp</a>
+            <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">📅 Agendar Minha Avaliação</a>
         </div>
     </section>
 
@@ -109,7 +114,9 @@
             <span class="section-tag">O que é</span>
             <h2 class="section-title">Abdominoplastia: Barriga <span style="color: var(--gold);">Chapada</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">A abdominoplastia, também conhecida como barriga chapada, é um procedimento cirúrgico que remove o excesso de pele e gordura do abdômen enquanto tensa a musculatura abdominal. É especialmente indicada para mulheres após gravidez ou pessoas com significativa perda de peso que apresentam flacidez abdominal. O Dr. Felipe Hissa Coelho realiza a técnica com precisão, criando resultados naturais e harmoniosos com o resto do corpo.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">A abdominoplastia remove excesso de pele e gordura abdominal e repara a diástase dos músculos retos abdominais — separação muscular que exercícios não corrigem. Age em três frentes: elimina pele flácida, remove gordura e restaura a musculatura. É uma das cirurgias de contorno corporal mais completas disponíveis.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.2rem;">Realizada sob anestesia geral (2-4h), com marcação cirúrgica em pé. Incisão posicionada dentro da linha do biquíni. Umbigo reposicionado. Variações: mini-abdominoplastia (excesso abaixo do umbigo), clássica (mais completa), em âncora (pós-bariátrica). Lipoaspiração frequentemente associada.</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px;">Indicada após gestações (especialmente com diástase), grande perda de peso, ou flacidez resistente a exercícios. Peso estável há 6+ meses é fundamental. Mulheres não devem planejar novas gestações após a cirurgia para preservar o resultado.</p>
         </div>
     </section>
 
@@ -121,27 +128,27 @@
             <div class="benefits-grid">
                 <div class="benefit-card">
                     <h3>Abdômen Plano</h3>
-                    <p>Eliminação de flacidez abdominal e criação de uma silhueta lisa e bem-contornada.</p>
+                    <p>Eliminação completa de flacidez abdominal e criação de uma silhueta lisa, bem-contornada e proporcional ao resto do corpo. Resultado que transforma a aparência em roupas e à beira do mar.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Correção de Diástase</h3>
-                    <p>Reforço dos músculos retos abdominais, corrigindo a separação ocorrida na gravidez.</p>
+                    <p>Reforço duradouro dos músculos retos abdominais, corrigindo a separação muscular ocorrida na gravidez. Melhora postura, estabilidade do core e reduz dores nas costas.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Eliminação de Estrias</h3>
-                    <p>Remoção das estrias e pele danificada presente no excesso de pele abdominal.</p>
+                    <p>Remoção das estrias e pele danificada presente no excesso de pele abdominal. A porção de pele removida carrega consigo a maioria das marcas estéticas.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Melhora da Silhueta</h3>
-                    <p>Proporção corporal equilibrada com cintura mais definida e abdômen firme.</p>
+                    <p>Proporção corporal mais equilibrada com cintura definida e abdômen firme. Traz harmonia ao corpo inteiro e realça feminilidade ou masculinidade conforme desejado.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Aumento da Autoestima</h3>
-                    <p>Confiança renovada ao recuperar a silhueta desejada após gravidez ou emagrecimento.</p>
+                    <p>Confiança renovada ao recuperar a silhueta desejada após gravidez ou emagrecimento. Impacto emocional positivo duradouro que afeta relacionamentos e qualidade de vida.</p>
                 </div>
                 <div class="benefit-card">
                     <h3>Melhora Funcional</h3>
-                    <p>Músculos abdominais reforçados melhoram postura e estabilidade do core.</p>
+                    <p>Músculos abdominais reforçados melhoram postura, estabilidade do core e facilita práticas de exercícios físicos intensos sem limitações de flacidez.</p>
                 </div>
             </div>
         </div>
@@ -152,14 +159,16 @@
             <span class="section-tag">Candidatos</span>
             <h2 class="section-title">Quem é o Candidato <span style="color: var(--gold);">Ideal?</span></h2>
             <div class="divider"></div>
-            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A abdominoplastia é indicada para adultos com flacidez abdominal significativa. Os candidatos ideais apresentam:</p>
+            <p style="font-size: 1.05rem; color: var(--gray); max-width: 800px; margin-bottom: 1.5rem;">A abdominoplastia é indicada para adultos com flacidez abdominal significativa. Os candidatos ideais apresentam bom estado geral de saúde, peso estável há pelo menos 6 meses, e compreensão clara dos resultados esperados. É especialmente eficaz em mulheres no pós-parto com múltiplos filhos e pessoas que alcançaram peso estável após grande emagrecimento.</p>
             <ul style="color: var(--gray); max-width: 800px; line-height: 2; margin-left: 1.5rem;">
                 <li>Mulheres pós-gravidez com múltiplos filhos</li>
-                <li>Pessoas com perda de peso significativa</li>
-                <li>Flacidez e excesso de pele abdominal evidente</li>
-                <li>Diástase dos retos abdominais</li>
-                <li>Bom estado geral de saúde</li>
-                <li>Expectativas realistas e compromisso com pós-operatório</li>
+                <li>Pessoas com perda de peso significativa (>15 kg)</li>
+                <li>Flacidez e excesso de pele abdominal visualmente evidente</li>
+                <li>Diástase dos retos abdominais com impacto funcional</li>
+                <li>Peso corporal estável há 6+ meses</li>
+                <li>Bom estado geral de saúde, sem contraindicações cirúrgicas</li>
+                <li>Expectativas realistas alinhadas com possibilidades cirúrgicas</li>
+                <li>Compromisso com cuidados pós-operatórios</li>
             </ul>
         </div>
     </section>
@@ -174,29 +183,55 @@
                     <div class="timeline-dot">1</div>
                     <div class="timeline-content">
                         <h3>Primeiros 5-7 dias</h3>
-                        <p>Repouso rigoroso em casa. Dreno será mantido por 5-7 dias. Use a cinta compressiva constantemente e tome analgésicos conforme orientado.</p>
+                        <p>Repouso rigoroso em casa com compressa a 30-45 graus para reduzir tensão na incisão. Dreno mantido por 5-7 dias com medição diária de débito. Cinta compressiva usada constantemente. Analgésicos conforme necessário. Risco mínimo de complicações nesta fase se repouso é respeitado.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">2</div>
                     <div class="timeline-content">
                         <h3>Semana 2-3</h3>
-                        <p>Continuação do uso da cinta compressiva por 6-8 semanas. Retorno a atividades leves. Evite flexionar o abdômen ou fazer exercícios.</p>
+                        <p>Continuação de cinta compressiva por 6-8 semanas. Retorno a atividades leves (trabalho de escritório). Caminhadas leves estimuladas para prevenir trombose. Evite flexionar o abdômen, levantar pesos ou fazer exercícios abdominais. Higiene cuidadosa da incisão.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">3</div>
                     <div class="timeline-content">
                         <h3>Mês 1-2</h3>
-                        <p>Redução significativa de edema. Cicatriz em fase inicial de cicatrização. Caminhadas e movimentos simples são encorajados.</p>
+                        <p>Redução significativa de edema e hematomas. Cicatriz em fase de cicatrização ativa — aplicar protetor solar mesmo em dias nublados. Caminhadas e movimentos simples encorajados. Retorno gradual ao trabalho. Repouso noturno continua importante.</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot">4</div>
                     <div class="timeline-content">
                         <h3>Mês 3-6</h3>
-                        <p>Retorno gradual aos exercícios. Resultado final se consolida entre 6-12 meses. Cicatriz continua melhorando até 18 meses.</p>
+                        <p>Retorno gradual aos exercícios: natação após 6 semanas, yoga leve após 8, musculação após 12 semanas. Resultado se consolida entre 6-12 meses. Cicatriz continua melhorando até 18 meses — mantém proteção solar e uso de cremes cicatrizantes.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-off">
+        <div class="section-inner">
+            <span class="section-tag">Dúvidas Frequentes</span>
+            <h2 class="section-title">Perguntas sobre <span style="color: var(--gold);">Abdominoplastia</span></h2>
+            <div class="divider"></div>
+            <div class="faq">
+                <div class="faq-item">
+                    <div class="faq-question">A abdominoplastia e lipoaspiração são a mesma coisa?</div>
+                    <div class="faq-answer">Não. Lipoaspiração remove gordura por aspiração, mantendo a pele. Abdominoplastia remove pele, corrige musculatura e reposiciona o umbigo. Frequentemente combinadas para resultado ótimo, mas são procedimentos distintos com objetivos diferentes.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">A cicatriz some?</div>
+                    <div class="faq-answer">Não desaparece completamente, mas fica dentro da linha do biquíni tornando-se imperceptível em biquíni ou roupa de banho. Com cuidados (proteção solar rigorosa, cremes cicatrizantes), torna-se muito discreta e acinzentada ao longo dos meses.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Quanto tempo de repouso?</div>
+                    <div class="faq-answer">Repouso integral de 5-7 dias. Trabalho leve em 10-15 dias. Exercícios físicos após 6-8 semanas (iniciando com leve e progressivo). Resultado estético final é avaliável após 6-12 meses quando todo edema se resolve.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Posso operar se quero ter filhos?</div>
+                    <div class="faq-answer">Recomenda-se aguardar gestações concluídas, pois nova gravidez pode esticar a pele e comprometer o resultado obtido. Se gestação for planejada em futuro próximo (1-2 anos), considere aguardar ou conversar com Dr. Felipe sobre alternativas.</div>
                 </div>
             </div>
         </div>
@@ -204,8 +239,8 @@
 
     <section class="cta-section">
         <h2>Recupere Seu Abdômen Ideal</h2>
-        <p>A abdominoplastia com o Dr. Felipe Hissa Coelho oferece resultados transformadores. Agende sua consulta e descubra como podemos ajudá-lo.</p>
-        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Consulta via WhatsApp</a>
+        <p>A abdominoplastia com o Dr. Felipe Hissa Coelho oferece resultados transformadores e duradouros. Agende sua consulta presencial para avaliação completa e personalizada.</p>
+        <a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta." class="btn-primary">Agendar Minha Avaliação Presencial</a>
     </section>
 
     <footer>
