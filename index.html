@@ -1114,6 +1114,56 @@ nav.scrolled .nav-logo img {
 }
 </style>
 
+
+<style>
+/* Fade-in hero */
+.hero-text {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 1.2s ease forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Premium button microinteraction */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent);
+  transform: skewX(-20deg);
+}
+
+.btn-primary:hover::after {
+  left: 125%;
+  transition: all 0.75s ease;
+}
+
+/* Page subtle loader */
+body {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+body.loaded {
+  opacity: 1;
+}
+</style>
+
 </head>
 <body>
 
@@ -1402,6 +1452,13 @@ window.addEventListener("scroll", function(){
   } else {
     nav.classList.remove("scrolled");
   }
+});
+</script>
+
+
+<script>
+window.addEventListener("load", function(){
+  document.body.classList.add("loaded");
 });
 </script>
 
