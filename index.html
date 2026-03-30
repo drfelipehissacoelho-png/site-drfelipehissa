@@ -106,11 +106,19 @@
       background: linear-gradient(180deg, rgba(8,24,45,0.96) 0%, rgba(13,35,64,0.88) 100%);
       backdrop-filter: blur(14px);
       border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding: 0 5%;
+      padding: 0 5.2%;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 72px;
+      height: 76px;
+      transition: height .28s ease, background .28s ease, box-shadow .28s ease, border-color .28s ease;
+    }
+
+    nav.nav-scrolled {
+      height: 68px;
+      background: linear-gradient(180deg, rgba(8,24,45,0.98) 0%, rgba(11,32,57,0.95) 100%);
+      box-shadow: 0 16px 34px rgba(5,16,30,0.18);
+      border-bottom-color: rgba(212,169,85,0.12);
     }
 
     .nav-logo {
@@ -121,9 +129,14 @@
     }
 
     .nav-logo img {
-      height: 38px;
+      height: 46px;
       width: auto;
-      filter: drop-shadow(0 6px 16px rgba(0,0,0,0.22));
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.22));
+      transition: height .28s ease, transform .28s ease;
+    }
+
+    nav.nav-scrolled .nav-logo img {
+      height: 40px;
     }
 
     .nav-links {
@@ -419,34 +432,51 @@
 
     #procedimentos { background: var(--white); }
 
-    .proc-intro { max-width: 620px; color: var(--gray); margin-bottom: 3rem; }
+    .proc-intro {
+      max-width: 680px;
+      color: var(--gray);
+      margin-bottom: 3rem;
+      font-size: 1rem;
+      line-height: 1.82;
+    }
 
     
     .proc-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1.6rem;
+      gap: 1.7rem;
     }
 
     .proc-card {
       position: relative;
-      background: linear-gradient(180deg, #fffdf9 0%, #f7f3ec 100%);
-      border-radius: 18px;
-      padding: 1.7rem 1.55rem 1.5rem;
+      background:
+        radial-gradient(circle at top right, rgba(212,169,85,0.10), transparent 28%),
+        linear-gradient(180deg, #fffefb 0%, #f7f2ea 100%);
+      border-radius: 22px;
+      padding: 1.75rem 1.6rem 1.55rem;
       border: 1px solid rgba(13,35,64,0.08);
-      box-shadow: 0 14px 34px rgba(9,25,44,0.06);
-      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      box-shadow:
+        0 16px 34px rgba(9,25,44,0.06),
+        inset 0 1px 0 rgba(255,255,255,0.75);
+      transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
       overflow: hidden;
       min-height: 100%;
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    .proc-card.in-view {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .proc-card::before {
       content: "";
       display: block;
-      width: 34px;
+      width: 42px;
       height: 2px;
-      margin-bottom: 1rem;
-      background: linear-gradient(90deg, rgba(212,169,85,1) 0%, rgba(212,169,85,0.18) 100%);
+      margin-bottom: 1.05rem;
+      background: linear-gradient(90deg, rgba(212,169,85,1) 0%, rgba(212,169,85,0.16) 100%);
       border-radius: 999px;
     }
 
@@ -455,15 +485,17 @@
       position: absolute;
       inset: 0 0 auto 0;
       height: 1px;
-      background: linear-gradient(90deg, rgba(212,169,85,0) 0%, rgba(212,169,85,0.55) 50%, rgba(212,169,85,0) 100%);
+      background: linear-gradient(90deg, rgba(212,169,85,0) 0%, rgba(212,169,85,0.62) 50%, rgba(212,169,85,0) 100%);
       opacity: 0;
-      transition: opacity 0.22s ease;
+      transition: opacity 0.28s ease;
     }
 
     .proc-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 18px 42px rgba(9,25,44,0.10);
-      border-color: rgba(184,145,58,0.30);
+      transform: translateY(-6px);
+      box-shadow:
+        0 22px 46px rgba(9,25,44,0.10),
+        inset 0 1px 0 rgba(255,255,255,0.85);
+      border-color: rgba(184,145,58,0.28);
     }
 
     .proc-card:hover::after {
@@ -472,37 +504,38 @@
 
     .proc-card h3 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.18rem;
-      line-height: 1.25;
+      font-size: 1.2rem;
+      line-height: 1.22;
       color: var(--navy);
-      margin-bottom: 0.72rem;
+      margin-bottom: 0.78rem;
       letter-spacing: 0.01em;
+      text-wrap: balance;
     }
 
     .proc-card p {
-      color: #5f6877;
-      font-size: 0.92rem;
-      line-height: 1.72;
+      color: #5d6676;
+      font-size: 0.93rem;
+      line-height: 1.74;
     }
 
     .proc-card .card-link {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      margin-top: 1.15rem;
+      margin-top: 1.2rem;
       color: var(--navy);
-      font-size: 0.83rem;
+      font-size: 0.81rem;
       font-weight: 700;
       text-decoration: none;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.11em;
       text-transform: uppercase;
-      transition: color 0.2s ease, transform 0.2s ease;
+      transition: color 0.22s ease, transform 0.22s ease;
     }
 
     .proc-card .card-link::after {
       content: "→";
       color: var(--gold);
-      transition: transform 0.2s ease;
+      transition: transform 0.22s ease;
     }
 
     .proc-card .card-link:hover {
@@ -511,34 +544,61 @@
     }
 
     .proc-card .card-link:hover::after {
-      transform: translateX(2px);
+      transform: translateX(3px);
+    }
+
+    .proc-card.featured {
+      border-color: rgba(184,145,58,0.26);
+      background:
+        radial-gradient(circle at top right, rgba(212,169,85,0.18), transparent 30%),
+        linear-gradient(180deg, #fffefc 0%, #f6efe3 100%);
+    }
+
+    .proc-card.featured .proc-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.72rem;
+      margin-bottom: 0.85rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.58);
+      border: 1px solid rgba(212,169,85,0.26);
+      backdrop-filter: blur(6px);
+      color: var(--gold);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
     }
 
     .proc-category-label {
       display: inline-flex;
       align-items: center;
       gap: 0.6rem;
-      background: linear-gradient(180deg, #102847 0%, #0b2039 100%);
+      background: rgba(11,32,57,0.78);
       color: rgba(255,255,255,0.96);
       font-size: 0.76rem;
       font-weight: 700;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      padding: 0.62rem 1.15rem;
+      padding: 0.68rem 1.18rem;
       border-radius: 999px;
-      margin-bottom: 1.8rem;
-      box-shadow: 0 14px 28px rgba(9,25,44,0.10);
+      margin-bottom: 1.85rem;
+      box-shadow: 0 14px 28px rgba(9,25,44,0.12);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
     }
 
     .proc-disclaimer {
-      margin-top: 2.2rem;
+      margin-top: 2.3rem;
       padding: 1rem 1.35rem;
-      background: linear-gradient(180deg, #f6f2ea 0%, #f1ede6 100%);
+      background: linear-gradient(180deg, #f7f2ea 0%, #f1ebe2 100%);
       border: 1px solid rgba(184,145,58,0.16);
       border-left: 3px solid var(--gold);
-      border-radius: 0 10px 10px 0;
+      border-radius: 0 12px 12px 0;
       color: var(--gray);
       font-size: 0.82rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
     }
 
     #contato { background: var(--navy); }
@@ -872,17 +932,18 @@
     }
 
     .video-card {
-      background: var(--white);
-      border-radius: var(--radius);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+      border-radius: 18px;
       overflow: hidden;
       border: 1px solid rgba(13,35,64,0.08);
-      box-shadow: 0 10px 28px rgba(13,35,64,0.05);
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      box-shadow: 0 14px 34px rgba(13,35,64,0.06);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
     }
 
     .video-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 36px rgba(13,35,64,0.09);
+      transform: translateY(-5px);
+      box-shadow: 0 20px 42px rgba(13,35,64,0.10);
+      border-color: rgba(184,145,58,0.20);
     }
 
     .video-thumb {
@@ -949,7 +1010,7 @@
 
     @media (max-width: 900px) {
       nav { height: 68px; }
-      .nav-logo img { height: 34px; }
+      .nav-logo img { height: 38px; }
       .nav-links { display: none; }
   
     .hero-brand {
@@ -1063,7 +1124,7 @@
       .hero-visual-spacer { display: none; }
       .sobre-grid { grid-template-columns: 1fr; gap: 2.5rem; }
       .sobre-photo-card { max-width: 360px; }
-      .proc-grid { grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+      .proc-grid { grid-template-columns: 1fr 1fr; }
       .contato-grid { grid-template-columns: 1fr; gap: 2.5rem; }
     }
 
@@ -1082,9 +1143,7 @@
         flex: 1 1 calc(50% - 0.8rem);
         min-width: 130px;
       }
-      .proc-card { padding: 1.35rem 1.2rem 1.25rem; border-radius: 16px; }
-      .proc-card h3 { font-size: 1.08rem; }
-      .proc-grid { grid-template-columns: 1fr; gap: 1rem; }
+      .proc-grid { grid-template-columns: 1fr; }
       .mobile-menu { top: 68px; }
       .horario-grid { grid-template-columns: 1fr; }
       .wa-float {
@@ -1221,14 +1280,14 @@
       Cirurgias Plásticas
     </div>
     <div class="proc-grid">
-      <div class="proc-card"><h3>Lipoaspiração e Lipoescultura</h3><p>Remoção seletiva de gordura localizada com modelagem simultânea do contorno corporal. A lipoescultura combina a aspiração com técnicas de definição muscular para resultados mais esculpidos e naturais.</p><a href="lipoaspiracao-recife.html" class="card-link">Saiba mais →</a></div>
-      <div class="proc-card"><h3>Abdominoplastia</h3><p>Cirurgia para remoção do excesso de pele e gordura abdominal, com restauração da musculatura do abdômen. Indicada após gravidez, grandes perdas de peso ou flacidez que não responde a exercícios.</p><a href="abdominoplastia-recife.html" class="card-link">Saiba mais →</a></div>
-      <div class="proc-card"><h3>Mamoplastia e Prótese de Silicone</h3><p>Cirurgias de aumento, redução ou remodelação das mamas. O aumento mamário com prótese de silicone é realizado com técnica individualizada para cada paciente, buscando proporção, simetria e naturalidade.</p><a href="mamoplastia-recife.html" class="card-link">Saiba mais →</a></div>
-      <div class="proc-card"><h3>Explante Mamário</h3><p>Remoção segura de próteses mamárias com ou sem troca, indicada por escolha pessoal, contratura capsular, ruptura ou outras intercorrências. Realizado com técnica que preserva ao máximo os tecidos.</p><a href="explante-recife.html" class="card-link">Saiba mais →</a></div>
-      <div class="proc-card"><h3>Blefaroplastia</h3><p>Cirurgia das pálpebras para remoção do excesso de pele e gordura, rejuvenescendo o olhar. Pode ser realizada nas pálpebras superiores, inferiores ou em ambas, com resultados naturais e duradouros.</p><a href="blefaroplastia-recife.html" class="card-link">Saiba mais →</a></div>
-      <div class="proc-card"><h3>Rinoplastia</h3><p>Cirurgia de remodelação do nariz para fins estéticos e/ou funcionais. Permite correção do tamanho, da forma, da largura e de desvios, sempre com planejamento individualizado para harmonizar com as demais estruturas da face.</p><a href="rinoplastia-recife.html" class="card-link">Saiba mais →</a></div>
-      <div class="proc-card"><h3>Cirurgia da Face</h3><p>Procedimentos cirúrgicos para rejuvenescimento facial, incluindo ritidoplastia. Corrige flacidez, sulcos e ptose dos tecidos, restituindo contornos mais jovens e descansados de forma duradoura.</p><a href="cirurgia-face-recife.html" class="card-link">Saiba mais →</a></div>
-      <div class="proc-card"><h3>Cirurgias Pós-Bariátrica</h3><p>Cirurgias de contorno corporal para pacientes após grande perda ponderal, incluindo dermolipectomias, abdominoplastia em âncora, lifting de coxas e braços. Recupera a qualidade de vida após o emagrecimento expressivo.</p><a href="pos-bariatrica-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"></path></svg></div><h3>Lipoaspiração e Lipoescultura</h3><p>Remoção seletiva de gordura localizada com modelagem simultânea do contorno corporal. A lipoescultura combina a aspiração com técnicas de definição muscular para resultados mais esculpidos e naturais.</p><a href="lipoaspiracao-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"></path></svg></div><h3>Abdominoplastia</h3><p>Cirurgia para remoção do excesso de pele e gordura abdominal, com restauração da musculatura do abdômen. Indicada após gravidez, grandes perdas de peso ou flacidez que não responde a exercícios.</p><a href="abdominoplastia-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"></path></svg></div><h3>Mamoplastia e Prótese de Silicone</h3><p>Cirurgias de aumento, redução ou remodelação das mamas. O aumento mamário com prótese de silicone é realizado com técnica individualizada para cada paciente, buscando proporção, simetria e naturalidade.</p><a href="mamoplastia-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"></path></svg></div><h3>Explante Mamário</h3><p>Remoção segura de próteses mamárias com ou sem troca, indicada por escolha pessoal, contratura capsular, ruptura ou outras intercorrências. Realizado com técnica que preserva ao máximo os tecidos.</p><a href="explante-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path></svg></div><h3>Blefaroplastia</h3><p>Cirurgia das pálpebras para remoção do excesso de pele e gordura, rejuvenescendo o olhar. Pode ser realizada nas pálpebras superiores, inferiores ou em ambas, com resultados naturais e duradouros.</p><a href="blefaroplastia-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path></svg></div><h3>Rinoplastia</h3><p>Cirurgia de remodelação do nariz para fins estéticos e/ou funcionais. Permite correção do tamanho, da forma, da largura e de desvios, sempre com planejamento individualizado para harmonizar com as demais estruturas da face.</p><a href="rinoplastia-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.354a15.055 15.055 0 0 1-4.5 0M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9Z"></path></svg></div><h3>Cirurgia da Face</h3><p>Procedimentos cirúrgicos para rejuvenescimento facial, incluindo ritidoplastia. Corrige flacidez, sulcos e ptose dos tecidos, restituindo contornos mais jovens e descansados de forma duradoura.</p><a href="cirurgia-face-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6"></path></svg></div><h3>Cirurgias Pós-Bariátrica</h3><p>Cirurgias de contorno corporal para pacientes após grande perda ponderal, incluindo dermolipectomias, abdominoplastia em âncora, lifting de coxas e braços. Recupera a qualidade de vida após o emagrecimento expressivo.</p><a href="pos-bariatrica-recife.html" class="card-link">Saiba mais →</a></div>
     </div>
 
     <div class="proc-category-label" style="margin-top:3.5rem;">
@@ -1236,11 +1295,11 @@
       Estética &amp; Cosmiatria
     </div>
     <div class="proc-grid">
-      <div class="proc-card"><h3>Toxina Botulínica</h3><p>Aplicação de toxina botulínica para suavização de rugas dinâmicas, como linhas de expressão na testa, entre as sobrancelhas e ao redor dos olhos. Resultado natural, sem interferir na expressividade do rosto.</p><a href="toxina-botulinica-recife.html" class="card-link">Saiba mais →</a></div>
-      <div class="proc-card"><h3>Preenchimento Facial</h3><p>Uso de ácido hialurônico para restaurar volumes, suavizar sulcos e definir contornos faciais como lábios, maçãs do rosto e mandíbula. Procedimento minimamente invasivo com resultado imediato e reversível.</p><a href="preenchimento-recife.html" class="card-link">Saiba mais →</a></div>
-      <div class="proc-card"><h3>Bioestimuladores de Colágeno</h3><p>Aplicação de substâncias que estimulam a produção natural de colágeno, promovendo firmeza, elasticidade e rejuvenescimento progressivo da pele ao longo dos meses.</p></div>
-      <div class="proc-card"><h3>Ellansé</h3><p>Preenchedor bioestimulador de longa duração que combina efeito volumizador imediato com estímulo progressivo de colágeno. Indicado para reposição de volume e melhora da qualidade da pele, com duração de 1 a 4 anos.</p></div>
-      <div class="proc-card"><h3>Sutura Silhouette</h3><p>Técnica minimamente invasiva de lifting com fios de sustentação absorvíveis, que promovem sustentação imediata dos tecidos e estimulam a neocolagênese. Indicada para ptose facial leve a moderada sem necessidade de cirurgia.</p></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"></path></svg></div><h3>Toxina Botulínica</h3><p>Aplicação de toxina botulínica para suavização de rugas dinâmicas, como linhas de expressão na testa, entre as sobrancelhas e ao redor dos olhos. Resultado natural, sem interferir na expressividade do rosto.</p><a href="toxina-botulinica-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"></path></svg></div><h3>Preenchimento Facial</h3><p>Uso de ácido hialurônico para restaurar volumes, suavizar sulcos e definir contornos faciais como lábios, maçãs do rosto e mandíbula. Procedimento minimamente invasivo com resultado imediato e reversível.</p><a href="preenchimento-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path></svg></div><h3>Bioestimuladores de Colágeno</h3><p>Aplicação de substâncias que estimulam a produção natural de colágeno, promovendo firmeza, elasticidade e rejuvenescimento progressivo da pele ao longo dos meses.</p></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"></path></svg></div><h3>Ellansé</h3><p>Preenchedor bioestimulador de longa duração que combina efeito volumizador imediato com estímulo progressivo de colágeno. Indicado para reposição de volume e melhora da qualidade da pele, com duração de 1 a 4 anos.</p></div>
+      <div class="proc-card"><div class="proc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z"></path></svg></div><h3>Sutura Silhouette</h3><p>Técnica minimamente invasiva de lifting com fios de sustentação absorvíveis, que promovem sustentação imediata dos tecidos e estimulam a neocolagênese. Indicada para ptose facial leve a moderada sem necessidade de cirurgia.</p></div>
     </div>
 
     <p class="proc-disclaimer">⚕️ A indicação de cada procedimento é definida individualmente após consulta de avaliação presencial. Entre em contato para agendar e receber orientações personalizadas.</p>
@@ -1294,7 +1353,7 @@
       <div>
         <p class="contato-intro">O agendamento é feito pelo WhatsApp, em horário comercial. Nossa equipe retornará o contato para confirmar data e horário disponíveis.</p>
         <div class="contato-items">
-          <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"></path></svg></div><div class="contato-item-text"><strong>Endereço</strong><a href="https://www.google.com/maps?cid=8318169712684508783" target="_blank" rel="noopener noreferrer">R. Gen. Joaquim Inácio, 830 – Sala 707, Ilha do Leite, Recife – PE</a></div></div>
+          <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"></path></svg></div><div class="contato-item-text"><strong>Endereço</strong><span>Ilha do Leite, Recife – PE</span></div></div>
           <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path></svg></div><div class="contato-item-text"><strong>Horário de atendimento</strong><span>Segunda a sexta, 08h às 18h</span></div></div>
           <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"></path></svg></div><div class="contato-item-text"><strong>Instagram</strong><a href="https://instagram.com/drfelipehissacoelho" target="_blank" rel="noopener noreferrer">@drfelipehissacoelho</a></div></div>
         </div>
@@ -1341,4 +1400,50 @@
 </footer>
 
 <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="wa-float" target="_blank" rel="noopener noreferrer" aria-label="Fale pelo WhatsApp">
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"></path><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.879L.057 23.7a.75.75 0 0 0 .921.921l5.821-1.484A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.049-1.371l-.361-.214-3.754.957.974-3.754-.234-.371A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path></svg>
+</a>
+
+
+<script>
+  const navToggle = document.querySelector('.nav-toggle');
+  const mobileMenu = document.getElementById('mobileMenu');
+  if (navToggle && mobileMenu) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = mobileMenu.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    mobileMenu.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+
+  const nav = document.querySelector('nav');
+  const onScrollNav = () => {
+    if (!nav) return;
+    nav.classList.toggle('nav-scrolled', window.scrollY > 10);
+  };
+  onScrollNav();
+  window.addEventListener('scroll', onScrollNav);
+
+  const revealCards = document.querySelectorAll('.proc-card');
+  if ('IntersectionObserver' in window && revealCards.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          entry.target.style.transitionDelay = `${Math.min(index * 45, 180)}ms`;
+          entry.target.classList.add('in-view');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealCards.forEach((card) => observer.observe(card));
+  } else {
+    revealCards.forEach((card) => card.classList.add('in-view'));
+  }
+</script>
+
+</body>
+</html>
