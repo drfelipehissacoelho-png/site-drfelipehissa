@@ -5,7 +5,7 @@
   <meta name="google-site-verification" content="kerHB19nDEP2zVgqs1F4Ugqmptd0M4SOB-lrpc6ftEk" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dr. Felipe Hissa Coelho | Cirurgião Plástico – Recife</title>
-  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="icon" href="favicon.ico" />
   <link rel="canonical" href="https://www.drfelipehissacoelho.com.br" />
 
   <meta name="description" content="Cirurgião plástico em Recife-PE. Especialista em lipoaspiração, abdominoplastia, rinoplastia e mamoplastia. CRM-PE 15420 · RQE 18425. Agende sua avaliação." />
@@ -19,7 +19,7 @@
   <meta property="og:url" content="https://www.drfelipehissacoelho.com.br" />
   <meta property="og:title" content="Dr. Felipe Hissa Coelho | Cirurgião Plástico – Recife, PE" />
   <meta property="og:description" content="Cirurgião plástico em Recife especializado em lipoaspiração, abdominoplastia, rinoplastia, mamoplastia e procedimentos estéticos. Agende sua consulta pelo WhatsApp." />
-  <meta property="og:image" content="https://www.drfelipehissacoelho.com.br/IMG_3262.JPEG" />
+  <meta property="og:image" content="https://www.drfelipehissacoelho.com.br/logo-horizontal-transparent.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:locale" content="pt_BR" />
@@ -28,7 +28,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Dr. Felipe Hissa Coelho | Cirurgião Plástico – Recife" />
   <meta name="twitter:description" content="Cirurgião plástico em Recife. Lipoaspiração, abdominoplastia, rinoplastia e mais. Agende pelo WhatsApp." />
-  <meta name="twitter:image" content="https://www.drfelipehissacoelho.com.br/IMG_3262.JPEG" />
+  <meta name="twitter:image" content="https://www.drfelipehissacoelho.com.br/logo-horizontal-transparent.png" />
 
   <script type="application/ld+json">
   {
@@ -103,8 +103,8 @@
       position: fixed;
       top: 0; left: 0; right: 0;
       z-index: 1000;
-      background: rgba(13, 35, 64, 0.92);
-      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(8,24,45,0.96) 0%, rgba(13,35,64,0.88) 100%);
+      backdrop-filter: blur(14px);
       border-bottom: 1px solid rgba(255,255,255,0.08);
       padding: 0 5%;
       display: flex;
@@ -114,13 +114,16 @@
     }
 
     .nav-logo {
-      color: var(--white);
+      display: inline-flex;
+      align-items: center;
       text-decoration: none;
-      font-family:'Playfair Display',serif;
-      font-size: 1.18rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
       white-space: nowrap;
+    }
+
+    .nav-logo img {
+      height: 38px;
+      width: auto;
+      filter: drop-shadow(0 6px 16px rgba(0,0,0,0.22));
     }
 
     .nav-links {
@@ -658,6 +661,103 @@
 
 
 
+
+    .hero-brand {
+      height: 62px;
+      width: auto;
+      margin-bottom: 1.15rem;
+      opacity: 0.96;
+      filter: drop-shadow(0 12px 26px rgba(0,0,0,0.22));
+    }
+
+    .hero-text h1 {
+      text-shadow: 0 10px 28px rgba(0,0,0,0.18);
+    }
+
+    .hero-text::after {
+      content: '';
+      display: block;
+      width: 96px;
+      height: 2px;
+      margin-top: 2rem;
+      background: linear-gradient(90deg, rgba(212,169,85,0.95), rgba(212,169,85,0.18));
+      border-radius: 999px;
+    }
+
+    .luxury-glow {
+      position: absolute;
+      top: 16%;
+      left: 10%;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,169,85,0.10) 0%, rgba(212,169,85,0.03) 38%, transparent 72%);
+      pointer-events: none;
+      filter: blur(8px);
+    }
+
+    .hero-scroll {
+      position: absolute;
+      left: 5%;
+      bottom: 28px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      color: rgba(255,255,255,0.62);
+      text-decoration: none;
+      font-size: 0.82rem;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .hero-scroll::before {
+      content: '';
+      width: 26px;
+      height: 42px;
+      border: 1.5px solid rgba(255,255,255,0.32);
+      border-radius: 999px;
+      position: relative;
+      display: inline-block;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    .hero-scroll::after {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 9px;
+      width: 4px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(212,169,85,0.9);
+      box-shadow: 0 0 10px rgba(212,169,85,0.45);
+      animation: scrollPulse 1.7s ease-in-out infinite;
+    }
+
+    @keyframes scrollPulse {
+      0% { transform: translateY(0); opacity: 0.95; }
+      60% { transform: translateY(12px); opacity: 0.35; }
+      100% { transform: translateY(0); opacity: 0.95; }
+    }
+
+    .video-card,
+    .proc-card,
+    .sobre-photo-card,
+    .whatsapp-block {
+      box-shadow: 0 16px 42px rgba(9,25,44,0.07);
+    }
+
+    .reviews-cta {
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .reviews-cta:hover {
+      background: #1a3a5c !important;
+      transform: translateY(-1px);
+    }
+
     .nav-toggle {
       display: none;
       align-items: center;
@@ -809,9 +909,106 @@
 
     @media (max-width: 900px) {
       nav { height: 68px; }
-      .nav-logo { font-size: 1rem; }
+      .nav-logo img { height: 34px; }
       .nav-links { display: none; }
-      .nav-toggle { display: inline-flex; }
+  
+    .hero-brand {
+      height: 62px;
+      width: auto;
+      margin-bottom: 1.15rem;
+      opacity: 0.96;
+      filter: drop-shadow(0 12px 26px rgba(0,0,0,0.22));
+    }
+
+    .hero-text h1 {
+      text-shadow: 0 10px 28px rgba(0,0,0,0.18);
+    }
+
+    .hero-text::after {
+      content: '';
+      display: block;
+      width: 96px;
+      height: 2px;
+      margin-top: 2rem;
+      background: linear-gradient(90deg, rgba(212,169,85,0.95), rgba(212,169,85,0.18));
+      border-radius: 999px;
+    }
+
+    .luxury-glow {
+      position: absolute;
+      top: 16%;
+      left: 10%;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,169,85,0.10) 0%, rgba(212,169,85,0.03) 38%, transparent 72%);
+      pointer-events: none;
+      filter: blur(8px);
+    }
+
+    .hero-scroll {
+      position: absolute;
+      left: 5%;
+      bottom: 28px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      color: rgba(255,255,255,0.62);
+      text-decoration: none;
+      font-size: 0.82rem;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .hero-scroll::before {
+      content: '';
+      width: 26px;
+      height: 42px;
+      border: 1.5px solid rgba(255,255,255,0.32);
+      border-radius: 999px;
+      position: relative;
+      display: inline-block;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    .hero-scroll::after {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 9px;
+      width: 4px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(212,169,85,0.9);
+      box-shadow: 0 0 10px rgba(212,169,85,0.45);
+      animation: scrollPulse 1.7s ease-in-out infinite;
+    }
+
+    @keyframes scrollPulse {
+      0% { transform: translateY(0); opacity: 0.95; }
+      60% { transform: translateY(12px); opacity: 0.35; }
+      100% { transform: translateY(0); opacity: 0.95; }
+    }
+
+    .video-card,
+    .proc-card,
+    .sobre-photo-card,
+    .whatsapp-block {
+      box-shadow: 0 16px 42px rgba(9,25,44,0.07);
+    }
+
+    .reviews-cta {
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .reviews-cta:hover {
+      background: #1a3a5c !important;
+      transform: translateY(-1px);
+    }
+
+    .nav-toggle { display: inline-flex; }
       .videos-grid { grid-template-columns: 1fr; }
       #hero {
         min-height: 92vh;
@@ -860,7 +1057,7 @@
 <body>
 
 <nav>
-  <a href="#hero" class="nav-logo">Dr. Felipe Hissa Coelho</a>
+  <a href="#hero" class="nav-logo"><img src="logo-site-header.png" alt="Dr. Felipe Hissa Coelho"></a>
   <ul class="nav-links">
     <li><a href="#sobre">Sobre</a></li>
     <li><a href="#procedimentos">Procedimentos</a></li>
@@ -882,8 +1079,10 @@
 </div>
 
 <section id="hero">
+  <div class="luxury-glow" aria-hidden="true"></div>
   <div class="hero-inner">
     <div class="hero-text">
+      <img src="logo-horizontal-white.png" alt="Felipe Hissa" class="hero-brand" loading="eager" />
       <div class="hero-badge">Cirurgião Plástico • Recife, PE</div>
       <h1>Dr. Felipe Hissa Coelho</h1>
       <p class="hero-subtitle">Cirurgia estética • Contorno corporal • Procedimentos personalizados</p>
@@ -912,6 +1111,7 @@
     </div>
     <div class="hero-visual-spacer" aria-hidden="true"></div>
   </div>
+  <a href="#sobre" class="hero-scroll">Explorar</a>
 </section>
 
 <section id="sobre">
@@ -1085,7 +1285,7 @@
     <div class="divider" style="margin:0 auto 1.2rem;"></div>
     <p style="color:#6b7280;margin-bottom:2rem;font-size:1rem;">Se você já foi atendido pelo Dr. Felipe Hissa Coelho, deixe sua avaliação no Google. Isso ajuda outros pacientes a encontrar o consultório e é muito importante para nós.</p>
     <div style="display:flex;justify-content:center;gap:0.3rem;margin-bottom:1.8rem;"><span style="font-size:2rem;color:#f59e0b;">★★★★★</span></div>
-    <a href="https://g.page/r/CW8m-TlIE3BzEBM/review" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:0.6rem;background:#0d2340;color:#fff;text-decoration:none;padding:0.9rem 2rem;border-radius:12px;font-weight:600;font-size:1rem;transition:background 0.2s;"> <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><path d="M12 11h8.533c.044.385.067.78.067 1.184 0 2.734-.98 5.048-2.61 6.627C16.42 20.385 14.398 21.25 12 21.25c-5.109 0-9.25-4.14-9.25-9.25S6.891 2.75 12 2.75c2.493 0 4.756.97 6.414 2.546l-2.652 2.652C14.697 6.948 13.402 6.44 12 6.44c-3.068 0-5.556 2.49-5.556 5.56S8.932 17.56 12 17.56c1.743 0 3.232-.657 4.258-1.72.788-.82 1.285-1.91 1.44-3.09H12V11Z" fill="currentColor"></path></svg> Avaliar no Google</a>
+    <a href="https://g.page/r/CW8m-TlIE3BzEBM/review" target="_blank" rel="noopener noreferrer" class="reviews-cta" style="display:inline-flex;align-items:center;gap:0.6rem;background:#0d2340;color:#fff;text-decoration:none;padding:0.9rem 2rem;border-radius:12px;font-weight:600;font-size:1rem;transition:background 0.2s, transform 0.15s;"> <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><path d="M12 11h8.533c.044.385.067.78.067 1.184 0 2.734-.98 5.048-2.61 6.627C16.42 20.385 14.398 21.25 12 21.25c-5.109 0-9.25-4.14-9.25-9.25S6.891 2.75 12 2.75c2.493 0 4.756.97 6.414 2.546l-2.652 2.652C14.697 6.948 13.402 6.44 12 6.44c-3.068 0-5.556 2.49-5.556 5.56S8.932 17.56 12 17.56c1.743 0 3.232-.657 4.258-1.72.788-.82 1.285-1.91 1.44-3.09H12V11Z" fill="currentColor"></path></svg> Avaliar no Google</a>
   </div>
 </section>
 
