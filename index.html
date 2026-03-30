@@ -421,82 +421,122 @@
 
     .proc-intro { max-width: 620px; color: var(--gray); margin-bottom: 3rem; }
 
+    
     .proc-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.6rem;
     }
 
     .proc-card {
-      background: var(--off-white);
-      border-radius: 14px;
-      padding: 2rem 1.6rem;
-      border-top: 3px solid transparent;
-      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      background: linear-gradient(180deg, #fffdf9 0%, #f7f3ec 100%);
+      border-radius: 18px;
+      padding: 1.7rem 1.55rem 1.5rem;
+      border: 1px solid rgba(13,35,64,0.08);
+      box-shadow: 0 14px 34px rgba(9,25,44,0.06);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      overflow: hidden;
+      min-height: 100%;
+    }
+
+    .proc-card::before {
+      content: "";
+      display: block;
+      width: 34px;
+      height: 2px;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, rgba(212,169,85,1) 0%, rgba(212,169,85,0.18) 100%);
+      border-radius: 999px;
+    }
+
+    .proc-card::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(212,169,85,0) 0%, rgba(212,169,85,0.55) 50%, rgba(212,169,85,0) 100%);
+      opacity: 0;
+      transition: opacity 0.22s ease;
     }
 
     .proc-card:hover {
-      border-color: var(--gold);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 28px rgba(0,0,0,0.07);
+      transform: translateY(-4px);
+      box-shadow: 0 18px 42px rgba(9,25,44,0.10);
+      border-color: rgba(184,145,58,0.30);
     }
 
-    .proc-icon {
-      width: 48px; height: 48px;
-      background: var(--navy);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 1.2rem;
+    .proc-card:hover::after {
+      opacity: 1;
     }
-
-    .proc-icon svg { width: 22px; height: 22px; color: var(--gold-light); }
 
     .proc-card h3 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.1rem;
+      font-size: 1.18rem;
+      line-height: 1.25;
       color: var(--navy);
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.72rem;
+      letter-spacing: 0.01em;
     }
 
     .proc-card p {
-      color: var(--gray);
-      font-size: 0.88rem;
-      line-height: 1.65;
+      color: #5f6877;
+      font-size: 0.92rem;
+      line-height: 1.72;
     }
 
     .proc-card .card-link {
-      display:inline-block;
-      margin-top:1rem;
-      color:var(--gold);
-      font-size:0.85rem;
-      font-weight:600;
-      text-decoration:none;
-      letter-spacing:0.04em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.15rem;
+      color: var(--navy);
+      font-size: 0.83rem;
+      font-weight: 700;
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: color 0.2s ease, transform 0.2s ease;
     }
 
-    .proc-card .card-link:hover { color: var(--gold-light); }
+    .proc-card .card-link::after {
+      content: "→";
+      color: var(--gold);
+      transition: transform 0.2s ease;
+    }
+
+    .proc-card .card-link:hover {
+      color: var(--gold);
+      transform: translateX(2px);
+    }
+
+    .proc-card .card-link:hover::after {
+      transform: translateX(2px);
+    }
 
     .proc-category-label {
       display: inline-flex;
       align-items: center;
       gap: 0.6rem;
-      background: var(--navy);
-      color: var(--white);
-      font-size: 0.8rem;
+      background: linear-gradient(180deg, #102847 0%, #0b2039 100%);
+      color: rgba(255,255,255,0.96);
+      font-size: 0.76rem;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      padding: 0.5rem 1.1rem;
+      padding: 0.62rem 1.15rem;
       border-radius: 999px;
       margin-bottom: 1.8rem;
+      box-shadow: 0 14px 28px rgba(9,25,44,0.10);
     }
 
     .proc-disclaimer {
-      margin-top: 2rem;
-      padding: 1rem 1.5rem;
-      background: var(--gray-light);
+      margin-top: 2.2rem;
+      padding: 1rem 1.35rem;
+      background: linear-gradient(180deg, #f6f2ea 0%, #f1ede6 100%);
+      border: 1px solid rgba(184,145,58,0.16);
       border-left: 3px solid var(--gold);
-      border-radius: 0 6px 6px 0;
+      border-radius: 0 10px 10px 0;
       color: var(--gray);
       font-size: 0.82rem;
     }
@@ -1023,7 +1063,7 @@
       .hero-visual-spacer { display: none; }
       .sobre-grid { grid-template-columns: 1fr; gap: 2.5rem; }
       .sobre-photo-card { max-width: 360px; }
-      .proc-grid { grid-template-columns: 1fr 1fr; }
+      .proc-grid { grid-template-columns: 1fr 1fr; gap: 1.1rem; }
       .contato-grid { grid-template-columns: 1fr; gap: 2.5rem; }
     }
 
@@ -1042,7 +1082,9 @@
         flex: 1 1 calc(50% - 0.8rem);
         min-width: 130px;
       }
-      .proc-grid { grid-template-columns: 1fr; }
+      .proc-card { padding: 1.35rem 1.2rem 1.25rem; border-radius: 16px; }
+      .proc-card h3 { font-size: 1.08rem; }
+      .proc-grid { grid-template-columns: 1fr; gap: 1rem; }
       .mobile-menu { top: 68px; }
       .horario-grid { grid-template-columns: 1fr; }
       .wa-float {
@@ -1084,7 +1126,7 @@
     <div class="hero-text">
       <img src="logo-horizontal-white.png" alt="Felipe Hissa" class="hero-brand" loading="eager" />
       <div class="hero-badge">Cirurgião Plástico • Recife, PE</div>
-      <h1>Cirurgião Plástico em Recife — Dr. Felipe Hissa Coelho</h1>
+      <h1>Dr. Felipe Hissa Coelho</h1>
       <p class="hero-subtitle">Cirurgia estética • Contorno corporal • Procedimentos personalizados</p>
       <p>Resultados naturais, segurança e planejamento individualizado para pacientes que buscam cirurgia plástica e procedimentos estéticos com atendimento personalizado na Ilha do Leite.</p>
       <div class="hero-actions">
