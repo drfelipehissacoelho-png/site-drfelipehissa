@@ -2,15 +2,75 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
+  <meta name="google-site-verification" content="kerHB19nDEP2zVgqs1F4Ugqmptd0M4SOB-lrpc6ftEk" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dr. Felipe Hissa Coelho | Cirurgião Plástico – Recife</title>
   <link rel="icon" href="favicon.ico" />
   <link rel="canonical" href="https://www.drfelipehissacoelho.com.br" />
 
-  <meta name="description" content="Cirurgião plástico em Recife-PE. Especialista em lipoaspiração, abdominoplastia, rinoplastia e mamoplastia. Resultados naturais e atendimento personalizado." />
+  <meta name="description" content="Cirurgião plástico em Recife-PE. Especialista em lipoaspiração, abdominoplastia, rinoplastia e mamoplastia. CRM-PE 15420 · RQE 18425. Agende sua avaliação." />
+  <meta name="keywords" content="cirurgião plástico Recife, lipoaspiração Recife, abdominoplastia Recife, rinoplastia Recife, mamoplastia Recife, cirurgia plástica Pernambuco, botox Recife, Felipe Hissa Coelho" />
+  <meta name="author" content="Dr. Felipe Hissa Coelho" />
+  <meta name="robots" content="index, follow" />
+  <meta name="geo.region" content="BR-PE" />
+  <meta name="geo.placename" content="Recife, Pernambuco, Brasil" />
 
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.drfelipehissacoelho.com.br" />
+  <meta property="og:title" content="Dr. Felipe Hissa Coelho | Cirurgião Plástico – Recife, PE" />
+  <meta property="og:description" content="Cirurgião plástico em Recife especializado em lipoaspiração, abdominoplastia, rinoplastia, mamoplastia e procedimentos estéticos. Agende sua consulta pelo WhatsApp." />
+  <meta property="og:image" content="https://www.drfelipehissacoelho.com.br/logo-horizontal-transparent.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:site_name" content="Dr. Felipe Hissa Coelho – Cirurgia Plástica" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Dr. Felipe Hissa Coelho | Cirurgião Plástico – Recife" />
+  <meta name="twitter:description" content="Cirurgião plástico em Recife. Lipoaspiração, abdominoplastia, rinoplastia e mais. Agende pelo WhatsApp." />
+  <meta name="twitter:image" content="https://www.drfelipehissacoelho.com.br/logo-horizontal-transparent.png" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Physician",
+    "name": "Dr. Felipe Hissa Coelho",
+    "url": "https://www.drfelipehissacoelho.com.br",
+    "image": "https://www.drfelipehissacoelho.com.br/IMG_3262.JPEG",
+    "description": "Cirurgião plástico em Recife (PE) especializado em cirurgia estética, contorno corporal e procedimentos estéticos.",
+    "medicalSpecialty": "PlasticSurgery",
+    "identifier": [
+      { "@type": "PropertyValue", "name": "CRM-PE", "value": "15420" },
+      { "@type": "PropertyValue", "name": "RQE", "value": "18425" }
+    ],
+    "telephone": "+55-81-99479-5101",
+    "sameAs": [
+      "https://www.instagram.com/drfelipehissacoelho",
+      "https://www.youtube.com/@DrFelipeHissaCoelho"
+    ],
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Recife",
+      "addressRegion": "PE",
+      "addressCountry": "BR",
+      "streetAddress": "Ilha do Leite"
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+        "opens": "08:00",
+        "closes": "18:00"
+      }
+    ],
+    "hasMap": "https://g.page/r/CW8m-TlIE3BzEBM/review",
+    "priceRange": "$$"
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -39,7 +99,6 @@
 
     img { max-width: 100%; display: block; }
 
-    /* ==================== NAV (seu original mantido) ==================== */
     nav {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -52,23 +111,44 @@
       align-items: center;
       justify-content: space-between;
       height: 78px;
-      transition: all 0.22s ease;
+    }
+
+    nav {
+      transition: height 0.22s ease, background 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
     }
 
     nav.scrolled {
       height: 70px;
       background: rgba(8, 24, 45, 0.94);
       box-shadow: 0 10px 30px rgba(5, 15, 28, 0.22);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .nav-logo {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .nav-logo:hover {
+      transform: translateY(-1px);
+      opacity: 0.96;
     }
 
     .nav-logo img {
+  height:64px;
       height: 52px;
       width: auto;
       filter: drop-shadow(0 6px 16px rgba(0,0,0,0.22));
+      transition: height 0.22s ease, filter 0.22s ease;
     }
 
     nav.scrolled .nav-logo img {
+  height:64px;
       height: 46px;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.18));
     }
 
     .nav-links {
@@ -85,7 +165,27 @@
       font-weight: 500;
       letter-spacing: 0.06em;
       text-transform: uppercase;
+      transition: color 0.2s, opacity 0.2s;
+      position: relative;
     }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -8px;
+      width: 100%;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(212,169,85,0.95), rgba(212,169,85,0.15));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.22s ease;
+    }
+
+    .nav-links a:hover { color: var(--gold-light); }
+
+    .nav-links a:hover::after { transform: scaleX(1); }
 
     .nav-cta {
       background: linear-gradient(180deg, #c49a45 0%, var(--gold) 100%);
@@ -93,137 +193,174 @@
       padding: 0.64rem 1.2rem;
       border-radius: 999px;
       box-shadow: 0 12px 26px rgba(184,145,58,0.22);
+      border: 1px solid rgba(255,255,255,0.10);
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s !important;
     }
 
-    /* ==================== NOVO HERO ==================== */
+    .nav-cta:hover {
+      background: linear-gradient(180deg, #d7ad58 0%, var(--gold-light) 100%) !important;
+      color: var(--white) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(184,145,58,0.28);
+    }
+
     #hero {
       min-height: 100vh;
-      background: linear-gradient(rgba(8, 20, 45, 0.72), rgba(8, 20, 45, 0.58)),
-                  url('hero-background.jpg') center/cover no-repeat fixed;
       display: flex;
       align-items: center;
+      padding: 120px 5% 72px;
       position: relative;
-      padding: 130px 5% 90px;
-      color: white;
       overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(8, 20, 45, 0.90) 0%, rgba(8, 20, 45, 0.82) 34%, rgba(8, 20, 45, 0.42) 64%, rgba(8, 20, 45, 0.16) 100%),
+        url('IMG_3262.JPEG') right center / cover no-repeat;
     }
 
-    .hero-content {
+    #hero::before {
+      content: '';
+      position: absolute;
+      inset: auto auto -22% -8%;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(184,145,58,0.18) 0%, rgba(184,145,58,0.02) 55%, transparent 72%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
       max-width: 1180px;
       margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1.15fr;
-      gap: 3.5rem;
-      align-items: center;
+      width: 100%;
       position: relative;
-      z-index: 2;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 640px) 1fr;
+      gap: 2rem;
+      align-items: center;
     }
 
-    .doctor-photo {
-      width: 340px;
-      height: 340px;
-      border-radius: 50%;
-      border: 10px solid rgba(255,255,255,0.9);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-      object-fit: cover;
+    .hero-text { max-width: 640px; }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(212,169,85,0.35);
+      color: #e3c27a;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.55rem 1rem;
+      border-radius: 999px;
+      margin-bottom: 1.4rem;
+      backdrop-filter: blur(4px);
     }
 
     .hero-text h1 {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(2.9rem, 5.8vw, 4.9rem);
-      line-height: 1.05;
-      margin-bottom: 1.4rem;
-      text-shadow: 0 10px 30px rgba(0,0,0,0.45);
+      font-size: clamp(2.7rem, 5vw, 4.7rem);
+      color: var(--white);
+      line-height: 1.02;
+      margin-bottom: 1rem;
+      max-width: 10ch;
+      text-wrap: balance;
     }
 
-    .hero-text p {
-      font-size: 1.25rem;
-      line-height: 1.45;
-      margin-bottom: 2rem;
-      max-width: 58ch;
-      color: rgba(255,255,255,0.93);
-    }
-
-    .hero-buttons {
-      display: flex;
-      gap: 1.2rem;
-      flex-wrap: wrap;
-    }
-
-    .btn-whatsapp {
-      background: #25D366;
-      color: white;
-      padding: 16px 34px;
-      border-radius: 50px;
-      font-weight: 600;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
+    .hero-subtitle {
+      color: rgba(255,255,255,0.88);
       font-size: 1.08rem;
-      box-shadow: 0 12px 28px rgba(37, 211, 102, 0.4);
-      transition: all 0.2s ease;
-    }
-
-    .btn-whatsapp:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 35px rgba(37, 211, 102, 0.5);
-    }
-
-    .btn-secondary {
-      border: 2px solid white;
-      color: white;
-      padding: 16px 34px;
-      border-radius: 50px;
-      text-decoration: none;
       font-weight: 500;
-      transition: all 0.2s;
-    }
-
-    .btn-secondary:hover {
-      background: white;
-      color: var(--navy);
-    }
-
-    /* ==================== SEÇÃO CONSULTÓRIO ==================== */
-    #consultorio {
-      padding: 100px 5%;
-      background: var(--off-white);
-      text-align: center;
-    }
-
-    #consultorio h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 2.55rem;
-      color: var(--navy);
+      letter-spacing: 0.03em;
       margin-bottom: 1rem;
     }
 
-    #consultorio p {
-      max-width: 720px;
-      margin: 0 auto 3rem;
-      color: var(--gray);
+    .hero-text p:not(.hero-subtitle) {
+      color: rgba(255,255,255,0.78);
       font-size: 1.05rem;
+      margin-bottom: 2rem;
+      max-width: 58ch;
     }
 
-    .consultorio-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 22px;
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
     }
 
-    .consultorio-grid img {
-      width: 100%;
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      transition: transform 0.3s;
+    .btn-primary,
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      text-decoration: none;
+      padding: 0.95rem 1.65rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.96rem;
+      transition: transform 0.15s, background 0.2s, border-color 0.2s, color 0.2s;
     }
 
-    .consultorio-grid img:hover {
-      transform: scale(1.03);
+    .btn-primary {
+      background: var(--gold);
+      color: var(--white);
+      box-shadow: 0 14px 30px rgba(184,145,58,0.22);
     }
 
-    /* ==================== SEÇÕES ORIGINAIS (mantidas) ==================== */
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+    .btn-outline {
+      border: 1.5px solid rgba(255,255,255,0.28);
+      color: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(4px);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gold-light);
+      color: var(--gold-light);
+      transform: translateY(-1px);
+    }
+
+    .hero-credentials {
+      display: flex;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+      padding-top: 1.6rem;
+      border-top: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .cred-item {
+      min-width: 112px;
+      padding: 0.9rem 1rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      backdrop-filter: blur(5px);
+    }
+
+    .cred-item strong {
+      display: block;
+      color: var(--gold-light);
+      font-size: 1.2rem;
+      font-family: 'Playfair Display', serif;
+      line-height: 1;
+      margin-bottom: 0.42rem;
+    }
+
+    .cred-item span {
+      color: rgba(255,255,255,0.62);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      line-height: 1.35;
+    }
+
+    .hero-visual-spacer { min-height: 1px; }
+
     section { padding: 90px 5%; }
     .section-inner { max-width: 1100px; margin: 0 auto; }
 
@@ -253,96 +390,1019 @@
       margin-bottom: 1.5rem;
     }
 
-    /* ... resto do seu CSS original (sobre, procedimentos, contato, etc.) ... */
-    /* Copiei aqui apenas o essencial para não ficar gigante. O resto do seu CSS original continua funcionando. */
+    #sobre { background: var(--off-white); }
+
+    .sobre-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) 1.1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .sobre-photo-card {
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      aspect-ratio: 3 / 4;
+      background: var(--gray-light);
+    }
+
+    .sobre-photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .sobre-text p {
+      color: var(--gray);
+      margin-bottom: 1.2rem;
+      font-size: 1rem;
+    }
+
+    .formacao-list {
+      list-style: none;
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .formacao-list li { display: flex; gap: 1rem; align-items: flex-start; }
+
+    .formacao-icon {
+      width: 38px; height: 38px; min-width: 38px;
+      background: var(--navy);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .formacao-icon svg { width: 18px; height: 18px; color: var(--gold-light); }
+
+    .formacao-info strong {
+      display: block;
+      color: var(--navy);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .formacao-info span { color: var(--gray); font-size: 0.82rem; }
+
+    .rqe-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--navy);
+      color: var(--white);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-top: 1.5rem;
+      letter-spacing: 0.03em;
+    }
+
+    #procedimentos { background: var(--white); }
+
+    .proc-intro { max-width: 620px; color: var(--gray); margin-bottom: 3rem; }
+
+    .proc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .proc-card {
+      background: var(--off-white);
+      border-radius: 14px;
+      padding: 2rem 1.6rem;
+      border-top: 3px solid transparent;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+
+    .proc-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.07);
+    }
+
+    .proc-icon {
+      width: 48px; height: 48px;
+      background: var(--navy);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .proc-icon svg { width: 22px; height: 22px; color: var(--gold-light); }
+
+    .proc-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--navy);
+      margin-bottom: 0.6rem;
+    }
+
+    .proc-card p {
+      color: var(--gray);
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+
+    .proc-card .card-link {
+      display:inline-block;
+      margin-top:1rem;
+      color:var(--gold);
+      font-size:0.85rem;
+      font-weight:600;
+      text-decoration:none;
+      letter-spacing:0.04em;
+    }
+
+    .proc-card .card-link:hover { color: var(--gold-light); }
+
+    .proc-category-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--navy);
+      color: var(--white);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      margin-bottom: 1.8rem;
+    }
+
+    .proc-disclaimer {
+      margin-top: 2rem;
+      padding: 1rem 1.5rem;
+      background: var(--gray-light);
+      border-left: 3px solid var(--gold);
+      border-radius: 0 6px 6px 0;
+      color: var(--gray);
+      font-size: 0.82rem;
+    }
+
+    #contato { background: var(--navy); }
+    #contato .section-title { color: var(--white); }
+    #contato .section-tag { color: var(--gold-light); }
+    #contato .divider { background: var(--gold); }
+
+    .contato-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    .contato-intro { color: rgba(255,255,255,0.65); margin-bottom: 2rem; }
+    .contato-items { display: flex; flex-direction: column; gap: 1.2rem; }
+    .contato-item { display: flex; gap: 1rem; align-items: flex-start; }
+
+    .contato-item-icon {
+      width: 42px; height: 42px; min-width: 42px;
+      background: rgba(184,145,58,0.15);
+      border: 1px solid rgba(184,145,58,0.3);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .contato-item-icon svg { width: 18px; height: 18px; color: var(--gold-light); }
+
+    .contato-item-text strong {
+      display: block;
+      color: var(--white);
+      font-size: 0.88rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .contato-item-text span,
+    .contato-item-text a {
+      color: rgba(255,255,255,0.58);
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+
+    .contato-item-text a:hover { color: var(--gold-light); }
+
+    .whatsapp-block {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(184,145,58,0.25);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+
+    .whatsapp-block h3 {
+      font-family: 'Playfair Display', serif;
+      color: var(--white);
+      font-size: 1.3rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .whatsapp-block p {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #25d366;
+      color: var(--white);
+      text-decoration: none;
+      padding: 0.9rem 1.8rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      width: 100%;
+      justify-content: center;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-whatsapp:hover { background: #1ebe5c; transform: translateY(-1px); }
+
+    .horario-grid {
+      margin-top: 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .horario-item {
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .horario-item span:first-child { color: rgba(255,255,255,0.55); font-size: 0.8rem; }
+    .horario-item span:last-child { color: var(--gold-light); font-size: 0.8rem; font-weight: 600; }
+
+    .reviews-section {
+      background:#f8f6f2;
+      padding:60px 5%;
+      text-align:center;
+    }
+
+    .reviews-inner { max-width:600px; margin:0 auto; }
+
+    footer {
+      background: var(--navy-deep);
+      padding: 2.5rem 5%;
+      text-align: center;
+    }
+
+    footer p { color: rgba(255,255,255,0.34); font-size: 0.8rem; }
+    footer a { color: var(--gold-light); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .footer-socials {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:1.2rem;
+      margin:0.8rem 0;
+    }
+
+    .footer-socials a {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:36px;
+      height:36px;
+      border-radius:10px;
+      transition:opacity 0.2s;
+    }
+
+    .wa-float {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 999;
+      width: 58px; height: 58px;
+      background: #25d366;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.45);
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .wa-float:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 22px rgba(37,211,102,0.55);
+    }
+
+    .wa-float svg { width: 30px; height: 30px; color: white; }
+
+
+
+
+    .hero-brand {
+      height: 62px;
+      width: auto;
+      margin-bottom: 1.15rem;
+      opacity: 0.96;
+      filter: drop-shadow(0 12px 26px rgba(0,0,0,0.22));
+    }
+
+    .hero-text h1 {
+      text-shadow: 0 10px 28px rgba(0,0,0,0.18);
+    }
+
+    .hero-text::after {
+      content: '';
+      display: block;
+      width: 96px;
+      height: 2px;
+      margin-top: 2rem;
+      background: linear-gradient(90deg, rgba(212,169,85,0.95), rgba(212,169,85,0.18));
+      border-radius: 999px;
+    }
+
+    .luxury-glow {
+      position: absolute;
+      top: 16%;
+      left: 10%;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,169,85,0.10) 0%, rgba(212,169,85,0.03) 38%, transparent 72%);
+      pointer-events: none;
+      filter: blur(8px);
+    }
+
+    .hero-scroll {
+      position: absolute;
+      left: 5%;
+      bottom: 28px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      color: rgba(255,255,255,0.62);
+      text-decoration: none;
+      font-size: 0.82rem;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .hero-scroll::before {
+      content: '';
+      width: 26px;
+      height: 42px;
+      border: 1.5px solid rgba(255,255,255,0.32);
+      border-radius: 999px;
+      position: relative;
+      display: inline-block;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    .hero-scroll::after {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 9px;
+      width: 4px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(212,169,85,0.9);
+      box-shadow: 0 0 10px rgba(212,169,85,0.45);
+      animation: scrollPulse 1.7s ease-in-out infinite;
+    }
+
+    @keyframes scrollPulse {
+      0% { transform: translateY(0); opacity: 0.95; }
+      60% { transform: translateY(12px); opacity: 0.35; }
+      100% { transform: translateY(0); opacity: 0.95; }
+    }
+
+    .video-card,
+    .proc-card,
+    .sobre-photo-card,
+    .whatsapp-block {
+      box-shadow: 0 16px 42px rgba(9,25,44,0.07);
+    }
+
+    .reviews-cta {
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .reviews-cta:hover {
+      background: #1a3a5c !important;
+      transform: translateY(-1px);
+    }
+
+    .nav-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      color: var(--white);
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .nav-toggle:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.22);
+    }
+
+    .mobile-menu {
+      position: fixed;
+      top: 72px;
+      left: 0;
+      right: 0;
+      z-index: 999;
+      background: rgba(8, 24, 45, 0.98);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 0 5%;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.28s ease;
+    }
+
+    .mobile-menu.open {
+      max-height: 360px;
+    }
+
+    .mobile-menu a {
+      display: block;
+      padding: 1rem 0;
+      color: rgba(255,255,255,0.88);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .mobile-menu a:last-child {
+      border-bottom: none;
+      margin-bottom: 1rem;
+    }
+
+    .mobile-menu .mobile-cta {
+      color: var(--gold-light);
+    }
+
+    #videos {
+      background: linear-gradient(180deg, #ffffff 0%, #f8f6f2 100%);
+    }
+
+    .videos-intro {
+      max-width: 640px;
+      color: var(--gray);
+      margin-bottom: 2.5rem;
+    }
+
+    .videos-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .video-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid rgba(13,35,64,0.08);
+      box-shadow: 0 10px 28px rgba(13,35,64,0.05);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .video-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(13,35,64,0.09);
+    }
+
+    .video-thumb {
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, rgba(13,35,64,0.96), rgba(26,58,92,0.9));
+      display: flex;
+      align-items: end;
+      padding: 1.1rem;
+      color: var(--white);
+      position: relative;
+    }
+
+    .video-thumb::before {
+      content: '▶';
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(4px);
+      font-size: 0.95rem;
+    }
+
+    .video-thumb strong {
+      max-width: 16ch;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      line-height: 1.15;
+    }
+
+    .video-card-body {
+      padding: 1.2rem 1.2rem 1.35rem;
+    }
+
+    .video-card-body h3 {
+      font-size: 1rem;
+      line-height: 1.4;
+      color: var(--navy);
+      margin-bottom: 0.55rem;
+    }
+
+    .video-card-body p {
+      color: var(--gray);
+      font-size: 0.9rem;
+      line-height: 1.65;
+      margin-bottom: 1rem;
+    }
+
+    .video-card-body a {
+      color: var(--gold);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .video-card-body a:hover {
+      color: var(--gold-light);
+    }
 
     @media (max-width: 900px) {
-      .hero-content {
-        grid-template-columns: 1fr;
-        text-align: center;
+      nav { height: 72px; }
+      .nav-logo img {
+  height:64px; height: 42px; }
+      .nav-links { display: none; }
+  
+    .hero-brand {
+      height: 62px;
+      width: auto;
+      margin-bottom: 1.15rem;
+      opacity: 0.96;
+      filter: drop-shadow(0 12px 26px rgba(0,0,0,0.22));
+    }
+
+    .hero-text h1 {
+      text-shadow: 0 10px 28px rgba(0,0,0,0.18);
+    }
+
+    .hero-text::after {
+      content: '';
+      display: block;
+      width: 96px;
+      height: 2px;
+      margin-top: 2rem;
+      background: linear-gradient(90deg, rgba(212,169,85,0.95), rgba(212,169,85,0.18));
+      border-radius: 999px;
+    }
+
+    .luxury-glow {
+      position: absolute;
+      top: 16%;
+      left: 10%;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,169,85,0.10) 0%, rgba(212,169,85,0.03) 38%, transparent 72%);
+      pointer-events: none;
+      filter: blur(8px);
+    }
+
+    .hero-scroll {
+      position: absolute;
+      left: 5%;
+      bottom: 28px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      color: rgba(255,255,255,0.62);
+      text-decoration: none;
+      font-size: 0.82rem;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .hero-scroll::before {
+      content: '';
+      width: 26px;
+      height: 42px;
+      border: 1.5px solid rgba(255,255,255,0.32);
+      border-radius: 999px;
+      position: relative;
+      display: inline-block;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    .hero-scroll::after {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 9px;
+      width: 4px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(212,169,85,0.9);
+      box-shadow: 0 0 10px rgba(212,169,85,0.45);
+      animation: scrollPulse 1.7s ease-in-out infinite;
+    }
+
+    @keyframes scrollPulse {
+      0% { transform: translateY(0); opacity: 0.95; }
+      60% { transform: translateY(12px); opacity: 0.35; }
+      100% { transform: translateY(0); opacity: 0.95; }
+    }
+
+    .video-card,
+    .proc-card,
+    .sobre-photo-card,
+    .whatsapp-block {
+      box-shadow: 0 16px 42px rgba(9,25,44,0.07);
+    }
+
+    .reviews-cta {
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .reviews-cta:hover {
+      background: #1a3a5c !important;
+      transform: translateY(-1px);
+    }
+
+    .nav-toggle { display: inline-flex; }
+      .videos-grid { grid-template-columns: 1fr; }
+      #hero {
+        min-height: 92vh;
+        padding: 108px 5% 54px;
+        background:
+          linear-gradient(180deg, rgba(8, 20, 45, 0.88) 0%, rgba(8, 20, 45, 0.64) 55%, rgba(8, 20, 45, 0.48) 100%),
+          url('IMG_3262.JPEG') center center / cover no-repeat;
       }
-      .doctor-photo {
-        margin: 0 auto 2.5rem;
-        width: 280px;
-        height: 280px;
-      }
-      #hero { padding: 110px 5% 70px; }
+      .hero-inner { grid-template-columns: 1fr; gap: 0; }
+      .hero-text { max-width: 100%; }
+      .hero-text h1 { max-width: 11ch; }
+      .hero-visual-spacer { display: none; }
+      .sobre-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+      .sobre-photo-card { max-width: 360px; }
+      .proc-grid { grid-template-columns: 1fr 1fr; }
+      .contato-grid { grid-template-columns: 1fr; gap: 2.5rem; }
     }
 
     @media (max-width: 600px) {
-      section { padding: 70px 5%; }
+      section { padding: 64px 5%; }
+      .hero-badge {
+        font-size: 0.72rem;
+        padding: 0.48rem 0.85rem;
+      }
+      .hero-subtitle { font-size: 0.96rem; }
+      .hero-text p:not(.hero-subtitle) { font-size: 0.98rem; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn-primary, .btn-outline { width: 100%; }
+      .hero-credentials { gap: 0.8rem; }
+      .cred-item {
+        flex: 1 1 calc(50% - 0.8rem);
+        min-width: 130px;
+      }
+      .proc-grid { grid-template-columns: 1fr; }
+      .mobile-menu { top: 72px; }
+      .horario-grid { grid-template-columns: 1fr; }
+      .wa-float {
+        width: 54px;
+        height: 54px;
+        right: 18px;
+        bottom: 18px;
+      }
     }
   </style>
+
+<style>
+nav {
+  height: 88px;
+  transition: all 0.3s ease;
+}
+nav.scrolled {
+  height: 70px;
+  backdrop-filter: blur(8px);
+  background: rgba(15, 42, 68, 0.9);
+}
+nav.scrolled .nav-logo img {
+  height: 48px;
+}
+</style>
+
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <a href="#hero" class="nav-logo"><img src="logo-site-header.png" alt="Dr. Felipe Hissa Coelho"></a>
   <ul class="nav-links">
     <li><a href="#sobre">Sobre</a></li>
     <li><a href="#procedimentos">Procedimentos</a></li>
     <li><a href="#videos">Vídeos</a></li>
-    <li><a href="#consultorio">Consultório</a></li>
     <li><a href="#contato">Contato</a></li>
     <li><a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="nav-cta" target="_blank" rel="noopener noreferrer">Agendar</a></li>
   </ul>
-  <button class="nav-toggle" type="button" aria-label="Abrir menu">☰</button>
+  <button class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenu">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
 </nav>
 
-<!-- NOVO HERO -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#sobre">Sobre</a>
+  <a href="#procedimentos">Procedimentos</a>
+  <a href="#videos">Vídeos</a>
+  <a href="#contato">Contato</a>
+  <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="mobile-cta" target="_blank" rel="noopener noreferrer">Agendar avaliação</a>
+</div>
+
 <section id="hero">
-  <div class="hero-content">
-    <div>
-      <img src="dr-felipe-jaleco.jpg" alt="Dr. Felipe Hissa Coelho - Cirurgião Plástico em Recife" class="doctor-photo">
-    </div>
+  <div class="luxury-glow" aria-hidden="true"></div>
+  <div class="hero-inner">
     <div class="hero-text">
-      <h1>Transformando sua confiança com naturalidade e cuidado</h1>
-      <p>Olá, sou o Dr. Felipe Hissa Coelho, cirurgião plástico em Recife.<br>
-      Meu compromisso é entender sua história, respeitar seu corpo e entregar resultados harmoniosos que você realmente reconheça como seus — seguros, sutis e verdadeiramente pessoais.</p>
-      
-      <div class="hero-buttons">
-        <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="btn-whatsapp" target="_blank" rel="noopener noreferrer">
-          Agendar consulta pelo WhatsApp
+      <img src="logo-horizontal-white.png" alt="Felipe Hissa" class="hero-brand" loading="eager" />
+      <div class="hero-badge">Cirurgião Plástico • Recife, PE</div>
+      <h1>Dr. Felipe Hissa Coelho</h1>
+      <p class="hero-subtitle">Cirurgia estética • Contorno corporal • Procedimentos personalizados</p>
+      <p>Resultados naturais, segurança e planejamento individualizado para pacientes que buscam cirurgia plástica e procedimentos estéticos com atendimento personalizado na Ilha do Leite.</p>
+      <div class="hero-actions">
+        <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="btn-primary" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"></path><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.879L.057 23.7a.75.75 0 0 0 .921.921l5.821-1.484A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.049-1.371l-.361-.214-3.754.957.974-3.754-.234-.371A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path></svg>
+          Agendar avaliação
         </a>
-        <a href="#consultorio" class="btn-secondary">Conhecer o consultório</a>
+        <a href="#procedimentos" class="btn-outline">Ver procedimentos</a>
+      </div>
+      <div class="hero-credentials">
+        <div class="cred-item">
+          <strong>UFPE</strong>
+          <span>Graduação em Medicina</span>
+        </div>
+        <div class="cred-item">
+          <strong>Einstein</strong>
+          <span>Pós-graduação em SP</span>
+        </div>
+        <div class="cred-item">
+          <strong>RQE</strong>
+          <span>18425</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual-spacer" aria-hidden="true"></div>
+  </div>
+  <a href="#sobre" class="hero-scroll">Explorar</a>
+</section>
+
+<section id="sobre">
+  <div class="section-inner">
+    <div class="sobre-grid">
+      <div class="sobre-photo-card">
+        <img src="IMG_3262.JPEG" alt="Dr. Felipe Hissa Coelho em ambiente cirúrgico, em Recife" loading="lazy" />
+      </div>
+      <div class="sobre-text">
+        <span class="section-tag">Sobre o médico</span>
+        <h2 class="section-title">Formação e experiência a serviço do seu resultado</h2>
+        <div class="divider"></div>
+        <p>Dr. Felipe Hissa Coelho é cirurgião plástico com atuação em Recife (PE), graduado em Medicina pela Universidade Federal de Pernambuco (UFPE) e com residência médica em Cirurgia Plástica pelo Hospital Agamenon Magalhães.</p>
+        <p>Possui pós-graduação em Cosmiatria e Procedimentos Estéticos pelo Hospital Israelita Albert Einstein, em São Paulo, com foco em cirurgias de contorno corporal.</p>
+        <p>Atende em consultório próprio na Ilha do Leite, com agendamento pelo WhatsApp em horário comercial.</p>
+
+        <ul class="formacao-list">
+          <li>
+            <div class="formacao-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 3.741-1.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"></path></svg>
+            </div>
+            <div class="formacao-info">
+              <strong>Graduação em Medicina</strong>
+              <span>Universidade Federal de Pernambuco – UFPE</span>
+            </div>
+          </li>
+          <li>
+            <div class="formacao-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"></path></svg>
+            </div>
+            <div class="formacao-info">
+              <strong>Residência em Cirurgia Plástica</strong>
+              <span>Hospital Agamenon Magalhães – Recife, PE</span>
+            </div>
+          </li>
+          <li>
+            <div class="formacao-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"></path></svg>
+            </div>
+            <div class="formacao-info">
+              <strong>Pós-graduação em Cosmiatria e Procedimentos Estéticos</strong>
+              <span>Hospital Israelita Albert Einstein – São Paulo, SP</span>
+            </div>
+          </li>
+        </ul>
+
+        <div class="rqe-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z"></path></svg>
+          CRM-PE 15420 · Especialista em Cirurgia Plástica · RQE 18425
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- NOVA SEÇÃO CONSULTÓRIO -->
-<section id="consultorio">
+<section id="procedimentos">
   <div class="section-inner">
-    <span class="section-tag">Nosso espaço</span>
-    <h2 class="section-title">Consultório na Ilha do Leite</h2>
+    <span class="section-tag">Área de atuação</span>
+    <h2 class="section-title">Procedimentos</h2>
     <div class="divider"></div>
-    <p>Atendo em um ambiente moderno, confortável e seguro, pensado para você se sentir acolhida desde o primeiro momento.</p>
-    
-    <div class="consultorio-grid">
-      <!-- Coloque aqui 4 fotos do seu consultório -->
-      <img src="foto-consultorio-1.jpg" alt="Sala de espera acolhedora">
-      <img src="foto-consultorio-2.jpg" alt="Ambiente do consultório">
-      <img src="foto-consultorio-3.jpg" alt="Espaço moderno">
-      <img src="foto-consultorio-4.jpg" alt="Ilha do Leite - Recife">
+    <p class="proc-intro">Com foco em resultados naturais e seguros, o Dr. Felipe Hissa Coelho oferece atendimento personalizado em cirurgia plástica e procedimentos estéticos e de cosmiatria.</p>
+
+    <div class="proc-category-label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 1-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21a48.309 48.309 0 0 1-8.135-.687c-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"></path></svg>
+      Cirurgias Plásticas
+    </div>
+    <div class="proc-grid">
+      <div class="proc-card"><h3>Lipoaspiração e Lipoescultura</h3><p>Remoção seletiva de gordura localizada com modelagem simultânea do contorno corporal. A lipoescultura combina a aspiração com técnicas de definição muscular para resultados mais esculpidos e naturais.</p><a href="lipoaspiracao-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><h3>Abdominoplastia</h3><p>Cirurgia para remoção do excesso de pele e gordura abdominal, com restauração da musculatura do abdômen. Indicada após gravidez, grandes perdas de peso ou flacidez que não responde a exercícios.</p><a href="abdominoplastia-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><h3>Mamoplastia e Prótese de Silicone</h3><p>Cirurgias de aumento, redução ou remodelação das mamas. O aumento mamário com prótese de silicone é realizado com técnica individualizada para cada paciente, buscando proporção, simetria e naturalidade.</p><a href="mamoplastia-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><h3>Explante Mamário</h3><p>Remoção segura de próteses mamárias com ou sem troca, indicada por escolha pessoal, contratura capsular, ruptura ou outras intercorrências. Realizado com técnica que preserva ao máximo os tecidos.</p><a href="explante-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><h3>Blefaroplastia</h3><p>Cirurgia das pálpebras para remoção do excesso de pele e gordura, rejuvenescendo o olhar. Pode ser realizada nas pálpebras superiores, inferiores ou em ambas, com resultados naturais e duradouros.</p><a href="blefaroplastia-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><h3>Rinoplastia</h3><p>Cirurgia de remodelação do nariz para fins estéticos e/ou funcionais. Permite correção do tamanho, da forma, da largura e de desvios, sempre com planejamento individualizado para harmonizar com as demais estruturas da face.</p><a href="rinoplastia-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><h3>Cirurgia da Face</h3><p>Procedimentos cirúrgicos para rejuvenescimento facial, incluindo ritidoplastia. Corrige flacidez, sulcos e ptose dos tecidos, restituindo contornos mais jovens e descansados de forma duradoura.</p><a href="cirurgia-face-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><h3>Cirurgias Pós-Bariátrica</h3><p>Cirurgias de contorno corporal para pacientes após grande perda ponderal, incluindo dermolipectomias, abdominoplastia em âncora, lifting de coxas e braços. Recupera a qualidade de vida após o emagrecimento expressivo.</p><a href="pos-bariatrica-recife.html" class="card-link">Saiba mais →</a></div>
+    </div>
+
+    <div class="proc-category-label" style="margin-top:3.5rem;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"></path></svg>
+      Estética &amp; Cosmiatria
+    </div>
+    <div class="proc-grid">
+      <div class="proc-card"><h3>Toxina Botulínica</h3><p>Aplicação de toxina botulínica para suavização de rugas dinâmicas, como linhas de expressão na testa, entre as sobrancelhas e ao redor dos olhos. Resultado natural, sem interferir na expressividade do rosto.</p><a href="toxina-botulinica-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><h3>Preenchimento Facial</h3><p>Uso de ácido hialurônico para restaurar volumes, suavizar sulcos e definir contornos faciais como lábios, maçãs do rosto e mandíbula. Procedimento minimamente invasivo com resultado imediato e reversível.</p><a href="preenchimento-recife.html" class="card-link">Saiba mais →</a></div>
+      <div class="proc-card"><h3>Bioestimuladores de Colágeno</h3><p>Aplicação de substâncias que estimulam a produção natural de colágeno, promovendo firmeza, elasticidade e rejuvenescimento progressivo da pele ao longo dos meses.</p></div>
+      <div class="proc-card"><h3>Ellansé</h3><p>Preenchedor bioestimulador de longa duração que combina efeito volumizador imediato com estímulo progressivo de colágeno. Indicado para reposição de volume e melhora da qualidade da pele, com duração de 1 a 4 anos.</p></div>
+      <div class="proc-card"><h3>Sutura Silhouette</h3><p>Técnica minimamente invasiva de lifting com fios de sustentação absorvíveis, que promovem sustentação imediata dos tecidos e estimulam a neocolagênese. Indicada para ptose facial leve a moderada sem necessidade de cirurgia.</p></div>
+    </div>
+
+    <p class="proc-disclaimer">⚕️ A indicação de cada procedimento é definida individualmente após consulta de avaliação presencial. Entre em contato para agendar e receber orientações personalizadas.</p>
+  </div>
+</section>
+
+<section id="videos">
+  <div class="section-inner">
+    <span class="section-tag">Conteúdo em vídeo</span>
+    <h2 class="section-title">Orientações e explicações em vídeo</h2>
+    <div class="divider"></div>
+    <p class="videos-intro">Vídeos com orientações pré e pós-operatórias, dúvidas frequentes e explicações claras sobre cirurgia plástica.<br>Conteúdos atualizados diretamente nesta página.</p>
+
+    <div class="videos-grid">
+      <article class="video-card">
+        <div class="video-thumb"><strong>Dúvidas frequentes</strong></div>
+        <div class="video-card-body">
+          <h3>Explicações claras para quem está pesquisando cirurgia plástica</h3>
+          <p>Ideal para responder perguntas comuns sobre indicação, recuperação, segurança e expectativas de resultado.</p>
+          <a href="https://www.youtube.com/@DrFelipeHissaCoelho" target="_blank" rel="noopener noreferrer">Ver canal no YouTube →</a>
+        </div>
+      </article>
+
+      <article class="video-card">
+        <div class="video-thumb"><strong>Orientações ao paciente</strong></div>
+        <div class="video-card-body">
+          <h3>Vídeos sobre jejum, preparo, dia da cirurgia e pós-operatório</h3>
+          <p>Conteúdo prático para reduzir ansiedade, melhorar entendimento e orientar o paciente em cada etapa do processo.</p>
+          <a href="https://www.youtube.com/@DrFelipeHissaCoelho" target="_blank" rel="noopener noreferrer">Assistir orientações →</a>
+        </div>
+      </article>
+
+      <article class="video-card">
+        <div class="video-thumb"><strong>Bastidores e casos</strong></div>
+        <div class="video-card-body">
+          <h3>Contextualização de casos e bastidores com foco educativo</h3>
+          <p>Mostra sua rotina com linguagem médica, reforçando autoridade, segurança e individualização do planejamento.</p>
+          <a href="https://www.youtube.com/@DrFelipeHissaCoelho" target="_blank" rel="noopener noreferrer">Conhecer o canal →</a>
+        </div>
+      </article>
     </div>
   </div>
 </section>
 
-<!-- A partir daqui você pode colar o restante do seu conteúdo original: #sobre, #procedimentos, #videos, #contato, avaliações e footer -->
+<section id="contato">
+  <div class="section-inner">
+    <span class="section-tag">Fale conosco</span>
+    <h2 class="section-title">Agende sua consulta</h2>
+    <div class="divider"></div>
+    <div class="contato-grid">
+      <div>
+        <p class="contato-intro">O agendamento é feito pelo WhatsApp, em horário comercial. Nossa equipe retornará o contato para confirmar data e horário disponíveis.</p>
+        <div class="contato-items">
+          <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"></path></svg></div><div class="contato-item-text"><strong>Endereço</strong><a href="https://www.google.com/maps/search/?api=1&query=R.%20General%20Joaquim%20In%C3%A1cio%2C%20830%20-%20Sala%20705-707%20-%20Ilha%20do%20Leite%2C%20Recife%20-%20PE%2C%2050070-270" target="_blank" rel="noopener noreferrer">R. General Joaquim Inácio, 830 - Sala 705-707 - Ilha do Leite, Recife - PE, 50070-270</a></div></div>
+          <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path></svg></div><div class="contato-item-text"><strong>Horário de atendimento</strong><span>Segunda a sexta, 08h às 18h</span></div></div>
+          <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"></path></svg></div><div class="contato-item-text"><strong>Instagram</strong><a href="https://instagram.com/drfelipehissacoelho" target="_blank" rel="noopener noreferrer">@drfelipehissacoelho</a></div></div>
+        </div>
 
-<!-- (Cole aqui o conteúdo das seções #sobre até o final do seu arquivo antigo) -->
+        <div class="horario-grid" style="margin-top:1.8rem;">
+          <div class="horario-item"><span>Segunda – Sexta</span><span>08h – 18h</span></div>
+          <div class="horario-item"><span>Sábado</span><span>Fechado</span></div>
+          <div class="horario-item"><span>Domingo</span><span>Fechado</span></div>
+          <div class="horario-item"><span>Feriados</span><span>Fechado</span></div>
+        </div>
+      </div>
+
+      <div class="whatsapp-block">
+        <h3>Fale diretamente pelo WhatsApp</h3>
+        <p>Clique abaixo para iniciar uma conversa com nossa equipe e agendar sua consulta de avaliação com o Dr. Felipe Hissa Coelho.</p>
+        <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="btn-whatsapp" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"></path><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.879L.057 23.7a.75.75 0 0 0 .921.921l5.821-1.484A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.049-1.371l-.361-.214-3.754.957.974-3.754-.234-.371A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path></svg>
+          (81) 99479-5101
+        </a>
+        <p style="margin-top:1rem; font-size:0.78rem; color:rgba(255,255,255,0.35); text-align:center;">Respondemos em horário comercial · Seg–Sex, 08h–18h</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="avaliacoes" class="reviews-section">
+  <div class="reviews-inner">
+    <span class="section-tag">Google</span>
+    <h2 class="section-title" style="font-size:1.9rem;">Avalie nossa consulta</h2>
+    <div class="divider" style="margin:0 auto 1.2rem;"></div>
+    <p style="color:#6b7280;margin-bottom:2rem;font-size:1rem;">Se você já foi atendido pelo Dr. Felipe Hissa Coelho, deixe sua avaliação no Google. Isso ajuda outros pacientes a encontrar o consultório e é muito importante para nós.</p>
+    <div style="display:flex;justify-content:center;gap:0.3rem;margin-bottom:1.8rem;"><span style="font-size:2rem;color:#f59e0b;">★★★★★</span></div>
+    <a href="https://g.page/r/CW8m-TlIE3BzEBM/review" target="_blank" rel="noopener noreferrer" class="reviews-cta" style="display:inline-flex;align-items:center;gap:0.6rem;background:#0d2340;color:#fff;text-decoration:none;padding:0.9rem 2rem;border-radius:12px;font-weight:600;font-size:1rem;transition:background 0.2s, transform 0.15s;"> <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><path d="M12 11h8.533c.044.385.067.78.067 1.184 0 2.734-.98 5.048-2.61 6.627C16.42 20.385 14.398 21.25 12 21.25c-5.109 0-9.25-4.14-9.25-9.25S6.891 2.75 12 2.75c2.493 0 4.756.97 6.414 2.546l-2.652 2.652C14.697 6.948 13.402 6.44 12 6.44c-3.068 0-5.556 2.49-5.556 5.56S8.932 17.56 12 17.56c1.743 0 3.232-.657 4.258-1.72.788-.82 1.285-1.91 1.44-3.09H12V11Z" fill="currentColor"></path></svg> Avaliar no Google</a>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 Dr. Felipe Hissa Coelho · CRM-PE 15420 · RQE 18425</p>
+  <div class="footer-socials">
+    <a href="https://instagram.com/drfelipehissacoelho" target="_blank" rel="noopener noreferrer" aria-label="Instagram" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);"><svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"></path></svg></a>
+    <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" style="background:#25d366;"><svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"></path><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.879L.057 23.7a.75.75 0 0 0 .921.921l5.821-1.484A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.049-1.371l-.361-.214-3.754.957.974-3.754-.234-.371A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path></svg></a>
+  </div>
+  <p style="margin-top:0.4rem;">As informações deste site têm caráter informativo e não substituem a consulta médica presencial.</p>
+</footer>
+
+<a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="wa-float" target="_blank" rel="noopener noreferrer" aria-label="Fale pelo WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"></path><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.879L.057 23.7a.75.75 0 0 0 .921.921l5.821-1.484A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.049-1.371l-.361-.214-3.754.957.974-3.754-.234-.371A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path></svg>
+</a>
 
 <script>
-  // Seu script de scroll e mobile menu (mantido)
   const nav = document.querySelector('nav');
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) {
+  const navToggle = document.querySelector('.nav-toggle');
+  const mobileMenu = document.getElementById('mobileMenu');
+
+  const updateNavOnScroll = () => {
+    if (!nav) return;
+    if (window.scrollY > 24) {
       nav.classList.add('scrolled');
     } else {
       nav.classList.remove('scrolled');
     }
-  });
+  };
+
+  updateNavOnScroll();
+  window.addEventListener('scroll', updateNavOnScroll, { passive: true });
+
+  if (navToggle && mobileMenu) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = mobileMenu.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    mobileMenu.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+</script>
+
+<script>
+window.addEventListener("scroll", function(){
+  const nav = document.querySelector("nav");
+  if(window.scrollY > 50){
+    nav.classList.add("scrolled");
+  } else {
+    nav.classList.remove("scrolled");
+  }
+});
 </script>
 
 </body>
