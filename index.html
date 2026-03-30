@@ -138,6 +138,7 @@
     }
 
     .nav-logo img {
+  height:64px;
       height: 52px;
       width: auto;
       filter: drop-shadow(0 6px 16px rgba(0,0,0,0.22));
@@ -145,6 +146,7 @@
     }
 
     nav.scrolled .nav-logo img {
+  height:64px;
       height: 46px;
       filter: drop-shadow(0 4px 12px rgba(0,0,0,0.18));
     }
@@ -951,7 +953,8 @@
 
     @media (max-width: 900px) {
       nav { height: 72px; }
-      .nav-logo img { height: 42px; }
+      .nav-logo img {
+  height:64px; height: 42px; }
       .nav-links { display: none; }
   
     .hero-brand {
@@ -1095,6 +1098,22 @@
       }
     }
   </style>
+
+<style>
+nav {
+  height: 88px;
+  transition: all 0.3s ease;
+}
+nav.scrolled {
+  height: 70px;
+  backdrop-filter: blur(8px);
+  background: rgba(15, 42, 68, 0.9);
+}
+nav.scrolled .nav-logo img {
+  height: 48px;
+}
+</style>
+
 </head>
 <body>
 
@@ -1374,5 +1393,17 @@
     });
   }
 </script>
+
+<script>
+window.addEventListener("scroll", function(){
+  const nav = document.querySelector("nav");
+  if(window.scrollY > 50){
+    nav.classList.add("scrolled");
+  } else {
+    nav.classList.remove("scrolled");
+  }
+});
+</script>
+
 </body>
 </html>
