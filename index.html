@@ -421,82 +421,122 @@
 
     .proc-intro { max-width: 620px; color: var(--gray); margin-bottom: 3rem; }
 
+    
     .proc-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.6rem;
     }
 
     .proc-card {
-      background: var(--off-white);
-      border-radius: 14px;
-      padding: 2rem 1.6rem;
-      border-top: 3px solid transparent;
-      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      background: linear-gradient(180deg, #fffdf9 0%, #f7f3ec 100%);
+      border-radius: 18px;
+      padding: 1.7rem 1.55rem 1.5rem;
+      border: 1px solid rgba(13,35,64,0.08);
+      box-shadow: 0 14px 34px rgba(9,25,44,0.06);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      overflow: hidden;
+      min-height: 100%;
+    }
+
+    .proc-card::before {
+      content: "";
+      display: block;
+      width: 34px;
+      height: 2px;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, rgba(212,169,85,1) 0%, rgba(212,169,85,0.18) 100%);
+      border-radius: 999px;
+    }
+
+    .proc-card::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(212,169,85,0) 0%, rgba(212,169,85,0.55) 50%, rgba(212,169,85,0) 100%);
+      opacity: 0;
+      transition: opacity 0.22s ease;
     }
 
     .proc-card:hover {
-      border-color: var(--gold);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 28px rgba(0,0,0,0.07);
+      transform: translateY(-4px);
+      box-shadow: 0 18px 42px rgba(9,25,44,0.10);
+      border-color: rgba(184,145,58,0.30);
     }
 
-    .proc-icon {
-      width: 48px; height: 48px;
-      background: var(--navy);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 1.2rem;
+    .proc-card:hover::after {
+      opacity: 1;
     }
-
-    .proc-icon svg { width: 22px; height: 22px; color: var(--gold-light); }
 
     .proc-card h3 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.1rem;
+      font-size: 1.18rem;
+      line-height: 1.25;
       color: var(--navy);
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.72rem;
+      letter-spacing: 0.01em;
     }
 
     .proc-card p {
-      color: var(--gray);
-      font-size: 0.88rem;
-      line-height: 1.65;
+      color: #5f6877;
+      font-size: 0.92rem;
+      line-height: 1.72;
     }
 
     .proc-card .card-link {
-      display:inline-block;
-      margin-top:1rem;
-      color:var(--gold);
-      font-size:0.85rem;
-      font-weight:600;
-      text-decoration:none;
-      letter-spacing:0.04em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.15rem;
+      color: var(--navy);
+      font-size: 0.83rem;
+      font-weight: 700;
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: color 0.2s ease, transform 0.2s ease;
     }
 
-    .proc-card .card-link:hover { color: var(--gold-light); }
+    .proc-card .card-link::after {
+      content: "→";
+      color: var(--gold);
+      transition: transform 0.2s ease;
+    }
+
+    .proc-card .card-link:hover {
+      color: var(--gold);
+      transform: translateX(2px);
+    }
+
+    .proc-card .card-link:hover::after {
+      transform: translateX(2px);
+    }
 
     .proc-category-label {
       display: inline-flex;
       align-items: center;
       gap: 0.6rem;
-      background: var(--navy);
-      color: var(--white);
-      font-size: 0.8rem;
+      background: linear-gradient(180deg, #102847 0%, #0b2039 100%);
+      color: rgba(255,255,255,0.96);
+      font-size: 0.76rem;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      padding: 0.5rem 1.1rem;
+      padding: 0.62rem 1.15rem;
       border-radius: 999px;
       margin-bottom: 1.8rem;
+      box-shadow: 0 14px 28px rgba(9,25,44,0.10);
     }
 
     .proc-disclaimer {
-      margin-top: 2rem;
-      padding: 1rem 1.5rem;
-      background: var(--gray-light);
+      margin-top: 2.2rem;
+      padding: 1rem 1.35rem;
+      background: linear-gradient(180deg, #f6f2ea 0%, #f1ede6 100%);
+      border: 1px solid rgba(184,145,58,0.16);
       border-left: 3px solid var(--gold);
-      border-radius: 0 6px 6px 0;
+      border-radius: 0 10px 10px 0;
       color: var(--gray);
       font-size: 0.82rem;
     }
@@ -1023,7 +1063,7 @@
       .hero-visual-spacer { display: none; }
       .sobre-grid { grid-template-columns: 1fr; gap: 2.5rem; }
       .sobre-photo-card { max-width: 360px; }
-      .proc-grid { grid-template-columns: 1fr 1fr; }
+      .proc-grid { grid-template-columns: 1fr 1fr; gap: 1.1rem; }
       .contato-grid { grid-template-columns: 1fr; gap: 2.5rem; }
     }
 
@@ -1042,7 +1082,9 @@
         flex: 1 1 calc(50% - 0.8rem);
         min-width: 130px;
       }
-      .proc-grid { grid-template-columns: 1fr; }
+      .proc-card { padding: 1.35rem 1.2rem 1.25rem; border-radius: 16px; }
+      .proc-card h3 { font-size: 1.08rem; }
+      .proc-grid { grid-template-columns: 1fr; gap: 1rem; }
       .mobile-menu { top: 68px; }
       .horario-grid { grid-template-columns: 1fr; }
       .wa-float {
@@ -1252,7 +1294,7 @@
       <div>
         <p class="contato-intro">O agendamento é feito pelo WhatsApp, em horário comercial. Nossa equipe retornará o contato para confirmar data e horário disponíveis.</p>
         <div class="contato-items">
-          <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"></path></svg></div><div class="contato-item-text"><strong>Endereço</strong><span>Ilha do Leite, Recife – PE</span></div></div>
+          <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"></path></svg></div><div class="contato-item-text"><strong>Endereço</strong><a href="https://www.google.com/maps/search/?api=1&query=R.%20General%20Joaquim%20In%C3%A1cio%2C%20830%20-%20Sala%20705-707%20-%20Ilha%20do%20Leite%2C%20Recife%20-%20PE%2C%2050070-270" target="_blank" rel="noopener noreferrer">R. General Joaquim Inácio, 830 - Sala 705-707 - Ilha do Leite, Recife - PE, 50070-270</a></div></div>
           <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path></svg></div><div class="contato-item-text"><strong>Horário de atendimento</strong><span>Segunda a sexta, 08h às 18h</span></div></div>
           <div class="contato-item"><div class="contato-item-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"></path></svg></div><div class="contato-item-text"><strong>Instagram</strong><a href="https://instagram.com/drfelipehissacoelho" target="_blank" rel="noopener noreferrer">@drfelipehissacoelho</a></div></div>
         </div>
@@ -1299,24 +1341,4 @@
 </footer>
 
 <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="wa-float" target="_blank" rel="noopener noreferrer" aria-label="Fale pelo WhatsApp">
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"></path><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.879L.057 23.7a.75.75 0 0 0 .921.921l5.821-1.484A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.049-1.371l-.361-.214-3.754.957.974-3.754-.234-.371A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path></svg>
-</a>
-
-<script>
-  const navToggle = document.querySelector('.nav-toggle');
-  const mobileMenu = document.getElementById('mobileMenu');
-  if (navToggle && mobileMenu) {
-    navToggle.addEventListener('click', () => {
-      const isOpen = mobileMenu.classList.toggle('open');
-      navToggle.setAttribute('aria-expanded', String(isOpen));
-    });
-    mobileMenu.querySelectorAll('a').forEach((link) => {
-      link.addEventListener('click', () => {
-        mobileMenu.classList.remove('open');
-        navToggle.setAttribute('aria-expanded', 'false');
-      });
-    });
-  }
-</script>
-</body>
-</html>
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1
