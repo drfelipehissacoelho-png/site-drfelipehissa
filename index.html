@@ -510,6 +510,98 @@
       font-size: 0.82rem;
     }
 
+
+    /* ─── VÍDEOS ─── */
+    #videos { background: linear-gradient(180deg, #ffffff 0%, #f8f6f2 100%); }
+
+    .videos-intro {
+      max-width: 700px;
+      color: var(--gray);
+      margin-bottom: 2.4rem;
+    }
+
+    .videos-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .video-card {
+      background: var(--white);
+      border-radius: 12px;
+      border: 1px solid rgba(13,35,64,0.08);
+      box-shadow: 0 10px 28px rgba(13,35,64,0.05);
+      overflow: hidden;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .video-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(13,35,64,0.09);
+      border-color: rgba(184,145,58,0.22);
+    }
+
+    .video-thumb {
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, rgba(13,35,64,0.96), rgba(26,58,92,0.9));
+      display: flex;
+      align-items: end;
+      padding: 1.1rem;
+      color: var(--white);
+      position: relative;
+    }
+
+    .video-thumb::before {
+      content: '▶';
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(4px);
+      font-size: 0.95rem;
+    }
+
+    .video-thumb strong {
+      max-width: 16ch;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.16rem;
+      line-height: 1.15;
+    }
+
+    .video-card-body {
+      padding: 1.15rem 1.15rem 1.25rem;
+    }
+
+    .video-card-body h3 {
+      font-size: 0.98rem;
+      line-height: 1.42;
+      color: var(--navy);
+      margin-bottom: 0.5rem;
+    }
+
+    .video-card-body p {
+      color: var(--gray);
+      font-size: 0.9rem;
+      line-height: 1.65;
+      margin-bottom: 0.95rem;
+    }
+
+    .video-card-body a {
+      color: var(--gold);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .video-card-body a:hover { color: var(--gold-light); }
+
+
     /* ─── CONTATO ─── */
     #contato { background: var(--navy); }
 
@@ -684,6 +776,7 @@
       .sobre-grid { grid-template-columns: 1fr; }
       .sobre-photo-placeholder { display: none; }
       .proc-grid { grid-template-columns: 1fr 1fr; }
+      .videos-grid { grid-template-columns: 1fr; }
       .contato-grid { grid-template-columns: 1fr; gap: 2.5rem; }
       .nav-links { display: none; }
     }
@@ -722,6 +815,7 @@
   <ul class="nav-links">
     <li><a href="#sobre">Sobre</a></li>
     <li><a href="#procedimentos">Procedimentos</a></li>
+    <li><a href="#videos">Vídeos</a></li>
     <li><a href="#contato">Contato</a></li>
     <li><a href="https://wa.me/5581994795101?text=Ol%C3%A1%2C%20Dr.%20Felipe!%20Vim%20pelo%20site%20e%20gostaria%20de%20agendar%20uma%20consulta.%20%F0%9F%98%8A" class="nav-cta" target="_blank">Agendar</a></li>
   </ul>
@@ -966,6 +1060,74 @@
     </p>
   </div>
 </section>
+
+
+<!-- VÍDEOS -->
+<section id="videos">
+  <div class="section-inner">
+    <span class="section-tag">Conteúdo</span>
+    <h2 class="section-title">Vídeos informativos</h2>
+    <div class="divider"></div>
+    <p class="videos-intro">Vídeos com orientações pré e pós-operatórias, dúvidas frequentes e explicações claras sobre cirurgia plástica.<br>Conteúdos atualizados diretamente nesta página.</p>
+
+    <div class="videos-grid">
+      <article class="video-card">
+        <div class="video-thumb"><strong>Dúvidas frequentes</strong></div>
+        <div class="video-card-body">
+          <h3>Respostas objetivas para quem está pesquisando cirurgia plástica</h3>
+          <p>Conteúdos sobre indicações, recuperação, segurança e expectativas de resultado.</p>
+          <a href="https://www.youtube.com/@DrFelipeHissaCoelho" target="_blank" rel="noopener noreferrer">Abrir no YouTube →</a>
+        </div>
+      </article>
+
+      <article class="video-card">
+        <div class="video-thumb"><strong>Orientações ao paciente</strong></div>
+        <div class="video-card-body">
+          <h3>Pré-operatório, pós-operatório e cuidados importantes</h3>
+          <p>Vídeos para orientar o paciente com clareza antes e depois da cirurgia.</p>
+          <a href="https://www.youtube.com/@DrFelipeHissaCoelho" target="_blank" rel="noopener noreferrer">Abrir no YouTube →</a>
+        </div>
+      </article>
+
+      <article class="video-card">
+        <div class="video-thumb"><strong>Lipoaspiração</strong></div>
+        <div class="video-card-body">
+          <h3>Informações sobre técnica, recuperação e dúvidas comuns</h3>
+          <p>Explicações objetivas sobre um dos procedimentos mais procurados.</p>
+          <a href="https://www.youtube.com/@DrFelipeHissaCoelho" target="_blank" rel="noopener noreferrer">Abrir no YouTube →</a>
+        </div>
+      </article>
+
+      <article class="video-card">
+        <div class="video-thumb"><strong>Abdominoplastia</strong></div>
+        <div class="video-card-body">
+          <h3>Como funciona a cirurgia e o que esperar da recuperação</h3>
+          <p>Conteúdo voltado para pacientes que desejam compreender o procedimento.</p>
+          <a href="https://www.youtube.com/@DrFelipeHissaCoelho" target="_blank" rel="noopener noreferrer">Abrir no YouTube →</a>
+        </div>
+      </article>
+
+      <article class="video-card">
+        <div class="video-thumb"><strong>Mamoplastia</strong></div>
+        <div class="video-card-body">
+          <h3>Explicações sobre aumento, redução e mastopexia</h3>
+          <p>Vídeos pensados para esclarecer decisões e alinhar expectativas.</p>
+          <a href="https://www.youtube.com/@DrFelipeHissaCoelho" target="_blank" rel="noopener noreferrer">Abrir no YouTube →</a>
+        </div>
+      </article>
+
+      <article class="video-card">
+        <div class="video-thumb"><strong>Cosmiatria</strong></div>
+        <div class="video-card-body">
+          <h3>Botox, preenchimento e bioestimuladores</h3>
+          <p>Conteúdos objetivos sobre procedimentos estéticos não cirúrgicos.</p>
+          <a href="https://www.youtube.com/@DrFelipeHissaCoelho" target="_blank" rel="noopener noreferrer">Abrir no YouTube →</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
 
 <!-- CONTATO -->
 <section id="contato">
