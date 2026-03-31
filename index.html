@@ -1112,6 +1112,49 @@ nav.scrolled {
 nav.scrolled .nav-logo img {
   height: 48px;
 }
+
+/* ── Gallery ── */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.gallery-grid .gallery-item {
+  overflow: hidden;
+  border-radius: 12px;
+  aspect-ratio: 3 / 4;
+  position: relative;
+}
+.gallery-grid .gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.45s ease;
+  display: block;
+}
+.gallery-grid .gallery-item:hover img {
+  transform: scale(1.05);
+}
+.gallery-item .gallery-caption {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(13,35,64,0.75));
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1.4rem 1rem 0.9rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.gallery-item:hover .gallery-caption { opacity: 1; }
+@media (max-width: 768px) {
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+@media (max-width: 480px) {
+  .gallery-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+}
 </style>
 
 </head>
@@ -1123,7 +1166,8 @@ nav.scrolled .nav-logo img {
     <li><a href="#sobre">Sobre</a></li>
     <li><a href="#procedimentos">Procedimentos</a></li>
     <li><a href="#videos">Vídeos</a></li>
-    <li><a href="#contato">Contato</a></li>
+    <li><a href="#paciente">Paciente</a></li>
+            <li><a href="#contato">Contato</a></li>
     <li><a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="nav-cta" target="_blank" rel="noopener noreferrer">Agendar</a></li>
   </ul>
   <button class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenu">
@@ -1135,6 +1179,7 @@ nav.scrolled .nav-logo img {
   <a href="#sobre">Sobre</a>
   <a href="#procedimentos">Procedimentos</a>
   <a href="#videos">Vídeos</a>
+  <a href="#paciente">Paciente</a>
   <a href="#contato">Contato</a>
   <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="mobile-cta" target="_blank" rel="noopener noreferrer">Agendar avaliação</a>
 </div>
@@ -1146,8 +1191,8 @@ nav.scrolled .nav-logo img {
       <img src="logo-horizontal-white.png" alt="Felipe Hissa" class="hero-brand" loading="eager" />
       <div class="hero-badge">Cirurgião Plástico • Recife, PE</div>
       <h1>Dr. Felipe Hissa Coelho</h1>
-      <p class="hero-subtitle">Cirurgia estética • Contorno corporal • Procedimentos personalizados</p>
-      <p>Resultados naturais, segurança e planejamento individualizado para pacientes que buscam cirurgia plástica e procedimentos estéticos com atendimento personalizado na Ilha do Leite.</p>
+      <p class="hero-subtitle">Cada paciente tem uma história. Cada resultado, um planejamento único.</p>
+      <p>Você merece sentir que o resultado foi feito para você — não para uma tendência. Aqui, cada cirurgia começa com escuta real, planejamento cuidadoso e o compromisso com a naturalidade que define todo o meu trabalho em Recife.</p>
       <div class="hero-actions">
         <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="btn-primary" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"></path><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.879L.057 23.7a.75.75 0 0 0 .921.921l5.821-1.484A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.049-1.371l-.361-.214-3.754.957.974-3.754-.234-.371A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path></svg>
@@ -1183,11 +1228,11 @@ nav.scrolled .nav-logo img {
       </div>
       <div class="sobre-text">
         <span class="section-tag">Sobre o médico</span>
-        <h2 class="section-title">Formação e experiência a serviço do seu resultado</h2>
+        <h2 class="section-title">Escolhi a cirurgia plástica porque acredito na força de sentir-se bem consigo mesmo</h2>
         <div class="divider"></div>
-        <p>Dr. Felipe Hissa Coelho é cirurgião plástico com atuação em Recife (PE), graduado em Medicina pela Universidade Federal de Pernambuco (UFPE) e com residência médica em Cirurgia Plástica pelo Hospital Agamenon Magalhães.</p>
-        <p>Possui pós-graduação em Cosmiatria e Procedimentos Estéticos pelo Hospital Israelita Albert Einstein, em São Paulo, com foco em cirurgias de contorno corporal.</p>
-        <p>Atende em consultório próprio na Ilha do Leite, com agendamento pelo WhatsApp em horário comercial.</p>
+        <p>Sou o Dr. Felipe Hissa Coelho. Ao longo dos anos de prática em cirurgia plástica em Recife, aprendi que o que mais move as pessoas a buscar uma cirurgia não é a vaidade — é o desejo de se reconhecer no espelho, de se sentir inteira, de ter o exterior alinhado com quem se é por dentro.</p>
+        <p>Formado pela UFPE e com residência pelo Hospital Agamenon Magalhães, busquei me especializar em cosmiatria e procedimentos estéticos no Albert Einstein em São Paulo porque queria oferecer uma visão completa: não apenas a cirurgia, mas o cuidado antes e depois dela.</p>
+        <p>Cada consulta começa com escuta. Porque acredito que um bom resultado cirúrgico só existe quando o planejamento respeita sua história, sua proporção e o que você realmente espera. Atendo em consultório próprio na Ilha do Leite, Recife.</p>
 
         <ul class="formacao-list">
           <li>
@@ -1224,6 +1269,72 @@ nav.scrolled .nav-logo img {
           CRM-PE 15420 · Especialista em Cirurgia Plástica · RQE 18425
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+
+<section id="consultorio" style="padding:80px 5%;background:#fff;">
+  <div style="max-width:1100px;margin:0 auto;text-align:center;">
+    <span style="font-size:0.75rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#b8913a;">Estrutura</span>
+    <h2 style="font-family:'Playfair Display',serif;font-size:clamp(1.6rem,2.5vw,2rem);color:var(--navy,#0d2340);margin:0.6rem 0 0.4rem;">Conheça nosso espaço</h2>
+    <div style="width:48px;height:2px;background:#b8913a;margin:0.8rem auto 2rem;"></div>
+    <p style="color:#666;max-width:580px;margin:0 auto 2.8rem;line-height:1.75;font-size:1rem;">Um ambiente projetado para oferecer conforto, privacidade e tranquilidade — do momento em que você chega até o final da sua consulta.</p>
+    <div class="gallery-grid">
+      <div class="gallery-item">
+        <img src="img/consultorio/sala-espera.jpg" alt="Sala de espera elegante do consultório Dr. Felipe Hissa Coelho, Recife" loading="lazy">
+        <div class="gallery-caption">Sala de Espera</div>
+      </div>
+      <div class="gallery-item">
+        <img src="img/consultorio/consultorio.jpg" alt="Consultório Dr. Felipe Hissa Coelho em Recife" loading="lazy">
+        <div class="gallery-caption">Consultório</div>
+      </div>
+      <div class="gallery-item">
+        <img src="img/consultorio/dr-felipe.jpg" alt="Dr. Felipe Hissa Coelho, cirurgião plástico em Recife" loading="lazy">
+        <div class="gallery-caption">Dr. Felipe Hissa</div>
+      </div>
+      <div class="gallery-item">
+        <img src="img/consultorio/sala-procedimentos.jpg" alt="Sala de procedimentos estéticos" loading="lazy">
+        <div class="gallery-caption">Sala de Procedimentos</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="avaliacoes" style="background:var(--navy,#0d2340);padding:64px 5%;text-align:center;">
+  <div style="max-width:860px;margin:0 auto;">
+    <span style="font-size:0.75rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#b8913a;">Avaliações</span>
+    <h2 style="font-family:'Playfair Display',serif;font-size:clamp(1.6rem,2.5vw,2rem);color:#fff;margin:0.6rem 0 0.4rem;">O que dizem os pacientes</h2>
+    <div style="width:48px;height:2px;background:#b8913a;margin:0.8rem auto 2rem;"></div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem;">
+      <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:1.4rem 2rem;display:inline-flex;align-items:center;gap:1rem;">
+        <div>
+          <div style="font-size:2.4rem;font-weight:700;color:#fff;line-height:1;">5,0</div>
+          <div style="color:#f5c518;font-size:1.2rem;letter-spacing:2px;margin:4px 0;">★★★★★</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.55);">5 avaliações no Google</div>
+        </div>
+        <div style="width:1px;height:48px;background:rgba(255,255,255,0.15);"></div>
+        <div>
+          <div style="font-size:2.4rem;font-weight:700;color:#fff;line-height:1;">5,0</div>
+          <div style="color:#f5c518;font-size:1.2rem;letter-spacing:2px;margin:4px 0;">★★★★★</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.55);">1 avaliação na Doctoralia</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="color:rgba(255,255,255,0.6);font-size:0.88rem;margin-bottom:1.8rem;max-width:480px;margin-left:auto;margin-right:auto;">Já foi atendido? Sua opinião ajuda outros pacientes a tomar uma decisão com mais segurança.</p>
+
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+      <a href="https://g.page/r/CW8m-TlIE3BzEBM/review" target="_blank" rel="noopener noreferrer"
+         style="display:inline-flex;align-items:center;gap:0.5rem;background:#b8913a;color:#fff;padding:0.7rem 1.5rem;border-radius:4px;text-decoration:none;font-size:0.88rem;font-weight:600;letter-spacing:0.04em;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Deixar minha avaliação
+      </a>
+      <a href="https://www.google.com/maps?cid=8318169712684508783" target="_blank" rel="noopener noreferrer"
+         style="display:inline-flex;align-items:center;gap:0.5rem;background:transparent;color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.25);padding:0.7rem 1.5rem;border-radius:4px;text-decoration:none;font-size:0.88rem;font-weight:500;">
+        Ver todas no Google Maps →
+      </a>
     </div>
   </div>
 </section>
@@ -1304,6 +1415,61 @@ nav.scrolled .nav-logo img {
   </div>
 </section>
 
+<section id="paciente" style="background:var(--off-white,#f8f6f2);padding:80px 5%;">
+  <div style="max-width:860px;margin:0 auto;">
+    <span style="font-size:0.75rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#b8913a;">Para o paciente</span>
+    <h2 style="font-family:'Playfair Display',serif;font-size:clamp(1.6rem,2.5vw,2rem);color:#0d2340;margin:0.6rem 0 0.4rem;">O que você precisa saber antes e depois</h2>
+    <div style="width:48px;height:2px;background:#b8913a;margin:0.8rem 0 2rem;"></div>
+    <p style="color:#4b5563;font-size:0.97rem;line-height:1.75;margin-bottom:2.5rem;max-width:680px;">A cirurgia começa muito antes do centro cirúrgico — e continua muito depois. Aqui estão as orientações gerais que guiam o cuidado com cada paciente. Na consulta, você receberá um plano individualizado com tudo o que precisa para cada etapa.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+
+      <div style="background:#fff;border-radius:12px;padding:1.8rem;border-left:4px solid #b8913a;">
+        <div style="display:flex;align-items:center;gap:0.7rem;margin-bottom:1rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#b8913a" stroke-width="2" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/></svg>
+          <strong style="color:#0d2340;font-family:'Playfair Display',serif;font-size:1.05rem;">Antes da cirurgia</strong>
+        </div>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0.65rem;">
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#b8913a;font-weight:700;flex-shrink:0;">→</span>Consulta de avaliação presencial obrigatória antes de qualquer procedimento</li>
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#b8913a;font-weight:700;flex-shrink:0;">→</span>Exames laboratoriais e avaliação clínica solicitados com antecedência</li>
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#b8913a;font-weight:700;flex-shrink:0;">→</span>Suspensão de medicamentos e suplementos conforme orientação médica</li>
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#b8913a;font-weight:700;flex-shrink:0;">→</span>Jejum a partir das 22h da véspera da cirurgia</li>
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#b8913a;font-weight:700;flex-shrink:0;">→</span>Organizar acompanhante para o dia do procedimento e os primeiros dias de recuperação</li>
+        </ul>
+      </div>
+
+      <div style="background:#fff;border-radius:12px;padding:1.8rem;border-left:4px solid #0d2340;">
+        <div style="display:flex;align-items:center;gap:0.7rem;margin-bottom:1rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0d2340" stroke-width="2" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/></svg>
+          <strong style="color:#0d2340;font-family:'Playfair Display',serif;font-size:1.05rem;">Recuperação e pós-operatório</strong>
+        </div>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0.65rem;">
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#0d2340;font-weight:700;flex-shrink:0;">→</span>Repouso relativo nos primeiros dias conforme o procedimento realizado</li>
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#0d2340;font-weight:700;flex-shrink:0;">→</span>Uso de cinta compressora quando indicado — fundamental para o resultado</li>
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#0d2340;font-weight:700;flex-shrink:0;">→</span>Retornos médicos programados para acompanhamento da cicatrização</li>
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#0d2340;font-weight:700;flex-shrink:0;">→</span>Evitar exposição solar nas áreas operadas durante o período indicado</li>
+          <li style="display:flex;gap:0.6rem;color:#374151;font-size:0.88rem;line-height:1.5;"><span style="color:#0d2340;font-weight:700;flex-shrink:0;">→</span>Dúvidas surgem — e estamos disponíveis pelo WhatsApp para orientá-lo</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div style="background:#0d2340;border-radius:12px;padding:1.8rem 2rem;margin-top:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <p style="color:#b8913a;font-weight:600;font-size:0.85rem;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.3rem;">Dúvidas específicas sobre seu caso?</p>
+        <p style="color:rgba(255,255,255,0.8);font-size:0.9rem;margin:0;">A consulta presencial é o melhor caminho. Cada situação é única e merece atenção individualizada.</p>
+      </div>
+      <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20tenho%20dúvidas%20sobre%20o%20pré%20e%20pós-operatório"
+         target="_blank" rel="noopener noreferrer"
+         style="display:inline-flex;align-items:center;gap:0.5rem;background:#b8913a;color:#fff;padding:0.7rem 1.4rem;border-radius:4px;text-decoration:none;font-size:0.85rem;font-weight:600;white-space:nowrap;">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.879L.057 23.7a.75.75 0 0 0 .921.921l5.821-1.484A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.049-1.371l-.361-.214-3.754.957.974-3.754-.234-.371A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Falar pelo WhatsApp
+      </a>
+    </div>
+
+  </div>
+</section>
+
 <section id="contato">
   <div class="section-inner">
     <span class="section-tag">Fale conosco</span>
@@ -1360,50 +1526,4 @@ nav.scrolled .nav-logo img {
 </footer>
 
 <a href="https://wa.me/5581994795101?text=Olá,%20vim%20pelo%20site%20e%20quero%20agendar%20uma%20consulta" class="wa-float" target="_blank" rel="noopener noreferrer" aria-label="Fale pelo WhatsApp">
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"></path><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.879L.057 23.7a.75.75 0 0 0 .921.921l5.821-1.484A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.049-1.371l-.361-.214-3.754.957.974-3.754-.234-.371A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path></svg>
-</a>
-
-<script>
-  const nav = document.querySelector('nav');
-  const navToggle = document.querySelector('.nav-toggle');
-  const mobileMenu = document.getElementById('mobileMenu');
-
-  const updateNavOnScroll = () => {
-    if (!nav) return;
-    if (window.scrollY > 24) {
-      nav.classList.add('scrolled');
-    } else {
-      nav.classList.remove('scrolled');
-    }
-  };
-
-  updateNavOnScroll();
-  window.addEventListener('scroll', updateNavOnScroll, { passive: true });
-
-  if (navToggle && mobileMenu) {
-    navToggle.addEventListener('click', () => {
-      const isOpen = mobileMenu.classList.toggle('open');
-      navToggle.setAttribute('aria-expanded', String(isOpen));
-    });
-    mobileMenu.querySelectorAll('a').forEach((link) => {
-      link.addEventListener('click', () => {
-        mobileMenu.classList.remove('open');
-        navToggle.setAttribute('aria-expanded', 'false');
-      });
-    });
-  }
-</script>
-
-<script>
-window.addEventListener("scroll", function(){
-  const nav = document.querySelector("nav");
-  if(window.scrollY > 50){
-    nav.classList.add("scrolled");
-  } else {
-    nav.classList.remove("scrolled");
-  }
-});
-</script>
-
-</body>
-</html>
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.
