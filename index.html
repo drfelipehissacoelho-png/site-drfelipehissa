@@ -471,26 +471,34 @@
 
     .proc-intro { max-width: 620px; color: var(--gray); margin-bottom: 3rem; }
 
-    /* Swiper proc overrides */
-    .proc-swiper { padding-bottom: 3rem !important; }
+    /* Swiper proc — carrossel contínuo elegante */
+    .proc-swiper {
+      overflow: visible;
+      cursor: grab;
+    }
+    .proc-swiper:active { cursor: grabbing; }
     .proc-swiper .swiper-slide { height: auto; }
-    .proc-swiper .swiper-pagination-bullet {
-      background: var(--navy, #0d2340); opacity: 0.3;
+    /* fade suave nas bordas */
+    #procedimentos .section-inner {
+      position: relative;
     }
-    .proc-swiper .swiper-pagination-bullet-active {
-      background: var(--gold, #b8913a); opacity: 1;
+    #procedimentos .section-inner::before,
+    #procedimentos .section-inner::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 80px;
+      z-index: 2;
+      pointer-events: none;
     }
-    .proc-swiper .swiper-button-prev,
-    .proc-swiper .swiper-button-next {
-      color: var(--navy, #0d2340);
-      top: auto;
-      bottom: 0.1rem;
-      width: 36px; height: 36px;
+    #procedimentos .section-inner::before {
+      left: 0;
+      background: linear-gradient(to right, var(--off-white, #f8f6f2), transparent);
     }
-    .proc-swiper .swiper-button-prev { left: calc(50% - 52px); }
-    .proc-swiper .swiper-button-next { right: calc(50% - 52px); left: auto; }
-    .proc-swiper .swiper-button-prev::after,
-    .proc-swiper .swiper-button-next::after { font-size: 1rem; font-weight: 700; }
+    #procedimentos .section-inner::after {
+      right: 0;
+      background: linear-gradient(to left, var(--off-white, #f8f6f2), transparent);
+    }
     .proc-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1461,9 +1469,7 @@ nav.scrolled .nav-logo img {
           <div class="proc-card"><h3>Sutura Silhouette</h3><p>Técnica minimamente invasiva de lifting com fios de sustentação absorvíveis, que promovem sustentação imediata dos tecidos e estimulam a neocolagênese. Indicada para ptose facial leve a moderada sem necessidade de cirurgia.</p></div>
         </div>
       </div>
-      <div class="swiper-pagination"></div>
-      <div class="swiper-button-prev"></div>
-      <div class="swiper-button-next"></div>
+
     </div>
   </div>
 </section>
@@ -1698,24 +1704,23 @@ nav.scrolled .nav-logo img {
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script>
 new Swiper('.proc-swiper', {
-  slidesPerView: 1.15,
-  spaceBetween: 16,
+  slidesPerView: 1.2,
+  spaceBetween: 20,
+  loop: true,
   grabCursor: true,
   centeredSlides: false,
-  navigation: {
-    nextEl: '.proc-swiper .swiper-button-next',
-    prevEl: '.proc-swiper .swiper-button-prev',
-  },
-  pagination: {
-    el: '.proc-swiper .swiper-pagination',
-    clickable: true,
+  speed: 600,
+  autoplay: {
+    delay: 2800,
+    disableOnInteraction: false,
+    pauseOnMouseEnter: true,
   },
   breakpoints: {
     600:  { slidesPerView: 2,   spaceBetween: 20 },
+    900:  { slidesPerView: 2.5, spaceBetween: 22 },
     1024: { slidesPerView: 3,   spaceBetween: 24 },
     1280: { slidesPerView: 3.2, spaceBetween: 28 },
   },
-  a11y: { prevSlideMessage: 'Procedimento anterior', nextSlideMessage: 'Próximo procedimento' },
 });
 </script>
 
