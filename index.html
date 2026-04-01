@@ -898,33 +898,67 @@
     .video-thumb {
       aspect-ratio: 16/9;
       background: linear-gradient(135deg, rgba(13,35,64,0.96), rgba(26,58,92,0.9));
-      display: flex;
-      align-items: end;
-      padding: 1.1rem;
+      display: block;
       color: var(--white);
       position: relative;
+      overflow: hidden;
+      text-decoration: none;
+      cursor: pointer;
     }
 
-    .video-thumb::before {
-      content: '▶';
+    .video-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
       position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 38px;
-      height: 38px;
+      top: 0; left: 0;
+      transition: transform 0.4s ease;
+    }
+
+    .video-thumb:hover img { transform: scale(1.04); }
+
+    .video-thumb::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(13,35,64,0.7) 0%, rgba(13,35,64,0.15) 50%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .video-thumb .play-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
+      background: rgba(255,255,255,0.92);
       display: grid;
       place-items: center;
-      background: rgba(255,255,255,0.12);
-      backdrop-filter: blur(4px);
-      font-size: 0.95rem;
+      z-index: 2;
+      transition: transform 0.2s ease, background 0.2s;
     }
 
+    .video-thumb:hover .play-btn {
+      transform: translate(-50%, -50%) scale(1.1);
+      background: #fff;
+    }
+
+    .video-thumb .play-btn svg { margin-left: 3px; }
+
     .video-thumb strong {
-      max-width: 16ch;
+      position: absolute;
+      bottom: 0.9rem;
+      left: 1rem;
+      right: 1rem;
+      max-width: 100%;
       font-family: 'Playfair Display', serif;
-      font-size: 1.2rem;
-      line-height: 1.15;
+      font-size: 1.05rem;
+      line-height: 1.2;
+      z-index: 2;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.5);
     }
 
     .video-card-body {
@@ -1393,7 +1427,11 @@ nav.scrolled .nav-logo img {
     <div class="videos-grid">
 
       <article class="video-card">
-        <div class="video-thumb"><strong>1. Dúvidas sobre Cirurgia Plástica</strong></div>
+        <a href="https://youtube.com/playlist?list=PLwdWEPCHP6hKQU8bgiQ3OC_Ec-W_FO2bR" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 1. Dúvidas sobre Cirurgia Plástica">
+          <img src="https://i.ytimg.com/vi/zCrMUrc3tyY/hqdefault.jpg" alt="1. Dúvidas sobre Cirurgia Plástica" loading="lazy">
+          <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
+          <strong>1. Dúvidas sobre Cirurgia Plástica</strong>
+        </a>
         <div class="video-card-body">
           <h3>1. Dúvidas sobre Cirurgia Plástica</h3>
           <p>Respondo às principais dúvidas sobre indicação, recuperação, segurança e expectativas dos procedimentos.</p>
@@ -1402,7 +1440,11 @@ nav.scrolled .nav-logo img {
       </article>
 
       <article class="video-card">
-        <div class="video-thumb"><strong>2. Lipoaspiração</strong></div>
+        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJ0kslp-K6pAjJO7JrZTIqL" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 2. Lipoaspiração">
+          <img src="https://i.ytimg.com/vi/PKQn-qaTl40/hqdefault.jpg" alt="2. Lipoaspiração" loading="lazy">
+          <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
+          <strong>2. Lipoaspiração</strong>
+        </a>
         <div class="video-card-body">
           <h3>2. Lipoaspiração</h3>
           <p>Indicação, resultados, recuperação e cuidados pós-operatórios da lipoaspiração explicados em detalhes.</p>
@@ -1411,7 +1453,11 @@ nav.scrolled .nav-logo img {
       </article>
 
       <article class="video-card">
-        <div class="video-thumb"><strong>3. Abdominoplastia</strong></div>
+        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJYYvhiAnYH0-7HWr0xB-VW" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 3. Abdominoplastia">
+          <img src="https://i.ytimg.com/vi/zCrMUrc3tyY/hqdefault.jpg" alt="3. Abdominoplastia" loading="lazy">
+          <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
+          <strong>3. Abdominoplastia</strong>
+        </a>
         <div class="video-card-body">
           <h3>3. Abdominoplastia</h3>
           <p>Tudo sobre abdominoplastia: técnica, indicação, recuperação e cuidados para melhores resultados.</p>
@@ -1420,7 +1466,11 @@ nav.scrolled .nav-logo img {
       </article>
 
       <article class="video-card">
-        <div class="video-thumb"><strong>4. Orientações ao paciente</strong></div>
+        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJ4kevWxNUCsEZ1zDkHT6nW" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 4. Orientações ao paciente">
+          
+          <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
+          <strong>4. Orientações ao paciente</strong>
+        </a>
         <div class="video-card-body">
           <h3>4. Orientações ao paciente</h3>
           <p>Preparo para cirurgia, jejum, o que levar ao hospital e como é a recuperação passo a passo.</p>
@@ -1429,7 +1479,11 @@ nav.scrolled .nav-logo img {
       </article>
 
       <article class="video-card">
-        <div class="video-thumb"><strong>5. Bastidores da cirurgia</strong></div>
+        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hIUKL529k9FMnXOsudsoPkc" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 5. Bastidores da cirurgia">
+          
+          <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
+          <strong>5. Bastidores da cirurgia</strong>
+        </a>
         <div class="video-card-body">
           <h3>5. Bastidores da cirurgia</h3>
           <p>Bastidores da prática cirúrgica com foco educativo, mostrando planejamento e cuidados em cada procedimento.</p>
@@ -1438,7 +1492,11 @@ nav.scrolled .nav-logo img {
       </article>
 
       <article class="video-card">
-        <div class="video-thumb"><strong>6. Cosmiatria</strong></div>
+        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hLqAouwQWK4G8dYoXSzzJBY" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 6. Cosmiatria">
+          
+          <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
+          <strong>6. Cosmiatria</strong>
+        </a>
         <div class="video-card-body">
           <h3>6. Cosmiatria</h3>
           <p>Toxina botulínica, preenchimento facial e bioestimuladores de colágeno: indicações, resultados e cuidados.</p>
@@ -1447,7 +1505,11 @@ nav.scrolled .nav-logo img {
       </article>
 
       <article class="video-card">
-        <div class="video-thumb"><strong>7. Mamoplastia</strong></div>
+        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hKhYpKD1QB8O292d9Tqc_kM" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 7. Mamoplastia">
+          
+          <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
+          <strong>7. Mamoplastia</strong>
+        </a>
         <div class="video-card-body">
           <h3>7. Mamoplastia</h3>
           <p>Mastopexia, aumento e redução de mamas: técnicas, recuperação e resultados com foco em harmonia e segurança.</p>
