@@ -2,420 +2,422 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gerador de Thumbnails — Dr. Felipe Hissa Coelho</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Thumbnails — Dr. Felipe Hissa Coelho</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef2f7; min-height: 100vh; padding: 24px 16px; color: #222; }
-  h1 { font-size: 22px; font-weight: 800; color: #071525; }
-  .subtitle { color: #5580a4; font-size: 13px; margin-top: 3px; margin-bottom: 22px; }
-  .layout { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; max-width: 940px; margin: 0 auto; }
-  .panel { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); flex: 0 0 300px; }
-  .label { display: block; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #555; margin-bottom: 7px; margin-top: 14px; }
-  .label:first-child { margin-top: 0; }
-  .btn-group { display: flex; flex-direction: column; gap: 5px; }
-  .btn-opt { padding: 8px 12px; border-radius: 8px; border: 2px solid #e5eaf0; background: #f9fafc; cursor: pointer; text-align: left; font-size: 13px; color: #222; font-weight: 400; display: flex; align-items: center; gap: 8px; transition: all 0.15s; }
-  .btn-opt.active { border-color: #d4a843; background: #fffbef; font-weight: 700; }
-  .btn-opt:hover { border-color: #d4a843; }
-  .theme-group { display: flex; gap: 5px; }
-  .btn-theme { flex: 1; padding: 7px 4px; border-radius: 8px; border: 2px solid #e5eaf0; background: #f9fafc; cursor: pointer; font-size: 11px; color: #333; font-weight: 400; text-align: center; transition: all 0.15s; }
-  .btn-theme.active { border-color: #d4a843; background: #fffbef; font-weight: 700; }
-  .btn-theme:hover { border-color: #d4a843; }
-  .upload-zone { border: 2px dashed #c5d0dc; border-radius: 10px; padding: 14px 10px; text-align: center; cursor: pointer; background: #f5f8fb; transition: all 0.2s; }
-  .upload-zone:hover { border-color: #d4a843; background: #fffbef; }
-  .upload-zone.has-photo { border-color: #d4a843; background: #fffbef; }
-  .upload-zone .icon { font-size: 26px; }
-  .upload-zone .utext { font-size: 13px; color: #5580a4; font-weight: 600; margin-top: 5px; }
-  .upload-zone .usub { font-size: 11px; color: #aaa; margin-top: 2px; }
-  .upload-zone .uname { font-size: 12px; color: #8a6200; font-weight: 600; margin-top: 3px; }
-  .btn-remove { width: 100%; margin-top: 5px; padding: 5px; border-radius: 7px; border: 1px solid #e5eaf0; background: #fff5f5; cursor: pointer; font-size: 11px; color: #e74c3c; }
-  input[type=text], textarea { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #dde3ea; font-size: 13px; font-family: inherit; transition: border-color 0.2s; }
-  input[type=text]:focus, textarea:focus { outline: none; border-color: #d4a843; }
-  textarea { resize: vertical; line-height: 1.5; }
-  .char-count { font-size: 10px; color: #bbb; margin-top: 2px; }
-  .presets-label { font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; margin-top: 14px; margin-bottom: 6px; display: block; }
-  .presets { display: flex; flex-wrap: wrap; gap: 4px; }
-  .btn-preset { padding: 3px 7px; border-radius: 5px; border: 1px solid #e5eaf0; background: #f5f8fb; cursor: pointer; font-size: 10px; color: #5580a4; line-height: 1.4; transition: all 0.15s; }
-  .btn-preset:hover { background: #fffbef; border-color: #d4a843; color: #8a6200; }
-  .btn-download { width: 100%; margin-top: 18px; padding: 13px 0; border-radius: 10px; background: linear-gradient(135deg, #c8961e, #e8c050); border: none; font-size: 15px; font-weight: 700; color: #071525; cursor: pointer; letter-spacing: 0.3px; transition: all 0.2s; }
-  .btn-download:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(200,150,30,0.35); }
-  .btn-download.success { background: #27ae60; color: #fff; }
-  .res-info { font-size: 10px; color: #ccc; text-align: center; margin-top: 7px; }
-  .preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 260px; }
-  .preview-card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); width: 100%; max-width: 560px; }
-  .preview-label { color: #aaa; font-size: 11px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-  .canvas-wrap { display: flex; justify-content: center; }
-  canvas { border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.22); display: block; }
-  .preview-hint { color: #ccc; font-size: 10px; text-align: center; margin-top: 10px; }
-  .tips { margin-top: 14px; background: #fffbef; border-radius: 12px; padding: 14px 16px; border: 1px solid #f0d080; width: 100%; max-width: 560px; }
-  .tips-title { font-weight: 700; color: #8a6200; font-size: 13px; margin-bottom: 8px; }
-  .tips ol { padding-left: 17px; font-size: 12px; color: #665000; line-height: 1.85; }
-  .tips ol strong { font-weight: 700; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1f2e; min-height: 100vh; color: #fff; overflow-x: hidden; }
+.header { background: #0d1220; padding: 14px 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.header h1 { font-size: 16px; font-weight: 700; color: #d4a843; }
+.header p { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.canvas-section { background: #111520; padding: 12px; display: flex; justify-content: center; }
+.canvas-wrap { position: relative; display: inline-block; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.5); touch-action: none; }
+canvas { display: block; touch-action: none; -webkit-user-select: none; user-select: none; }
+.canvas-hint { text-align: center; color: rgba(255,255,255,0.3); font-size: 11px; margin-top: 7px; }
+.sel-controls { background: #0d1220; border-top: 2px solid #d4a843; padding: 10px 14px; display: none; }
+.sel-controls.visible { display: block; }
+.sel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sel-label { font-size: 11px; font-weight: 700; color: #d4a843; text-transform: uppercase; letter-spacing: 0.5px; }
+.deselect-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); font-size: 11px; cursor: pointer; }
+.sel-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.sel-row label { font-size: 11px; color: rgba(255,255,255,0.4); min-width: 40px; }
+input[type=range] { flex: 1; min-width: 80px; height: 4px; accent-color: #d4a843; cursor: pointer; }
+input[type=color] { width: 36px; height: 36px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 2px; background: none; cursor: pointer; }
+.size-val { font-size: 12px; color: rgba(255,255,255,0.4); min-width: 30px; text-align: right; }
+.btn-bold { padding: 6px 12px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.2); background: transparent; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+.btn-bold.on { background: #d4a843; border-color: #d4a843; color: #071525; }
+.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.sw { width: 30px; height: 30px; border-radius: 7px; border: 2px solid transparent; cursor: pointer; transition: transform 0.1s; }
+.sw:active { transform: scale(0.88); }
+.sw.on { border-color: #d4a843; box-shadow: 0 0 0 2px rgba(212,168,67,0.4); }
+.controls { padding: 14px; display: flex; flex-direction: column; gap: 11px; max-width: 580px; margin: 0 auto; }
+.row2 { display: flex; gap: 9px; }
+.cb { background: #0d1220; border-radius: 10px; padding: 12px 14px; flex: 1; }
+.cb label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255,255,255,0.38); margin-bottom: 8px; }
+.fmt-btns { display: flex; flex-direction: column; gap: 5px; }
+.fbt { padding: 7px 10px; border-radius: 7px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.65); font-size: 12px; cursor: pointer; text-align: left; transition: all 0.15s; }
+.fbt.on { border-color: #d4a843; background: rgba(212,168,67,0.1); color: #d4a843; font-weight: 700; }
+.tbt { flex: 1; padding: 8px 4px; border-radius: 7px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.55); font-size: 12px; cursor: pointer; text-align: center; transition: all 0.15s; }
+.tbt.on { border-color: #d4a843; background: rgba(212,168,67,0.1); color: #d4a843; font-weight: 700; }
+.upzone { border: 2px dashed rgba(255,255,255,0.18); border-radius: 8px; padding: 11px 8px; text-align: center; cursor: pointer; }
+.upzone.has { border-color: #d4a843; }
+.upzone .ic { font-size: 20px; }
+.upzone .ut { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 3px; }
+.rm-ph { width:100%; margin-top:5px; padding:4px; border-radius:6px; border:1px solid rgba(231,76,60,0.35); background:rgba(231,76,60,0.08); cursor:pointer; font-size:11px; color:#e74c3c; }
+.ti { width:100%; background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.12); border-radius:8px; padding:9px 10px; color:#fff; font-size:13px; font-family:inherit; resize:none; line-height:1.5; transition: border-color .2s; }
+.ti:focus { outline:none; border-color:#d4a843; }
+.cc { font-size:10px; color:rgba(255,255,255,0.25); margin-top:3px; }
+.presets { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; }
+.pb { padding:4px 8px; border-radius:5px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); cursor:pointer; font-size:10px; color:rgba(255,255,255,0.5); line-height:1.4; }
+.pb:active { background:rgba(212,168,67,0.15); color:#d4a843; }
+.instr { background:rgba(212,168,67,0.08); border:1px solid rgba(212,168,67,0.22); border-radius:8px; padding:10px 12px; font-size:11px; color:rgba(255,255,255,0.55); line-height:1.7; }
+.instr strong { color:#d4a843; }
+.dl-btn { width:100%; padding:15px; border-radius:12px; background:linear-gradient(135deg,#c8961e,#e8c050); border:none; font-size:16px; font-weight:800; color:#071525; cursor:pointer; }
+.dl-btn.ok { background:#27ae60; color:#fff; }
+.ri { font-size:10px; color:rgba(255,255,255,0.22); text-align:center; margin-top:5px; }
 </style>
 </head>
 <body>
 
-<div style="max-width:940px;margin:0 auto;">
+<div class="header">
   <h1>🎨 Gerador de Thumbnails</h1>
-  <p class="subtitle">Dr. Felipe Hissa Coelho · Cirurgião Plástico · Recife</p>
+  <p>Dr. Felipe Hissa Coelho · Cirurgia Plástica · Recife</p>
+</div>
 
-  <div class="layout">
-
-    <!-- PAINEL DE CONTROLES -->
-    <div class="panel">
-
-      <span class="label">Formato</span>
-      <div class="btn-group" id="formatGroup">
-        <button class="btn-opt active" data-format="youtube">▶ YouTube 16:9 <small style="color:#aaa;font-weight:400;margin-left:auto">1280×720</small></button>
-        <button class="btn-opt" data-format="reel">📱 Reel / Short 9:16 <small style="color:#aaa;font-weight:400;margin-left:auto">1080×1920</small></button>
-        <button class="btn-opt" data-format="square">⬛ Post Quadrado 1:1 <small style="color:#aaa;font-weight:400;margin-left:auto">1080×1080</small></button>
-      </div>
-
-      <span class="label">Tema de cor</span>
-      <div class="theme-group" id="themeGroup">
-        <button class="btn-theme active" data-theme="azul">🌙 Azul</button>
-        <button class="btn-theme" data-theme="verde">🩺 Verde</button>
-        <button class="btn-theme" data-theme="claro">☀️ Claro</button>
-      </div>
-
-      <span class="label">Sua foto</span>
-      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('photoInput').click()">
-        <div class="icon">📸</div>
-        <div class="utext">Clique para adicionar sua foto</div>
-        <div class="usub">JPG ou PNG · fundo escuro fica melhor</div>
-      </div>
-      <input type="file" id="photoInput" accept="image/*" style="display:none">
-      <button class="btn-remove" id="btnRemovePhoto" style="display:none" onclick="removePhoto()">✕ Remover foto</button>
-
-      <span class="label">Categoria <span style="color:#bbb;font-weight:400;font-size:10px;text-transform:none">(aparece no topo)</span></span>
-      <input type="text" id="tagInput" value="Cirurgia Plástica" placeholder="Ex: Botox, Rinoplastia...">
-
-      <span class="label">Título do vídeo</span>
-      <textarea id="titleInput" rows="3" placeholder="Digite o título aqui...">Lipoaspiração emagrece? Entenda a verdade.</textarea>
-      <div class="char-count" id="charCount">42 caracteres</div>
-
-      <span class="presets-label">Títulos rápidos — clique para usar</span>
-      <div class="presets" id="presetsBox"></div>
-
-      <button class="btn-download" id="btnDownload" onclick="downloadThumbnail()">⬇️ Baixar PNG</button>
-      <p class="res-info" id="resInfo">1280 × 720 px · PNG alta resolução</p>
-
-    </div>
-
-    <!-- PREVIEW -->
-    <div class="preview-area">
-      <div class="preview-card">
-        <p class="preview-label" id="previewLabel">Prévia · YouTube 16:9</p>
-        <div class="canvas-wrap">
-          <canvas id="thumbCanvas"></canvas>
-        </div>
-        <p class="preview-hint">Clique em "Baixar PNG" para salvar em alta resolução</p>
-      </div>
-
-      <div class="tips">
-        <p class="tips-title">💡 Como usar — passo a passo</p>
-        <ol>
-          <li>Escolha o <strong>formato</strong>: YouTube para vídeos, Reel para Instagram</li>
-          <li>Clique em <strong>"Clique para adicionar sua foto"</strong> e selecione uma foto do computador</li>
-          <li>Digite o <strong>título</strong> do seu vídeo (ou clique num título rápido)</li>
-          <li>Clique <strong>"Baixar PNG"</strong> — arquivo salvo na pasta Downloads</li>
-          <li>Faça upload da thumbnail direto no YouTube ou Instagram</li>
-        </ol>
-      </div>
-    </div>
-
+<div class="canvas-section">
+  <div>
+    <div class="canvas-wrap" id="cWrap"><canvas id="tc"></canvas></div>
+    <p class="canvas-hint">Toque em um texto para selecionar • Arraste para reposicionar</p>
   </div>
 </div>
 
+<!-- Selected text controls -->
+<div class="sel-controls" id="selPanel">
+  <div class="sel-header">
+    <span class="sel-label" id="selLbl">Texto selecionado</span>
+    <button class="deselect-btn" onclick="desel()">✕ Soltar</button>
+  </div>
+  <div class="sel-row">
+    <label>Tamanho</label>
+    <input type="range" id="szR" min="0.8" max="11" step="0.1" value="5" oninput="onSize(this)">
+    <span class="size-val" id="szV">5%</span>
+    <button class="btn-bold" id="boldB" onclick="onBold()">N</button>
+  </div>
+  <div class="sel-row">
+    <label>Cor</label>
+    <input type="color" id="colP" value="#ffffff" oninput="onColor(this.value)">
+    <div class="swatches" id="swatches">
+      <div class="sw on" style="background:#ffffff" data-c="#ffffff" onclick="onSwatch(this)"></div>
+      <div class="sw" style="background:#d4a843" data-c="#d4a843" onclick="onSwatch(this)"></div>
+      <div class="sw" style="background:#071525" data-c="#071525" onclick="onSwatch(this)"></div>
+      <div class="sw" style="background:#4a9eff" data-c="#4a9eff" onclick="onSwatch(this)"></div>
+      <div class="sw" style="background:#ff6b6b" data-c="#ff6b6b" onclick="onSwatch(this)"></div>
+      <div class="sw" style="background:#2ecc71" data-c="#2ecc71" onclick="onSwatch(this)"></div>
+      <div class="sw" style="background:#ffffffcc" data-c="#ffffffcc" style="background:rgba(255,255,255,0.5)" onclick="onSwatch(this)"></div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="row2">
+    <div class="cb" style="flex:1.2">
+      <label>Formato</label>
+      <div class="fmt-btns" id="fmts">
+        <button class="fbt on" data-f="youtube">▶ YouTube 16:9</button>
+        <button class="fbt" data-f="reel">📱 Reel 9:16</button>
+        <button class="fbt" data-f="square">⬛ Post 1:1</button>
+      </div>
+    </div>
+    <div class="cb" style="flex:0.8">
+      <label>Tema</label>
+      <div style="display:flex;gap:5px" id="thms">
+        <button class="tbt on" data-t="azul">🌙 Azul</button>
+        <button class="tbt" data-t="verde">🩺 Verde</button>
+        <button class="tbt" data-t="claro">☀️ Claro</button>
+      </div>
+      <label style="margin-top:12px">Sua foto</label>
+      <div class="upzone" id="upZ" onclick="document.getElementById('phIn').click()">
+        <div class="ic">📸</div>
+        <div class="ut" id="upT">Toque para adicionar</div>
+      </div>
+      <input type="file" id="phIn" accept="image/*" style="display:none">
+      <button class="rm-ph" id="rmPh" style="display:none" onclick="rmPhoto()">✕ Remover foto</button>
+    </div>
+  </div>
+
+  <div class="cb">
+    <label>Categoria (tag no topo)</label>
+    <input type="text" class="ti" id="tagI" value="Cirurgia Plástica" style="height:38px;resize:none">
+  </div>
+
+  <div class="cb">
+    <label>Título do vídeo</label>
+    <textarea class="ti" id="titI" rows="3">Lipoaspiração emagrece? Entenda a verdade.</textarea>
+    <div class="cc" id="cc">42 caracteres</div>
+    <div class="presets" id="pbox"></div>
+  </div>
+
+  <div class="instr">
+    <strong>Como usar:</strong> toque em qualquer texto na prévia acima — ele fica com <strong>borda dourada</strong>. Arraste para mover. Os controles de <strong>tamanho</strong> e <strong>cor</strong> aparecem automaticamente.
+  </div>
+
+  <button class="dl-btn" id="dlB" onclick="doDown()">⬇️ Baixar PNG</button>
+  <p class="ri" id="ri">1280 × 720 px · PNG alta resolução</p>
+</div>
+
 <script>
-// ─── CONFIGURAÇÃO ────────────────────────────────────────────────
-const DOCTOR = {
-  name: "Dr. Felipe Hissa Coelho",
-  title: "Cirurgião Plástico",
-  crm: "CRM 15420/PE",
-  city: "Recife, PE"
+const DR = { name:'Dr. Felipe Hissa Coelho', spec:'Cirurgião Plástico', crm:'CRM 15420/PE', city:'Recife, PE' };
+const FMT = { youtube:{w:1280,h:720}, reel:{w:1080,h:1920}, square:{w:1080,h:1080} };
+const THM = {
+  azul:  {bg1:'#071525',bg2:'#0d2240',bg3:'#071525',acc:'#d4a843',strip:'rgba(5,15,30,0.88)',sub:'#7fb3d3',circ:'#2a6aad'},
+  verde: {bg1:'#051a12',bg2:'#0b3320',bg3:'#051a12',acc:'#d4a843',strip:'rgba(4,14,10,0.88)',sub:'#7fd3b3',circ:'#1a8f5e'},
+  claro: {bg1:'#f0f4f8',bg2:'#dce8f2',bg3:'#eaf0f8',acc:'#0d4f8c',strip:'rgba(215,230,245,0.95)',sub:'#2a6aad',circ:'#0d4f8c'}
 };
-
-const FORMATS = {
-  youtube: { w: 1280, h: 720,  label: "YouTube 16:9" },
-  reel:    { w: 1080, h: 1920, label: "Reel / Short 9:16" },
-  square:  { w: 1080, h: 1080, label: "Post Quadrado 1:1" }
-};
-
-const THEMES = {
-  azul:  { bg1:"#071525", bg2:"#0d2240", bg3:"#071525", accent:"#d4a843", titleCol:"#ffffff", strip:"rgba(5,15,30,0.88)",  sub:"#7fb3d3", circle:"#2a6aad" },
-  verde: { bg1:"#051a12", bg2:"#0b3320", bg3:"#051a12", accent:"#d4a843", titleCol:"#ffffff", strip:"rgba(4,14,10,0.88)",   sub:"#7fd3b3", circle:"#1a8f5e" },
-  claro: { bg1:"#f0f4f8", bg2:"#dce8f2", bg3:"#eaf0f8", accent:"#0d4f8c", titleCol:"#071525", strip:"rgba(215,230,245,0.95)", sub:"#2a6aad", circle:"#0d4f8c" }
-};
-
 const PRESETS = [
-  "Lipoaspiração emagrece? Entenda a verdade.",
-  "Qual a diferença entre lipoaspiração e abdominoplastia?",
-  "Depois do Ozempic: o que a cirurgia plástica realmente faz",
-  "Botox deixa o rosto artificial?",
-  "Quanto tempo dura a recuperação?",
-  "O que acontece na primeira consulta?",
-  "Preciso emagrecer antes da cirurgia plástica?",
-  "Cirurgia plástica é segura?",
-  "Abdominoplastia após perda de peso",
-  "Mastopexia: quando é indicada?",
-  "Rinoplastia muda o rosto inteiro?",
-  "Blefaroplastia: rejuvenesça o olhar"
+  'Lipoaspiração emagrece? Entenda a verdade.',
+  'Qual a diferença entre lipo e abdominoplastia?',
+  'Depois do Ozempic: o que a cirurgia faz',
+  'Botox deixa o rosto artificial?',
+  'Quanto tempo dura a recuperação?',
+  'O que acontece na primeira consulta?',
+  'Preciso emagrecer antes da cirurgia?',
+  'Cirurgia plástica é segura?',
+  'Abdominoplastia após perda de peso',
+  'Mastopexia: quando é indicada?',
+  'Rinoplastia muda o rosto inteiro?',
 ];
 
-// ─── ESTADO ──────────────────────────────────────────────────────
-let state = { format: "youtube", theme: "azul", photo: null, title: PRESETS[0], tag: "Cirurgia Plástica" };
+let S = { fmt:'youtube', thm:'azul', photo:null };
+let ELS = [
+  {id:'tag',  text:'Cirurgia Plástica', xp:4.5, yp:7,  fs:2.3, col:'#071525', bold:true,  bg:'#d4a843'},
+  {id:'tit',  text:'Lipoaspiração emagrece? Entenda a verdade.', xp:4.5, yp:30, fs:5.5, col:'#ffffff', bold:true,  bg:null},
+  {id:'name', text:DR.name, xp:4.5, yp:87, fs:2.5, col:'#d4a843', bold:true,  bg:null},
+  {id:'sub',  text:DR.spec+'  •  '+DR.crm+'  •  '+DR.city, xp:4.5, yp:93, fs:1.8, col:'#7fb3d3', bold:false, bg:null},
+];
+let selId=null, drag=false, dsx=0, dsy=0, dex=0, dey=0;
+let bboxes={};
 
-// ─── INICIALIZAÇÃO ───────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
-  buildPresets();
-  bindEvents();
-  render();
-});
+const cv = document.getElementById('tc');
+const ctx = cv.getContext('2d');
 
-function buildPresets() {
-  const box = document.getElementById("presetsBox");
-  PRESETS.forEach(p => {
-    const btn = document.createElement("button");
-    btn.className = "btn-preset";
-    btn.textContent = p.length > 30 ? p.slice(0, 30) + "…" : p;
-    btn.title = p;
-    btn.onclick = () => { state.title = p; document.getElementById("titleInput").value = p; updateCharCount(); render(); };
-    box.appendChild(btn);
-  });
+function pw() {
+  const mx = Math.min(window.innerWidth-24,560);
+  return S.fmt==='reel'?Math.min(mx*.55,240):S.fmt==='square'?Math.min(mx*.75,370):mx;
 }
-
-function bindEvents() {
-  // Formato
-  document.getElementById("formatGroup").addEventListener("click", e => {
-    const btn = e.target.closest("[data-format]");
-    if (!btn) return;
-    state.format = btn.dataset.format;
-    document.querySelectorAll("#formatGroup .btn-opt").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    updateResInfo();
-    render();
-  });
-
-  // Tema
-  document.getElementById("themeGroup").addEventListener("click", e => {
-    const btn = e.target.closest("[data-theme]");
-    if (!btn) return;
-    state.theme = btn.dataset.theme;
-    document.querySelectorAll("#themeGroup .btn-theme").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    render();
-  });
-
-  // Foto
-  document.getElementById("photoInput").addEventListener("change", e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => { state.photo = img; render(); };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-    // Atualiza zona de upload
-    const zone = document.getElementById("uploadZone");
-    zone.classList.add("has-photo");
-    zone.innerHTML = `<div class="icon">✅</div><div class="utext" style="color:#8a6200">Foto carregada!</div><div class="uname">${file.name}</div><div class="usub">Clique para trocar</div>`;
-    document.getElementById("btnRemovePhoto").style.display = "block";
-  });
-
-  // Tag
-  document.getElementById("tagInput").addEventListener("input", e => { state.tag = e.target.value; render(); });
-
-  // Título
-  document.getElementById("titleInput").addEventListener("input", e => { state.title = e.target.value; updateCharCount(); render(); });
-
-  updateCharCount();
-  updateResInfo();
+function setup(){
+  const {w,h}=FMT[S.fmt]; cv.width=w; cv.height=h;
+  const p=pw(); cv.style.width=p+'px'; cv.style.height=Math.round(p*h/w)+'px';
+  document.getElementById('ri').textContent=w+' × '+h+' px · PNG';
 }
-
-function updateCharCount() {
-  document.getElementById("charCount").textContent = document.getElementById("titleInput").value.length + " caracteres";
-}
-
-function updateResInfo() {
-  const f = FORMATS[state.format];
-  document.getElementById("resInfo").textContent = `${f.w} × ${f.h} px · PNG alta resolução`;
-  document.getElementById("previewLabel").textContent = `Prévia · ${f.label}`;
-}
-
-function removePhoto() {
-  state.photo = null;
-  document.getElementById("photoInput").value = "";
-  const zone = document.getElementById("uploadZone");
-  zone.classList.remove("has-photo");
-  zone.innerHTML = `<div class="icon">📸</div><div class="utext">Clique para adicionar sua foto</div><div class="usub">JPG ou PNG · fundo escuro fica melhor</div>`;
-  document.getElementById("btnRemovePhoto").style.display = "none";
-  render();
-}
-
-// ─── RENDERIZAÇÃO ─────────────────────────────────────────────────
-function render() {
-  const canvas = document.getElementById("thumbCanvas");
-  const { w, h } = FORMATS[state.format];
-  canvas.width = w;
-  canvas.height = h;
-
-  // Escala de prévia
-  const maxW = state.format === "reel" ? 215 : state.format === "square" ? 295 : 500;
-  const scale = Math.min(maxW / w, 1);
-  canvas.style.width  = Math.round(w * scale) + "px";
-  canvas.style.height = Math.round(h * scale) + "px";
-
-  const ctx = canvas.getContext("2d");
-  const T = THEMES[state.theme];
-  const isReel = state.format === "reel";
-  const isSquare = state.format === "square";
-  const barW = Math.round(w * 0.013);
-  const stripH = isReel ? h * 0.13 : h * 0.18;
-
-  // Fundo
-  const grad = ctx.createLinearGradient(0, 0, w, h);
-  grad.addColorStop(0, T.bg1); grad.addColorStop(0.55, T.bg2); grad.addColorStop(1, T.bg3);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, w, h);
-
-  // Foto
-  if (state.photo) {
+function render(){
+  setup();
+  const {w,h}=FMT[S.fmt],T=THM[S.thm],isR=S.fmt==='reel',bW=Math.round(w*.013),stH=isR?h*.13:h*.18;
+  bboxes={};
+  // BG
+  const g=ctx.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,T.bg1);g.addColorStop(.55,T.bg2);g.addColorStop(1,T.bg3);
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  // Photo
+  if(S.photo){
     ctx.save();
-    if (isReel) {
-      // Reel: foto no centro, ocupa 55% da altura
-      const ph = h * 0.55, py = h * 0.28;
-      const sc = Math.max(w / state.photo.width, ph / state.photo.height);
-      const dw = state.photo.width * sc, dh = state.photo.height * sc;
-      ctx.drawImage(state.photo, (w - dw) / 2, py + (ph - dh) / 2, dw, dh);
-      const fg = ctx.createLinearGradient(0, py, 0, py + ph);
-      fg.addColorStop(0, T.bg1); fg.addColorStop(0.22, "transparent");
-      fg.addColorStop(0.78, "transparent"); fg.addColorStop(1, T.bg1);
-      ctx.fillStyle = fg; ctx.fillRect(0, py, w, ph);
+    if(isR){
+      const ph=h*.55,py=h*.28,sc=Math.max(w/S.photo.width,ph/S.photo.height);
+      const dw=S.photo.width*sc,dh=S.photo.height*sc;
+      ctx.drawImage(S.photo,(w-dw)/2,py+(ph-dh)/2,dw,dh);
+      const fg=ctx.createLinearGradient(0,py,0,py+ph);
+      fg.addColorStop(0,T.bg1);fg.addColorStop(.22,'transparent');
+      fg.addColorStop(.78,'transparent');fg.addColorStop(1,T.bg1);
+      ctx.fillStyle=fg; ctx.fillRect(0,py,w,ph);
     } else {
-      // YouTube / square: foto à direita
-      const pw = w * (isSquare ? 0.55 : 0.47);
-      const ph = h - stripH;
-      const px = w - pw;
-      const sc = Math.max(pw / state.photo.width, ph / state.photo.height);
-      const dw = state.photo.width * sc, dh = state.photo.height * sc;
-      ctx.drawImage(state.photo, px + (pw - dw) / 2, (ph - dh) / 2, dw, dh);
-      // Fade lateral esquerdo
-      const fg = ctx.createLinearGradient(px, 0, px + pw * 0.48, 0);
-      fg.addColorStop(0, T.bg2); fg.addColorStop(1, "transparent");
-      ctx.fillStyle = fg; ctx.fillRect(px, 0, pw * 0.48, ph);
+      const pw2=w*(S.fmt==='square'?.55:.47),ph=h-stH,px=w-pw2;
+      const sc=Math.max(pw2/S.photo.width,ph/S.photo.height);
+      const dw=S.photo.width*sc,dh=S.photo.height*sc;
+      ctx.drawImage(S.photo,px+(pw2-dw)/2,(ph-dh)/2,dw,dh);
+      const fg=ctx.createLinearGradient(px,0,px+pw2*.5,0);
+      fg.addColorStop(0,T.bg2);fg.addColorStop(1,'transparent');
+      ctx.fillStyle=fg; ctx.fillRect(px,0,pw2*.5,ph);
     }
     ctx.restore();
   }
-
-  // Arcos decorativos
+  // Arcs
   ctx.save();
-  ctx.globalAlpha = 0.1; ctx.strokeStyle = T.circle; ctx.lineWidth = w * 0.055;
-  ctx.beginPath(); ctx.arc(w * 0.88, h * 0.12, w * 0.36, 0, Math.PI * 2); ctx.stroke();
-  ctx.globalAlpha = 0.05; ctx.lineWidth = w * 0.033;
-  ctx.beginPath(); ctx.arc(w * 0.88, h * 0.12, w * 0.52, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha=.1;ctx.strokeStyle=T.circ;ctx.lineWidth=w*.055;
+  ctx.beginPath();ctx.arc(w*.88,h*.12,w*.36,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=.05;ctx.lineWidth=w*.033;
+  ctx.beginPath();ctx.arc(w*.88,h*.12,w*.52,0,Math.PI*2);ctx.stroke();
   ctx.restore();
-
-  // Barra dourada esquerda
-  ctx.fillStyle = T.accent;
-  ctx.fillRect(0, 0, barW, h);
-
-  // Strip inferior
-  ctx.fillStyle = T.strip;
-  ctx.fillRect(0, h - stripH, w, stripH);
-  ctx.fillStyle = T.accent;
-  ctx.fillRect(0, h - stripH, w, Math.round(h * 0.004));
-
-  // Tag
-  const tag = state.tag.trim();
-  if (tag) {
-    const tfs = isReel ? 46 : 28;
-    ctx.font = `bold ${tfs}px Arial, sans-serif`;
-    const padX = w * 0.042, padY = isReel ? h * 0.047 : h * 0.069;
-    const tw = ctx.measureText(tag.toUpperCase()).width;
-    const rx = barW + padX * 0.45, ry = padY - tfs * 0.83;
-    ctx.fillStyle = T.accent;
-    roundRect(ctx, rx, ry, tw + padX * 1.1, tfs * 1.65, 6);
-    ctx.fill();
-    ctx.fillStyle = "#071525"; ctx.textAlign = "left";
-    ctx.fillText(tag.toUpperCase(), rx + padX * 0.55, padY + tfs * 0.08);
+  // Gold bar
+  ctx.fillStyle=T.acc;ctx.fillRect(0,0,bW,h);
+  // Strip
+  ctx.fillStyle=T.strip;ctx.fillRect(0,h-stH,w,stH);
+  ctx.fillStyle=T.acc;ctx.fillRect(0,h-stH,w,Math.round(h*.004));
+  // Cross
+  const cx2=w*.91,cy2=isR?h*.068:h*.13,cs=w*.022;
+  ctx.save();ctx.globalAlpha=.45;ctx.fillStyle=T.acc;
+  ctx.fillRect(cx2-cs*.33,cy2-cs,cs*.66,cs*2);
+  ctx.fillRect(cx2-cs,cy2-cs*.33,cs*2,cs*.66);
+  ctx.restore();
+  // Text elements
+  ELS.forEach(e=>drawEl(e,w,h));
+}
+function fs(e,w){return Math.round(w*e.fs/100);}
+function drawEl(e,w,h){
+  const f=fs(e,w);
+  ctx.save();
+  ctx.font=(e.bold?'bold ':'')+f+'px Arial,sans-serif';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  const px=w*e.xp/100, py=h*e.yp/100, mw=w*.86;
+  if(e.bg){
+    const tw=Math.min(ctx.measureText(e.text).width,mw);
+    const px2=f*.5,py2=f*.28;
+    ctx.fillStyle=e.bg;
+    rr(ctx,px-px2*.3,py-py2*.2,tw+px2*1.1,f+py2*1.35,6); ctx.fill();
+    ctx.fillStyle=e.col; ctx.fillText(e.text,px,py);
+    saveBB(e.id,px-px2*.3,py-py2*.2,tw+px2*1.1,f+py2*1.35,w,h);
+  } else {
+    ctx.fillStyle=e.col;
+    const lines=wrapLines(ctx,e.text,mw);
+    const lh=f*1.28;
+    lines.forEach((l,i)=>ctx.fillText(l,px,py+i*lh));
+    const tw2=Math.max(...lines.map(l=>ctx.measureText(l).width));
+    saveBB(e.id,px,py,Math.min(tw2,mw),lines.length*lh,w,h);
   }
-
-  // Título
-  const titleW = (state.photo && !isReel) ? w * (isSquare ? 0.49 : 0.51) : w * 0.84;
-  const tfs = isReel
-    ? clamp(Math.floor(w / Math.max(state.title.length * 0.37, 1)), 68, 112)
-    : clamp(Math.floor(w / Math.max(state.title.length * 0.27, 1)), 50, 82);
-  ctx.font = `bold ${tfs}px Arial, sans-serif`;
-  ctx.fillStyle = T.titleCol;
-  ctx.textAlign = "left";
-  const ty = isReel ? h * 0.285 : (isSquare ? h * 0.265 : h * 0.278);
-  wrapText(ctx, state.title, barW + w * 0.045, ty, titleW, tfs * 1.28);
-
-  // Nome dourado
-  const nfs = isReel ? 50 : 30;
-  ctx.font = `bold ${nfs}px Arial, sans-serif`;
-  ctx.fillStyle = T.accent;
-  ctx.fillText(DOCTOR.name, barW + w * 0.045, h - stripH + stripH * 0.43);
-
-  // Especialidade e CRM
-  const sfs = isReel ? 36 : 22;
-  ctx.font = `${sfs}px Arial, sans-serif`;
-  ctx.fillStyle = T.sub;
-  ctx.fillText(`${DOCTOR.title}  •  ${DOCTOR.crm}  •  ${DOCTOR.city}`, barW + w * 0.045, h - stripH + stripH * 0.79);
-
-  // Cruz médica
-  const cx = w * 0.91, cy = isReel ? h * 0.068 : h * 0.13, cs = w * 0.022;
-  ctx.save(); ctx.globalAlpha = 0.5; ctx.fillStyle = T.accent;
-  ctx.fillRect(cx - cs * 0.33, cy - cs, cs * 0.66, cs * 2);
-  ctx.fillRect(cx - cs, cy - cs * 0.33, cs * 2, cs * 0.66);
+  // Selection box
+  if(e.id===selId){
+    const b=bboxes[e.id];
+    if(b){
+      ctx.strokeStyle='#d4a843';ctx.lineWidth=Math.max(2,w*.003);
+      ctx.setLineDash([w*.012,w*.006]);
+      ctx.strokeRect(b.x-w*.01,b.y-h*.007,b.bw+w*.02,b.bh+h*.014);
+      ctx.setLineDash([]);
+    }
+  }
   ctx.restore();
 }
-
-// ─── UTILITÁRIOS ─────────────────────────────────────────────────
-function wrapText(ctx, text, x, y, maxW, lh) {
-  const words = text.split(" ");
-  let line = "", curY = y;
-  for (let i = 0; i < words.length; i++) {
-    const test = line + words[i] + " ";
-    if (ctx.measureText(test).width > maxW && i > 0) {
-      ctx.fillText(line.trim(), x, curY);
-      line = words[i] + " ";
-      curY += lh;
-    } else { line = test; }
+function saveBB(id,x,y,bw,bh,w,h){bboxes[id]={x,y,bw,bh,xp:x/w*100,yp:y/h*100,wp:bw/w*100,hp:bh/h*100};}
+function wrapLines(ctx,txt,mw){
+  const words=txt.split(' '),lines=[];let line='';
+  for(let i=0;i<words.length;i++){
+    const t=line+words[i]+' ';
+    if(ctx.measureText(t).width>mw&&i>0){lines.push(line.trim());line=words[i]+' ';}else{line=t;}
   }
-  ctx.fillText(line.trim(), x, curY);
+  lines.push(line.trim()); return lines;
 }
-
-function roundRect(ctx, x, y, w, h, r) {
+function rr(ctx,x,y,w,h,r){
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+function getCoords(e){
+  const rc=cv.getBoundingClientRect(),{w,h}=FMT[S.fmt];
+  const pt=e.touches?e.touches[0]:e;
+  return {xp:(pt.clientX-rc.left)/(rc.width)*100, yp:(pt.clientY-rc.top)/(rc.height)*100};
+}
+function hitTest(xp,yp){
+  const order=['tag','tit','name','sub'];
+  for(let i=order.length-1;i>=0;i--){
+    const b=bboxes[order[i]];if(!b)continue;
+    const pad=2.5;
+    if(xp>=b.xp-pad&&xp<=b.xp+b.wp+pad&&yp>=b.yp-pad&&yp<=b.yp+b.hp+pad)return order[i];
+  }
+  return null;
+}
+cv.addEventListener('touchstart',onS,{passive:false});
+cv.addEventListener('mousedown',onS);
+function onS(e){
+  e.preventDefault();
+  const c=getCoords(e),h=hitTest(c.xp,c.yp);
+  if(h){
+    selEl(h);drag=true;dsx=c.xp;dsy=c.yp;
+    const el=ELS.find(t=>t.id===h);dex=el.xp;dey=el.yp;
+  }else{desel();}
+}
+document.addEventListener('touchmove',onM,{passive:false});
+document.addEventListener('mousemove',onM);
+function onM(e){
+  if(!drag||!selId)return;e.preventDefault();
+  const c=getCoords(e),el=ELS.find(t=>t.id===selId);if(!el)return;
+  el.xp=clamp(dex+(c.xp-dsx),1,90);el.yp=clamp(dey+(c.yp-dsy),1,97);render();
+}
+document.addEventListener('touchend',()=>drag=false);
+document.addEventListener('mouseup',()=>drag=false);
+function clamp(v,a,b){return Math.min(Math.max(v,a),b);}
+
+function selEl(id){
+  selId=id;
+  const el=ELS.find(t=>t.id===id);
+  document.getElementById('selPanel').classList.add('visible');
+  document.getElementById('selLbl').textContent=
+    id==='tag'?'Categoria':id==='tit'?'Título':id==='name'?'Nome':'Subtítulo';
+  document.getElementById('szR').value=el.fs;
+  document.getElementById('szV').textContent=el.fs.toFixed(1)+'%';
+  document.getElementById('colP').value=el.col.length>7?'#ffffff':el.col;
+  document.getElementById('boldB').classList.toggle('on',el.bold);
+  document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s.dataset.c===el.col));
+  render();
+}
+function desel(){selId=null;document.getElementById('selPanel').classList.remove('visible');render();}
+function onSize(r){
+  if(!selId)return;const el=ELS.find(t=>t.id===selId);
+  el.fs=parseFloat(r.value);document.getElementById('szV').textContent=el.fs.toFixed(1)+'%';render();
+}
+function onColor(v){
+  if(!selId)return;const el=ELS.find(t=>t.id===selId);el.col=v;
+  document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s.dataset.c===v));render();
+}
+function onSwatch(sw){document.getElementById('colP').value=sw.dataset.c;onColor(sw.dataset.c);}
+function onBold(){
+  if(!selId)return;const el=ELS.find(t=>t.id===selId);el.bold=!el.bold;
+  document.getElementById('boldB').classList.toggle('on',el.bold);render();
 }
 
-function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
-
-// ─── DOWNLOAD ────────────────────────────────────────────────────
-function downloadThumbnail() {
-  const canvas = document.getElementById("thumbCanvas");
-  const link = document.createElement("a");
-  const safe = state.title.slice(0, 40).replace(/[^a-zA-Z0-9À-ÿ]/g, "-");
-  link.download = `thumbnail-${state.format}-${safe}.png`;
-  link.href = canvas.toDataURL("image/png");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  const btn = document.getElementById("btnDownload");
-  btn.textContent = "✅ Baixado!";
-  btn.classList.add("success");
-  setTimeout(() => { btn.textContent = "⬇️ Baixar PNG"; btn.classList.remove("success"); }, 2500);
+document.getElementById('fmts').addEventListener('click',e=>{
+  const b=e.target.closest('[data-f]');if(!b)return;
+  S.fmt=b.dataset.f;
+  document.querySelectorAll('.fbt').forEach(x=>x.classList.toggle('on',x.dataset.f===S.fmt));
+  resetPos();render();
+});
+document.getElementById('thms').addEventListener('click',e=>{
+  const b=e.target.closest('[data-t]');if(!b)return;
+  S.thm=b.dataset.t;
+  document.querySelectorAll('.tbt').forEach(x=>x.classList.toggle('on',x.dataset.t===S.thm));
+  ELS.find(t=>t.id==='sub').col=THM[S.thm].sub;render();
+});
+document.getElementById('tagI').addEventListener('input',function(){ELS.find(t=>t.id==='tag').text=this.value;render();});
+document.getElementById('titI').addEventListener('input',function(){
+  ELS.find(t=>t.id==='tit').text=this.value;
+  document.getElementById('cc').textContent=this.value.length+' caracteres';render();
+});
+document.getElementById('phIn').addEventListener('change',function(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{const i=new Image();i.onload=()=>{S.photo=i;render();};i.src=ev.target.result;};
+  r.readAsDataURL(f);
+  document.getElementById('upZ').classList.add('has');
+  document.getElementById('upZ').querySelector('.ic').textContent='✅';
+  document.getElementById('upT').textContent=f.name.length>18?f.name.slice(0,18)+'…':f.name;
+  document.getElementById('rmPh').style.display='block';
+});
+function rmPhoto(){
+  S.photo=null;document.getElementById('phIn').value='';
+  document.getElementById('upZ').classList.remove('has');
+  document.getElementById('upZ').querySelector('.ic').textContent='📸';
+  document.getElementById('upT').textContent='Toque para adicionar';
+  document.getElementById('rmPh').style.display='none';render();
 }
+function resetPos(){
+  const pos={youtube:{tag:{x:4.5,y:7},tit:{x:4.5,y:30},name:{x:4.5,y:87},sub:{x:4.5,y:93}},
+             reel:{tag:{x:4.5,y:5},tit:{x:4.5,y:28},name:{x:4.5,y:89},sub:{x:4.5,y:93.5}},
+             square:{tag:{x:4.5,y:7},tit:{x:4.5,y:28},name:{x:4.5,y:87},sub:{x:4.5,y:93}}};
+  const fsz={youtube:{tag:2.3,tit:5.5,name:2.5,sub:1.8},reel:{tag:2.3,tit:6.5,name:2.8,sub:2.0},square:{tag:2.3,tit:5.5,name:2.5,sub:1.8}};
+  const p=pos[S.fmt],f=fsz[S.fmt];
+  ELS.forEach(e=>{e.xp=p[e.id].x;e.yp=p[e.id].y;e.fs=f[e.id];});
+}
+(function(){
+  const box=document.getElementById('pbox');
+  PRESETS.forEach(p=>{
+    const b=document.createElement('button');b.className='pb';
+    b.textContent=p.length>30?p.slice(0,30)+'…':p;b.title=p;
+    b.onclick=()=>{
+      document.getElementById('titI').value=p;ELS.find(t=>t.id==='tit').text=p;
+      document.getElementById('cc').textContent=p.length+' caracteres';render();};
+    box.appendChild(b);
+  });
+})();
+function doDown(){
+  desel();
+  const el=ELS.find(t=>t.id==='tit');
+  const a=document.createElement('a');
+  a.download='thumbnail-'+S.fmt+'-'+el.text.slice(0,35).replace(/[^a-zA-Z0-9À-ÿ]/g,'-')+'.png';
+  a.href=cv.toDataURL('image/png');
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  const b=document.getElementById('dlB');b.textContent='✅ Baixado!';b.classList.add('ok');
+  setTimeout(()=>{b.textContent='⬇️ Baixar PNG';b.classList.remove('ok');},2500);
+}
+window.addEventListener('resize',()=>render());
+render();
 </script>
 </body>
 </html>
