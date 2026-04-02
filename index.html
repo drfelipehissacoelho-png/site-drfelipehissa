@@ -1021,7 +1021,6 @@
 
     /* YouTube embed facade */
     .video-thumb.playing {
-      pointer-events: none;
       cursor: default;
     }
     .video-thumb.playing::after { display: none; }
@@ -1037,6 +1036,29 @@
       border: none;
       z-index: 10;
     }
+    .yt-close-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 20;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.35);
+      background: rgba(0,0,0,0.72);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      transition: background 0.18s, transform 0.15s;
+    }
+    .yt-close-btn:hover { background: rgba(200,20,20,0.88); transform: scale(1.08); }
     .yt-placeholder {
       position: absolute;
       inset: 0;
@@ -1814,15 +1836,36 @@ new Swiper('.proc-swiper', {
 
   <script>
   function playVideo(el) {
+    var original = el.innerHTML;
     var list = el.getAttribute('data-list');
+
+    // Disable click while playing
+    el.removeAttribute('onclick');
+    el.removeAttribute('onkeydown');
+
     var iframe = document.createElement('iframe');
     iframe.src = 'https://www.youtube.com/embed/videoseries?list=' + list + '&autoplay=1&rel=0&modestbranding=1';
     iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
     iframe.setAttribute('allowfullscreen', '');
     iframe.setAttribute('title', el.getAttribute('aria-label') || 'Vídeo');
+
+    // Close / stop button
+    var btn = document.createElement('button');
+    btn.className = 'yt-close-btn';
+    btn.setAttribute('aria-label', 'Fechar vídeo');
+    btn.innerHTML = '&#x2715;';
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      el.classList.remove('playing');
+      el.innerHTML = original;
+      el.setAttribute('onclick', 'playVideo(this)');
+      el.setAttribute('onkeydown', "if(event.key==='Enter')playVideo(this)");
+    });
+
     el.classList.add('playing');
     el.innerHTML = '';
     el.appendChild(iframe);
+    el.appendChild(btn);
   }
   </script>
 </body>
