@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Thumbnails — Dr. Felipe Hissa Coelho</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef2f7; min-height: 100vh; padding: 24px 16px; color: #222; }
+  h1 { font-size: 22px; font-weight: 800; color: #071525; }
+  .subtitle { color: #5580a4; font-size: 13px; margin-top: 3px; margin-bottom: 22px; }
+  .layout { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; max-width: 940px; margin: 0 auto; }
+  .panel { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); flex: 0 0 300px; }
+  .label { display: block; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #555; margin-bottom: 7px; margin-top: 14px; }
+  .label:first-child { margin-top: 0; }
+  .btn-group { display: flex; flex-direction: column; gap: 5px; }
+  .btn-opt { padding: 8px 12px; border-radius: 8px; border: 2px solid #e5eaf0; background: #f9fafc; cursor: pointer; text-align: left; font-size: 13px; color: #222; font-weight: 400; display: flex; align-items: center; gap: 8px; transition: all 0.15s; }
+  .btn-opt.active { border-color: #d4a843; background: #fffbef; font-weight: 700; }
+  .btn-opt:hover { border-color: #d4a843; }
+  .theme-group { display: flex; gap: 5px; }
+  .btn-theme { flex: 1; padding: 7px 4px; border-radius: 8px; border: 2px solid #e5eaf0; background: #f9fafc; cursor: pointer; font-size: 11px; color: #333; font-weight: 400; text-align: center; transition: all 0.15s; }
+  .btn-theme.active { border-color: #d4a843; background: #fffbef; font-weight: 700; }
+  .btn-theme:hover { border-color: #d4a843; }
+  .upload-zone { border: 2px dashed #c5d0dc; border-radius: 10px; padding: 14px 10px; text-align: center; cursor: pointer; background: #f5f8fb; transition: all 0.2s; }
+  .upload-zone:hover { border-color: #d4a843; background: #fffbef; }
+  .upload-zone.has-photo { border-color: #d4a843; background: #fffbef; }
+  .upload-zone .icon { font-size: 26px; }
+  .upload-zone .utext { font-size: 13px; color: #5580a4; font-weight: 600; margin-top: 5px; }
+  .upload-zone .usub { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .upload-zone .uname { font-size: 12px; color: #8a6200; font-weight: 600; margin-top: 3px; }
+  .btn-remove { width: 100%; margin-top: 5px; padding: 5px; border-radius: 7px; border: 1px solid #e5eaf0; background: #fff5f5; cursor: pointer; font-size: 11px; color: #e74c3c; }
+  input[type=text], textarea { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #dde3ea; font-size: 13px; font-family: inherit; transition: border-color 0.2s; }
+  input[type=text]:focus, textarea:focus { outline: none; border-color: #d4a843; }
+  textarea { resize: vertical; line-height: 1.5; }
+  .char-count { font-size: 10px; color: #bbb; margin-top: 2px; }
+  .presets-label { font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; margin-top: 14px; margin-bottom: 6px; display: block; }
+  .presets { display: flex; flex-wrap: wrap; gap: 4px; }
+  .btn-preset { padding: 3px 7px; border-radius: 5px; border: 1px solid #e5eaf0; background: #f5f8fb; cursor: pointer; font-size: 10px; color: #5580a4; line-height: 1.4; transition: all 0.15s; }
+  .btn-preset:hover { background: #fffbef; border-color: #d4a843; color: #8a6200; }
+  .btn-download { width: 100%; margin-top: 18px; padding: 13px 0; border-radius: 10px; background: linear-gradient(135deg, #c8961e, #e8c050); border: none; font-size: 15px; font-weight: 700; color: #071525; cursor: pointer; letter-spacing: 0.3px; transition: all 0.2s; }
+  .btn-download:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(200,150,30,0.35); }
+  .btn-download.success { background: #27ae60; color: #fff; }
+  .res-info { font-size: 10px; color: #ccc; text-align: center; margin-top: 7px; }
+  .preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 260px; }
+  .preview-card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); width: 100%; max-width: 560px; }
+  .preview-label { color: #aaa; font-size: 11px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .canvas-wrap { display: flex; justify-content: center; }
+  canvas { border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.22); display: block; }
+  .preview-hint { color: #ccc; font-size: 10px; text-align: center; margin-top: 10px; }
+  .tips { margin-top: 14px; background: #fffbef; border-radius: 12px; padding: 14px 16px; border: 1px solid #f0d080; width: 100%; max-width: 560px; }
+  .tips-title { font-weight: 700; color: #8a6200; font-size: 13px; margin-bottom: 8px; }
+  .tips ol { padding-left: 17px; font-size: 12px; color: #665000; line-height: 1.85; }
+  .tips ol strong { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div style="max-width:940px;margin:0 auto;">
+  <h1>🎨 Gerador de Thumbnails</h1>
+  <p class="subtitle">Dr. Felipe Hissa Coelho · Cirurgião Plástico · Recife</p>
+
+  <div class="layout">
+
+    <!-- PAINEL DE CONTROLES -->
+    <div class="panel">
+
+      <span class="label">Formato</span>
+      <div class="btn-group" id="formatGroup">
+        <button class="btn-opt active" data-format="youtube">▶ YouTube 16:9 <small style="color:#aaa;font-weight:400;margin-left:auto">1280×720</small></button>
+        <button class="btn-opt" data-format="reel">📱 Reel / Short 9:16 <small style="color:#aaa;font-weight:400;margin-left:auto">1080×1920</small></button>
+        <button class="btn-opt" data-format="square">⬛ Post Quadrado 1:1 <small style="color:#aaa;font-weight:400;margin-left:auto">1080×1080</small></button>
+      </div>
+
+      <span class="label">Tema de cor</span>
+      <div class="theme-group" id="themeGroup">
+        <button class="btn-theme active" data-theme="azul">🌙 Azul</button>
+        <button class="btn-theme" data-theme="verde">🩺 Verde</button>
+        <button class="btn-theme" data-theme="claro">☀️ Claro</button>
+      </div>
+
+      <span class="label">Sua foto</span>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('photoInput').click()">
+        <div class="icon">📸</div>
+        <div class="utext">Clique para adicionar sua foto</div>
+        <div class="usub">JPG ou PNG · fundo escuro fica melhor</div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" style="display:none">
+      <button class="btn-remove" id="btnRemovePhoto" style="display:none" onclick="removePhoto()">✕ Remover foto</button>
+
+      <span class="label">Categoria <span style="color:#bbb;font-weight:400;font-size:10px;text-transform:none">(aparece no topo)</span></span>
+      <input type="text" id="tagInput" value="Cirurgia Plástica" placeholder="Ex: Botox, Rinoplastia...">
+
+      <span class="label">Título do vídeo</span>
+      <textarea id="titleInput" rows="3" placeholder="Digite o título aqui...">Lipoaspiração emagrece? Entenda a verdade.</textarea>
+      <div class="char-count" id="charCount">42 caracteres</div>
+
+      <span class="presets-label">Títulos rápidos — clique para usar</span>
+      <div class="presets" id="presetsBox"></div>
+
+      <button class="btn-download" id="btnDownload" onclick="downloadThumbnail()">⬇️ Baixar PNG</button>
+      <p class="res-info" id="resInfo">1280 × 720 px · PNG alta resolução</p>
+
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="preview-area">
+      <div class="preview-card">
+        <p class="preview-label" id="previewLabel">Prévia · YouTube 16:9</p>
+        <div class="canvas-wrap">
+          <canvas id="thumbCanvas"></canvas>
+        </div>
+        <p class="preview-hint">Clique em "Baixar PNG" para salvar em alta resolução</p>
+      </div>
+
+      <div class="tips">
+        <p class="tips-title">💡 Como usar — passo a passo</p>
+        <ol>
+          <li>Escolha o <strong>formato</strong>: YouTube para vídeos, Reel para Instagram</li>
+          <li>Clique em <strong>"Clique para adicionar sua foto"</strong> e selecione uma foto do computador</li>
+          <li>Digite o <strong>título</strong> do seu vídeo (ou clique num título rápido)</li>
+          <li>Clique <strong>"Baixar PNG"</strong> — arquivo salvo na pasta Downloads</li>
+          <li>Faça upload da thumbnail direto no YouTube ou Instagram</li>
+        </ol>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── CONFIGURAÇÃO ────────────────────────────────────────────────
+const DOCTOR = {
+  name: "Dr. Felipe Hissa Coelho",
+  title: "Cirurgião Plástico",
+  crm: "CRM 15420/PE",
+  city: "Recife, PE"
+};
+
+const FORMATS = {
+  youtube: { w: 1280, h: 720,  label: "YouTube 16:9" },
+  reel:    { w: 1080, h: 1920, label: "Reel / Short 9:16" },
+  square:  { w: 1080, h: 1080, label: "Post Quadrado 1:1" }
+};
+
+const THEMES = {
+  azul:  { bg1:"#071525", bg2:"#0d2240", bg3:"#071525", accent:"#d4a843", titleCol:"#ffffff", strip:"rgba(5,15,30,0.88)",  sub:"#7fb3d3", circle:"#2a6aad" },
+  verde: { bg1:"#051a12", bg2:"#0b3320", bg3:"#051a12", accent:"#d4a843", titleCol:"#ffffff", strip:"rgba(4,14,10,0.88)",   sub:"#7fd3b3", circle:"#1a8f5e" },
+  claro: { bg1:"#f0f4f8", bg2:"#dce8f2", bg3:"#eaf0f8", accent:"#0d4f8c", titleCol:"#071525", strip:"rgba(215,230,245,0.95)", sub:"#2a6aad", circle:"#0d4f8c" }
+};
+
+const PRESETS = [
+  "Lipoaspiração emagrece? Entenda a verdade.",
+  "Qual a diferença entre lipoaspiração e abdominoplastia?",
+  "Depois do Ozempic: o que a cirurgia plástica realmente faz",
+  "Botox deixa o rosto artificial?",
+  "Quanto tempo dura a recuperação?",
+  "O que acontece na primeira consulta?",
+  "Preciso emagrecer antes da cirurgia plástica?",
+  "Cirurgia plástica é segura?",
+  "Abdominoplastia após perda de peso",
+  "Mastopexia: quando é indicada?",
+  "Rinoplastia muda o rosto inteiro?",
+  "Blefaroplastia: rejuvenesça o olhar"
+];
+
+// ─── ESTADO ──────────────────────────────────────────────────────
+let state = { format: "youtube", theme: "azul", photo: null, title: PRESETS[0], tag: "Cirurgia Plástica" };
+
+// ─── INICIALIZAÇÃO ───────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  buildPresets();
+  bindEvents();
+  render();
+});
+
+function buildPresets() {
+  const box = document.getElementById("presetsBox");
+  PRESETS.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "btn-preset";
+    btn.textContent = p.length > 30 ? p.slice(0, 30) + "…" : p;
+    btn.title = p;
+    btn.onclick = () => { state.title = p; document.getElementById("titleInput").value = p; updateCharCount(); render(); };
+    box.appendChild(btn);
+  });
+}
+
+function bindEvents() {
+  // Formato
+  document.getElementById("formatGroup").addEventListener("click", e => {
+    const btn = e.target.closest("[data-format]");
+    if (!btn) return;
+    state.format = btn.dataset.format;
+    document.querySelectorAll("#formatGroup .btn-opt").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    updateResInfo();
+    render();
+  });
+
+  // Tema
+  document.getElementById("themeGroup").addEventListener("click", e => {
+    const btn = e.target.closest("[data-theme]");
+    if (!btn) return;
+    state.theme = btn.dataset.theme;
+    document.querySelectorAll("#themeGroup .btn-theme").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    render();
+  });
+
+  // Foto
+  document.getElementById("photoInput").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => { state.photo = img; render(); };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    // Atualiza zona de upload
+    const zone = document.getElementById("uploadZone");
+    zone.classList.add("has-photo");
+    zone.innerHTML = `<div class="icon">✅</div><div class="utext" style="color:#8a6200">Foto carregada!</div><div class="uname">${file.name}</div><div class="usub">Clique para trocar</div>`;
+    document.getElementById("btnRemovePhoto").style.display = "block";
+  });
+
+  // Tag
+  document.getElementById("tagInput").addEventListener("input", e => { state.tag = e.target.value; render(); });
+
+  // Título
+  document.getElementById("titleInput").addEventListener("input", e => { state.title = e.target.value; updateCharCount(); render(); });
+
+  updateCharCount();
+  updateResInfo();
+}
+
+function updateCharCount() {
+  document.getElementById("charCount").textContent = document.getElementById("titleInput").value.length + " caracteres";
+}
+
+function updateResInfo() {
+  const f = FORMATS[state.format];
+  document.getElementById("resInfo").textContent = `${f.w} × ${f.h} px · PNG alta resolução`;
+  document.getElementById("previewLabel").textContent = `Prévia · ${f.label}`;
+}
+
+function removePhoto() {
+  state.photo = null;
+  document.getElementById("photoInput").value = "";
+  const zone = document.getElementById("uploadZone");
+  zone.classList.remove("has-photo");
+  zone.innerHTML = `<div class="icon">📸</div><div class="utext">Clique para adicionar sua foto</div><div class="usub">JPG ou PNG · fundo escuro fica melhor</div>`;
+  document.getElementById("btnRemovePhoto").style.display = "none";
+  render();
+}
+
+// ─── RENDERIZAÇÃO ─────────────────────────────────────────────────
+function render() {
+  const canvas = document.getElementById("thumbCanvas");
+  const { w, h } = FORMATS[state.format];
+  canvas.width = w;
+  canvas.height = h;
+
+  // Escala de prévia
+  const maxW = state.format === "reel" ? 215 : state.format === "square" ? 295 : 500;
+  const scale = Math.min(maxW / w, 1);
+  canvas.style.width  = Math.round(w * scale) + "px";
+  canvas.style.height = Math.round(h * scale) + "px";
+
+  const ctx = canvas.getContext("2d");
+  const T = THEMES[state.theme];
+  const isReel = state.format === "reel";
+  const isSquare = state.format === "square";
+  const barW = Math.round(w * 0.013);
+  const stripH = isReel ? h * 0.13 : h * 0.18;
+
+  // Fundo
+  const grad = ctx.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, T.bg1); grad.addColorStop(0.55, T.bg2); grad.addColorStop(1, T.bg3);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Foto
+  if (state.photo) {
+    ctx.save();
+    if (isReel) {
+      // Reel: foto no centro, ocupa 55% da altura
+      const ph = h * 0.55, py = h * 0.28;
+      const sc = Math.max(w / state.photo.width, ph / state.photo.height);
+      const dw = state.photo.width * sc, dh = state.photo.height * sc;
+      ctx.drawImage(state.photo, (w - dw) / 2, py + (ph - dh) / 2, dw, dh);
+      const fg = ctx.createLinearGradient(0, py, 0, py + ph);
+      fg.addColorStop(0, T.bg1); fg.addColorStop(0.22, "transparent");
+      fg.addColorStop(0.78, "transparent"); fg.addColorStop(1, T.bg1);
+      ctx.fillStyle = fg; ctx.fillRect(0, py, w, ph);
+    } else {
+      // YouTube / square: foto à direita
+      const pw = w * (isSquare ? 0.55 : 0.47);
+      const ph = h - stripH;
+      const px = w - pw;
+      const sc = Math.max(pw / state.photo.width, ph / state.photo.height);
+      const dw = state.photo.width * sc, dh = state.photo.height * sc;
+      ctx.drawImage(state.photo, px + (pw - dw) / 2, (ph - dh) / 2, dw, dh);
+      // Fade lateral esquerdo
+      const fg = ctx.createLinearGradient(px, 0, px + pw * 0.48, 0);
+      fg.addColorStop(0, T.bg2); fg.addColorStop(1, "transparent");
+      ctx.fillStyle = fg; ctx.fillRect(px, 0, pw * 0.48, ph);
+    }
+    ctx.restore();
+  }
+
+  // Arcos decorativos
+  ctx.save();
+  ctx.globalAlpha = 0.1; ctx.strokeStyle = T.circle; ctx.lineWidth = w * 0.055;
+  ctx.beginPath(); ctx.arc(w * 0.88, h * 0.12, w * 0.36, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 0.05; ctx.lineWidth = w * 0.033;
+  ctx.beginPath(); ctx.arc(w * 0.88, h * 0.12, w * 0.52, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+
+  // Barra dourada esquerda
+  ctx.fillStyle = T.accent;
+  ctx.fillRect(0, 0, barW, h);
+
+  // Strip inferior
+  ctx.fillStyle = T.strip;
+  ctx.fillRect(0, h - stripH, w, stripH);
+  ctx.fillStyle = T.accent;
+  ctx.fillRect(0, h - stripH, w, Math.round(h * 0.004));
+
+  // Tag
+  const tag = state.tag.trim();
+  if (tag) {
+    const tfs = isReel ? 46 : 28;
+    ctx.font = `bold ${tfs}px Arial, sans-serif`;
+    const padX = w * 0.042, padY = isReel ? h * 0.047 : h * 0.069;
+    const tw = ctx.measureText(tag.toUpperCase()).width;
+    const rx = barW + padX * 0.45, ry = padY - tfs * 0.83;
+    ctx.fillStyle = T.accent;
+    roundRect(ctx, rx, ry, tw + padX * 1.1, tfs * 1.65, 6);
+    ctx.fill();
+    ctx.fillStyle = "#071525"; ctx.textAlign = "left";
+    ctx.fillText(tag.toUpperCase(), rx + padX * 0.55, padY + tfs * 0.08);
+  }
+
+  // Título
+  const titleW = (state.photo && !isReel) ? w * (isSquare ? 0.49 : 0.51) : w * 0.84;
+  const tfs = isReel
+    ? clamp(Math.floor(w / Math.max(state.title.length * 0.37, 1)), 68, 112)
+    : clamp(Math.floor(w / Math.max(state.title.length * 0.27, 1)), 50, 82);
+  ctx.font = `bold ${tfs}px Arial, sans-serif`;
+  ctx.fillStyle = T.titleCol;
+  ctx.textAlign = "left";
+  const ty = isReel ? h * 0.285 : (isSquare ? h * 0.265 : h * 0.278);
+  wrapText(ctx, state.title, barW + w * 0.045, ty, titleW, tfs * 1.28);
+
+  // Nome dourado
+  const nfs = isReel ? 50 : 30;
+  ctx.font = `bold ${nfs}px Arial, sans-serif`;
+  ctx.fillStyle = T.accent;
+  ctx.fillText(DOCTOR.name, barW + w * 0.045, h - stripH + stripH * 0.43);
+
+  // Especialidade e CRM
+  const sfs = isReel ? 36 : 22;
+  ctx.font = `${sfs}px Arial, sans-serif`;
+  ctx.fillStyle = T.sub;
+  ctx.fillText(`${DOCTOR.title}  •  ${DOCTOR.crm}  •  ${DOCTOR.city}`, barW + w * 0.045, h - stripH + stripH * 0.79);
+
+  // Cruz médica
+  const cx = w * 0.91, cy = isReel ? h * 0.068 : h * 0.13, cs = w * 0.022;
+  ctx.save(); ctx.globalAlpha = 0.5; ctx.fillStyle = T.accent;
+  ctx.fillRect(cx - cs * 0.33, cy - cs, cs * 0.66, cs * 2);
+  ctx.fillRect(cx - cs, cy - cs * 0.33, cs * 2, cs * 0.66);
+  ctx.restore();
+}
+
+// ─── UTILITÁRIOS ─────────────────────────────────────────────────
+function wrapText(ctx, text, x, y, maxW, lh) {
+  const words = text.split(" ");
+  let line = "", curY = y;
+  for (let i = 0; i < words.length; i++) {
+    const test = line + words[i] + " ";
+    if (ctx.measureText(test).width > maxW && i > 0) {
+      ctx.fillText(line.trim(), x, curY);
+      line = words[i] + " ";
+      curY += lh;
+    } else { line = test; }
+  }
+  ctx.fillText(line.trim(), x, curY);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
+
+// ─── DOWNLOAD ────────────────────────────────────────────────────
+function downloadThumbnail() {
+  const canvas = document.getElementById("thumbCanvas");
+  const link = document.createElement("a");
+  const safe = state.title.slice(0, 40).replace(/[^a-zA-Z0-9À-ÿ]/g, "-");
+  link.download = `thumbnail-${state.format}-${safe}.png`;
+  link.href = canvas.toDataURL("image/png");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  const btn = document.getElementById("btnDownload");
+  btn.textContent = "✅ Baixado!";
+  btn.classList.add("success");
+  setTimeout(() => { btn.textContent = "⬇️ Baixar PNG"; btn.classList.remove("success"); }, 2500);
+}
+</script>
+</body>
+</html>

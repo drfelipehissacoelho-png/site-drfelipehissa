@@ -1019,6 +1019,44 @@
       color: var(--gold-light);
     }
 
+    /* YouTube embed facade */
+    .video-thumb.playing {
+      pointer-events: none;
+      cursor: default;
+    }
+    .video-thumb.playing::after { display: none; }
+    .video-thumb.playing img,
+    .video-thumb.playing strong,
+    .video-thumb.playing .play-btn,
+    .video-thumb.playing .yt-placeholder { display: none; }
+    .video-thumb.playing iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      z-index: 10;
+    }
+    .yt-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 1.2rem;
+      text-align: center;
+      background: linear-gradient(135deg, #0a1a30, #1a3a5c);
+    }
+    .yt-placeholder span {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.4;
+    }
+    .yt-placeholder svg { opacity: 0.35; }
+
     @media (max-width: 900px) {
       nav { height: 72px; }
       .nav-logo img {
@@ -1477,102 +1515,122 @@ nav.scrolled .nav-logo img {
 <section id="videos">
   <div class="section-inner">
     <span class="section-tag">Conteúdo em vídeo</span>
-    <h2 class="section-title">Playlists no YouTube</h2>
+    <h2 class="section-title">Vídeos &amp; Playlists</h2>
     <div class="divider"></div>
-    <p class="videos-intro">Conteúdo educativo organizado por tema — dúvidas frequentes, orientações ao paciente, procedimentos e muito mais.<br>Acesse as playlists diretamente no canal.</p>
+    <p class="videos-intro">Assista diretamente aqui — sem sair do site. Clique no play para reproduzir cada playlist completa.</p>
 
     <div class="videos-grid">
 
       <article class="video-card">
-        <a href="https://youtube.com/playlist?list=PLwdWEPCHP6hKQU8bgiQ3OC_Ec-W_FO2bR" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 1. Dúvidas sobre Cirurgia Plástica">
-          <img src="https://i.ytimg.com/vi/zCrMUrc3tyY/hqdefault.jpg" alt="1. Dúvidas sobre Cirurgia Plástica" loading="lazy">
+        <div class="video-thumb" role="button" tabindex="0" aria-label="Reproduzir: Dúvidas sobre Cirurgia Plástica"
+             data-list="PLwdWEPCHP6hKQU8bgiQ3OC_Ec-W_FO2bR" onclick="playVideo(this)" onkeydown="if(event.key==='Enter')playVideo(this)">
+          <img src="https://i.ytimg.com/vi/zCrMUrc3tyY/hqdefault.jpg" alt="Dúvidas sobre Cirurgia Plástica" loading="lazy">
           <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
           <strong>1. Dúvidas sobre Cirurgia Plástica</strong>
-        </a>
+        </div>
         <div class="video-card-body">
-          <h3>1. Dúvidas sobre Cirurgia Plástica</h3>
+          <h3>Dúvidas sobre Cirurgia Plástica</h3>
           <p>Respondo às principais dúvidas sobre indicação, recuperação, segurança e expectativas dos procedimentos.</p>
-          <a href="https://youtube.com/playlist?list=PLwdWEPCHP6hKQU8bgiQ3OC_Ec-W_FO2bR" target="_blank" rel="noopener noreferrer">Ver playlist no YouTube →</a>
+          <a href="https://youtube.com/playlist?list=PLwdWEPCHP6hKQU8bgiQ3OC_Ec-W_FO2bR" target="_blank" rel="noopener noreferrer">Ver no YouTube →</a>
         </div>
       </article>
 
       <article class="video-card">
-        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJ0kslp-K6pAjJO7JrZTIqL" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 2. Lipoaspiração">
-          <img src="https://i.ytimg.com/vi/PKQn-qaTl40/hqdefault.jpg" alt="2. Lipoaspiração" loading="lazy">
+        <div class="video-thumb" role="button" tabindex="0" aria-label="Reproduzir: Lipoaspiração"
+             data-list="PLwdWEPCHP6hJ0kslp-K6pAjJO7JrZTIqL" onclick="playVideo(this)" onkeydown="if(event.key==='Enter')playVideo(this)">
+          <img src="https://i.ytimg.com/vi/PKQn-qaTl40/hqdefault.jpg" alt="Lipoaspiração" loading="lazy">
           <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
           <strong>2. Lipoaspiração</strong>
-        </a>
+        </div>
         <div class="video-card-body">
-          <h3>2. Lipoaspiração</h3>
+          <h3>Lipoaspiração</h3>
           <p>Indicação, resultados, recuperação e cuidados pós-operatórios da lipoaspiração explicados em detalhes.</p>
-          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJ0kslp-K6pAjJO7JrZTIqL" target="_blank" rel="noopener noreferrer">Ver playlist no YouTube →</a>
+          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJ0kslp-K6pAjJO7JrZTIqL" target="_blank" rel="noopener noreferrer">Ver no YouTube →</a>
         </div>
       </article>
 
       <article class="video-card">
-        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJYYvhiAnYH0-7HWr0xB-VW" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 3. Abdominoplastia">
-          <img src="https://i.ytimg.com/vi/zCrMUrc3tyY/hqdefault.jpg" alt="3. Abdominoplastia" loading="lazy">
+        <div class="video-thumb" role="button" tabindex="0" aria-label="Reproduzir: Abdominoplastia"
+             data-list="PLwdWEPCHP6hJYYvhiAnYH0-7HWr0xB-VW" onclick="playVideo(this)" onkeydown="if(event.key==='Enter')playVideo(this)">
+          <img src="https://i.ytimg.com/vi/zCrMUrc3tyY/hqdefault.jpg" alt="Abdominoplastia" loading="lazy">
           <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
           <strong>3. Abdominoplastia</strong>
-        </a>
+        </div>
         <div class="video-card-body">
-          <h3>3. Abdominoplastia</h3>
+          <h3>Abdominoplastia</h3>
           <p>Tudo sobre abdominoplastia: técnica, indicação, recuperação e cuidados para melhores resultados.</p>
-          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJYYvhiAnYH0-7HWr0xB-VW" target="_blank" rel="noopener noreferrer">Ver playlist no YouTube →</a>
+          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJYYvhiAnYH0-7HWr0xB-VW" target="_blank" rel="noopener noreferrer">Ver no YouTube →</a>
         </div>
       </article>
 
       <article class="video-card">
-        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJ4kevWxNUCsEZ1zDkHT6nW" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 4. Orientações ao paciente">
-          
+        <div class="video-thumb" role="button" tabindex="0" aria-label="Reproduzir: Orientações ao paciente"
+             data-list="PLwdWEPCHP6hJ4kevWxNUCsEZ1zDkHT6nW" onclick="playVideo(this)" onkeydown="if(event.key==='Enter')playVideo(this)">
+          <div class="yt-placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <span>Novos vídeos em breve</span>
+          </div>
           <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
           <strong>4. Orientações ao paciente</strong>
-        </a>
+        </div>
         <div class="video-card-body">
-          <h3>4. Orientações ao paciente</h3>
+          <h3>Orientações ao paciente</h3>
           <p>Preparo para cirurgia, jejum, o que levar ao hospital e como é a recuperação passo a passo.</p>
-          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJ4kevWxNUCsEZ1zDkHT6nW" target="_blank" rel="noopener noreferrer">Ver playlist no YouTube →</a>
+          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hJ4kevWxNUCsEZ1zDkHT6nW" target="_blank" rel="noopener noreferrer">Ver no YouTube →</a>
         </div>
       </article>
 
       <article class="video-card">
-        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hIUKL529k9FMnXOsudsoPkc" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 5. Bastidores da cirurgia">
-          
+        <div class="video-thumb" role="button" tabindex="0" aria-label="Reproduzir: Bastidores da cirurgia"
+             data-list="PLwdWEPCHP6hIUKL529k9FMnXOsudsoPkc" onclick="playVideo(this)" onkeydown="if(event.key==='Enter')playVideo(this)">
+          <div class="yt-placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <span>Novos vídeos em breve</span>
+          </div>
           <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
           <strong>5. Bastidores da cirurgia</strong>
-        </a>
+        </div>
         <div class="video-card-body">
-          <h3>5. Bastidores da cirurgia</h3>
+          <h3>Bastidores da cirurgia</h3>
           <p>Bastidores da prática cirúrgica com foco educativo, mostrando planejamento e cuidados em cada procedimento.</p>
-          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hIUKL529k9FMnXOsudsoPkc" target="_blank" rel="noopener noreferrer">Ver playlist no YouTube →</a>
+          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hIUKL529k9FMnXOsudsoPkc" target="_blank" rel="noopener noreferrer">Ver no YouTube →</a>
         </div>
       </article>
 
       <article class="video-card">
-        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hLqAouwQWK4G8dYoXSzzJBY" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 6. Cosmiatria">
-          
+        <div class="video-thumb" role="button" tabindex="0" aria-label="Reproduzir: Cosmiatria"
+             data-list="PLwdWEPCHP6hLqAouwQWK4G8dYoXSzzJBY" onclick="playVideo(this)" onkeydown="if(event.key==='Enter')playVideo(this)">
+          <div class="yt-placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <span>Novos vídeos em breve</span>
+          </div>
           <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
           <strong>6. Cosmiatria</strong>
-        </a>
+        </div>
         <div class="video-card-body">
-          <h3>6. Cosmiatria</h3>
+          <h3>Cosmiatria</h3>
           <p>Toxina botulínica, preenchimento facial e bioestimuladores de colágeno: indicações, resultados e cuidados.</p>
-          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hLqAouwQWK4G8dYoXSzzJBY" target="_blank" rel="noopener noreferrer">Ver playlist no YouTube →</a>
+          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hLqAouwQWK4G8dYoXSzzJBY" target="_blank" rel="noopener noreferrer">Ver no YouTube →</a>
         </div>
       </article>
 
       <article class="video-card">
-        <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hKhYpKD1QB8O292d9Tqc_kM" target="_blank" rel="noopener noreferrer" class="video-thumb" aria-label="Ver playlist: 7. Mamoplastia">
-          
+        <div class="video-thumb" role="button" tabindex="0" aria-label="Reproduzir: Mamoplastia"
+             data-list="PLwdWEPCHP6hKhYpKD1QB8O292d9Tqc_kM" onclick="playVideo(this)" onkeydown="if(event.key==='Enter')playVideo(this)">
+          <div class="yt-placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <span>Novos vídeos em breve</span>
+          </div>
           <span class="play-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#0d2340"><path d="M8 5v14l11-7z"/></svg></span>
           <strong>7. Mamoplastia</strong>
-        </a>
+        </div>
         <div class="video-card-body">
-          <h3>7. Mamoplastia</h3>
+          <h3>Mamoplastia</h3>
           <p>Mastopexia, aumento e redução de mamas: técnicas, recuperação e resultados com foco em harmonia e segurança.</p>
-          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hKhYpKD1QB8O292d9Tqc_kM" target="_blank" rel="noopener noreferrer">Ver playlist no YouTube →</a>
+          <a href="https://www.youtube.com/playlist?list=PLwdWEPCHP6hKhYpKD1QB8O292d9Tqc_kM" target="_blank" rel="noopener noreferrer">Ver no YouTube →</a>
         </div>
       </article>
+
     </div>
 
     <div style="text-align:center;margin-top:2.5rem;">
@@ -1753,5 +1811,19 @@ new Swiper('.proc-swiper', {
 })();
 </script>
 
+
+  <script>
+  function playVideo(el) {
+    var list = el.getAttribute('data-list');
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://www.youtube.com/embed/videoseries?list=' + list + '&autoplay=1&rel=0&modestbranding=1';
+    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+    iframe.setAttribute('allowfullscreen', '');
+    iframe.setAttribute('title', el.getAttribute('aria-label') || 'Vídeo');
+    el.classList.add('playing');
+    el.innerHTML = '';
+    el.appendChild(iframe);
+  }
+  </script>
 </body>
 </html>
