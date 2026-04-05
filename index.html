@@ -909,6 +909,11 @@
       gap: 1.5rem;
     }
 
+    /* Center an orphaned last item when it's alone on its row */
+    .videos-grid > article:last-child:nth-child(3n+1) {
+      grid-column: 2;
+    }
+
     .video-card {
       background: var(--white);
       border-radius: var(--radius);
@@ -1082,7 +1087,7 @@
     @media (max-width: 900px) {
       nav { height: 72px; }
       .nav-logo img {
-  height:64px; height: 42px; }
+  height: 42px; }
       .nav-links { display: none; }
   
     .hero-brand {
@@ -1755,7 +1760,7 @@ nav.scrolled .nav-logo img {
   </div>
 </section>
 
-<section id="avaliacoes" class="reviews-section">
+<section id="avaliar-google" class="reviews-section">
   <div class="reviews-inner">
     <span class="section-tag">Google</span>
     <h2 class="section-title" style="font-size:1.9rem;">Avalie nossa consulta</h2>
@@ -1780,6 +1785,16 @@ nav.scrolled .nav-logo img {
 </a>
 
 
+
+<script>
+(function() {
+  var nav = document.querySelector('nav');
+  if (!nav) return;
+  window.addEventListener('scroll', function() {
+    nav.classList.toggle('scrolled', window.scrollY > 50);
+  }, { passive: true });
+})();
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script>
