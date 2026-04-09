@@ -193,6 +193,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div class="tab" onclick="showPage('pacientes',this)">👤 Pacientes</div>
   <div class="tab" onclick="showPage('dre',this)">📋 DRE</div>
   <div class="tab" onclick="showPage('relatorio',this)">📈 Relatórios</div>
+  <div class="tab" onclick="showPage('orcamento',this);initOrcamento()">💰 Orçamentos</div>
   <div class="tab" onclick="showPage('auditoria',this)">🔒 Auditoria</div>
 </nav>
 
@@ -223,7 +224,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       </div>
       <div class="fr">
         <div><label>Data</label><input type="date" id="fData"></div>
-        <div><label>Valor (R$)</label><input type="number" id="fValor" placeholder="0,00" step="0.01" min="0"></div>
+        <div><label>Valor (R$)</label><input type="text" id="fValor" placeholder="0,00" class="moeda-input" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
       </div>
       <div class="fg"><label>Categoria</label><select id="fCategoria"></select></div>
       <div id="camposPac">
@@ -292,6 +293,57 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div class="sec"><h3>💡 Análise</h3><div id="analise"></div></div>
 </div>
 
+<!-- ORÇAMENTO -->
+<div id="page-orcamento" class="page">
+  <div class="g2">
+    <div class="sec">
+      <h3>💰 Novo Orçamento</h3>
+      <div class="fr">
+        <div><label>Paciente</label><input type="text" id="oPaciente" placeholder="Nome completo do paciente"></div>
+        <div><label>Data</label><input type="date" id="oData"></div>
+      </div>
+      <div class="fr">
+        <div><label>CPF</label><input type="text" id="oCPF" placeholder="000.000.000-00"></div>
+        <div><label>RG</label><input type="text" id="oRG" placeholder="0.000.000"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;margin-top:4px">
+        <h3 style="margin:0;font-size:.85rem">🔧 Serviços / Procedimentos</h3>
+        <button class="btn btn-ok btn-sm" onclick="addServicoOrc()">+ Adicionar Serviço</button>
+      </div>
+      <div id="oServicos"></div>
+      <div class="fg" style="margin-top:8px">
+        <label>🏥 Hospital</label>
+        <select id="oHospital" onchange="selectHospital()">
+          <option value="">— Sem internação hospitalar —</option>
+          <option value="avila_peridural">Hospital de Avila · Anestesia Peridural — R$ 3.600,00</option>
+          <option value="avila_geral">Hospital de Avila · Anestesia Geral — R$ 4.700,00</option>
+          <option value="sao_marcos">Hospital São Marcos — R$ 5.539,99</option>
+          <option value="outro">Outro hospital (valor manual)</option>
+        </select>
+      </div>
+      <div class="fr">
+        <div><label>Custo Hospital (R$)</label><input type="text" id="oCustoHosp" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this);calcTotaisOrc()" onblur="fmtMoeda(this)"></div>
+        <div><label>Validade do Orçamento</label><input type="date" id="oValidade"></div>
+      </div>
+      <div class="fg"><label>Observações</label><textarea id="oObs" rows="2" placeholder="Ex: Inclui anestesia, material, acompanhamento pós-operatório..."></textarea></div>
+      <div style="background:#f0f4f8;border-radius:9px;padding:13px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.85rem"><span style="color:var(--muted)">Subtotal serviços:</span><span id="oSubtotal">R$ 0,00</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.85rem"><span style="color:var(--muted)">Desconto total:</span><span id="oDesconto" style="color:var(--err)">- R$ 0,00</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:.85rem"><span style="color:var(--muted)">Custo hospital:</span><span id="oHospTotal">R$ 0,00</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:1.05rem;font-weight:700;color:var(--primary);border-top:2px solid var(--brd);padding-top:8px"><span>TOTAL GERAL:</span><span id="oTotal">R$ 0,00</span></div>
+      </div>
+      <button class="btn btn-ok" style="width:100%;font-size:.91rem" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
+    </div>
+    <div class="sec">
+      <h3>📋 Orçamentos Salvos</h3>
+      <div style="margin-bottom:11px">
+        <input type="text" id="searchOrc" placeholder="🔍 buscar paciente..." oninput="renderOrcamentos()">
+      </div>
+      <div id="orcList"><div class="empty"><div class="ico">📋</div>Nenhum orçamento salvo.</div></div>
+    </div>
+  </div>
+</div>
+
 <!-- AUDITORIA -->
 <div id="page-auditoria" class="page">
   <div class="alert aw">🔒 Todos os lançamentos e exclusões são registrados. Nenhuma exclusão ocorre sem registro.</div>
@@ -341,7 +393,7 @@ const UCORS = ['#2d7bbf','#27ae60','#9b59b6','#e8a838','#e74c3c','#1abc9c'];
 
 // ==================== ESTADO ====================
 let CU = '', CUEmail = '', tipo = 'receita', period = '';
-let CI = {}, DATA = { lancamentos:{}, log:{} };
+let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{} };
 
 function nomeDoUsuario(email) {
   return USUARIOS[email] || email.split('@')[0];
@@ -422,6 +474,7 @@ function iniciarApp() {
     const val = snap.val() || {};
     DATA.lancamentos = val.lancamentos || {};
     DATA.log = val.log || {};
+    DATA.orcamentos = val.orcamentos || {};
     renderAll();
   });
 
@@ -469,7 +522,7 @@ function setTipo(t) {
 // ==================== LANÇAMENTO ====================
 function salvarLancamento() {
   const data=document.getElementById('fData').value;
-  const valor=parseFloat(document.getElementById('fValor').value);
+  const valor=parseMoeda(document.getElementById('fValor').value);
   const cat=document.getElementById('fCategoria').value;
   const pag=document.getElementById('fPag').value;
   const desc=document.getElementById('fDesc').value.trim();
@@ -514,7 +567,7 @@ function getUsuarios(){return[...new Set(getLancs().map(l=>l.usuario).filter(Boo
 
 function renderAll(){
   updateFilters();renderKPIs();renderUserPanel();renderMetas();
-  renderLancs();renderPacientes();renderDRE();renderRelatorio();renderLog();
+  renderLancs();renderPacientes();renderDRE();renderRelatorio();renderLog();renderOrcamentos();
   rChRec();rChExp();rChEvol();rChDRE();rChComp();
 }
 
@@ -687,6 +740,285 @@ function fN(v){return(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maxi
 function fD(d){if(!d)return'—';const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
 function pct(v,t){if(!t)return'0%';return(v/t*100).toFixed(0)+'%';}
 function showToast(msg,color='#2c3e50'){const t=document.getElementById('toast');t.textContent=msg;t.style.background=color;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
+
+// ==================== MOEDA ====================
+function parseMoeda(v){
+  if(!v)return 0;
+  let s=v.toString().trim().replace(/[R$\s]/g,'');
+  // Formato brasileiro: 1.234,56 → remover pontos, trocar vírgula por ponto
+  if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.');}
+  return parseFloat(s)||0;
+}
+function maskMoeda(el){
+  let v=el.value.replace(/\D/g,'');
+  if(!v){el.value='';return;}
+  const num=parseInt(v,10)/100;
+  el.value=num.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtMoeda(el){
+  const v=parseMoeda(el.value);
+  el.value=v>0?fN(v):'';
+}
+
+// ==================== ORÇAMENTO ====================
+const PROC_ORC=[
+  {nome:'Rinoplastia',valor:12000},
+  {nome:'Abdominoplastia',valor:15000},
+  {nome:'Mamoplastia de Aumento',valor:12000},
+  {nome:'Mamoplastia Redutora',valor:13000},
+  {nome:'Mastopexia',valor:11000},
+  {nome:'Mastopexia com Prótese',valor:14000},
+  {nome:'Lipoaspiração',valor:10000},
+  {nome:'Blefaroplastia Superior',valor:7000},
+  {nome:'Blefaroplastia Inferior',valor:7000},
+  {nome:'Blefaroplastia Superior e Inferior',valor:12000},
+  {nome:'Ritidoplastia (Facelift)',valor:20000},
+  {nome:'Otoplastia',valor:7000},
+  {nome:'Mentoplastia',valor:8000},
+  {nome:'Lipoenxertia Facial',valor:9000},
+  {nome:'Botox (por região)',valor:800},
+  {nome:'Preenchimento (AH)',valor:1500},
+  {nome:'Consulta',valor:350},
+  {nome:'Retorno',valor:0},
+  {nome:'Outros',valor:0},
+];
+const HOSP_ORC={
+  'avila_peridural':{nome:'Hospital de Avila',anestesia:'Peridural',valor:3600},
+  'avila_geral':{nome:'Hospital de Avila',anestesia:'Geral',valor:4700},
+  'sao_marcos':{nome:'Hospital São Marcos',anestesia:'',valor:5539.99},
+};
+let orcServicos=[];
+
+function initOrcamento(){
+  const today=new Date();
+  const oDataEl=document.getElementById('oData');
+  if(oDataEl&&!oDataEl.value)oDataEl.value=today.toISOString().split('T')[0];
+  const val=new Date(today);val.setDate(val.getDate()+30);
+  const oValEl=document.getElementById('oValidade');
+  if(oValEl&&!oValEl.value)oValEl.value=val.toISOString().split('T')[0];
+  if(!orcServicos.length)addServicoOrc();
+  else renderServicosOrc();
+}
+
+function addServicoOrc(proc='',qty=1,valorUnit=0,descPct=0){
+  orcServicos.push({proc,qty,valorUnit,descPct});
+  renderServicosOrc();
+  calcTotaisOrc();
+}
+
+function removeServicoOrc(i){
+  orcServicos.splice(i,1);
+  renderServicosOrc();
+  calcTotaisOrc();
+}
+
+function renderServicosOrc(){
+  const el=document.getElementById('oServicos');if(!el)return;
+  if(!orcServicos.length){el.innerHTML='<div style="text-align:center;padding:12px;color:var(--muted);font-size:.83rem">Clique em "+ Adicionar Serviço" para incluir procedimentos.</div>';return;}
+  el.innerHTML=orcServicos.map((s,i)=>`
+    <div style="background:#f7f9fb;border-radius:8px;padding:10px;margin-bottom:8px;border:1.5px solid var(--brd)">
+      <div style="display:grid;grid-template-columns:1fr 55px 120px 75px;gap:6px;align-items:end;margin-bottom:6px">
+        <div>
+          <label>Serviço / Procedimento</label>
+          <select onchange="selectProcOrc(${i},this.value)" style="width:100%">
+            ${PROC_ORC.map(p=>`<option value="${p.nome}"${s.proc===p.nome?' selected':''}>${p.nome}</option>`).join('')}
+          </select>
+        </div>
+        <div><label>QTD</label><input type="number" min="1" value="${s.qty||1}" style="width:100%" onchange="updateOrcRow(${i},'qty',+this.value)"></div>
+        <div><label>Valor Unit. (R$)</label><input type="text" class="moeda-input" value="${s.valorUnit?fN(s.valorUnit):''}" style="width:100%" oninput="maskMoeda(this)" onblur="updateOrcRowValor(${i},this.value);fmtMoeda(this)"></div>
+        <div><label>Desconto %</label><input type="number" min="0" max="100" value="${s.descPct||0}" style="width:100%" oninput="updateOrcRow(${i},'descPct',+this.value)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.78rem;color:var(--muted)">Valor c/ desconto: <b style="color:var(--primary)">R$ ${fN(calcValorFinalServ(s))}</b></span>
+        <button class="btn btn-err btn-sm" onclick="removeServicoOrc(${i})">🗑 Remover</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectProcOrc(i,nome){
+  const p=PROC_ORC.find(x=>x.nome===nome);
+  orcServicos[i].proc=nome;
+  if(p&&p.valor>0)orcServicos[i].valorUnit=p.valor;
+  renderServicosOrc();calcTotaisOrc();
+}
+
+function updateOrcRow(i,field,val){orcServicos[i][field]=val;calcTotaisOrc();}
+
+function updateOrcRowValor(i,val){orcServicos[i].valorUnit=parseMoeda(val);calcTotaisOrc();}
+
+function calcValorFinalServ(s){const b=(s.valorUnit||0)*(s.qty||1);return b*(1-(s.descPct||0)/100);}
+
+function calcTotaisOrc(){
+  const subtotal=orcServicos.reduce((sum,s)=>sum+(s.valorUnit||0)*(s.qty||1),0);
+  const desconto=orcServicos.reduce((sum,s)=>sum+((s.valorUnit||0)*(s.qty||1)*(s.descPct||0)/100),0);
+  const hospVal=parseMoeda(document.getElementById('oCustoHosp')?.value||'0');
+  const total=subtotal-desconto+hospVal;
+  const es=document.getElementById('oSubtotal'),ed=document.getElementById('oDesconto'),eh=document.getElementById('oHospTotal'),et=document.getElementById('oTotal');
+  if(es)es.textContent='R$ '+fN(subtotal);
+  if(ed)ed.textContent='- R$ '+fN(desconto);
+  if(eh)eh.textContent='R$ '+fN(hospVal);
+  if(et)et.textContent='R$ '+fN(total);
+}
+
+function selectHospital(){
+  const val=document.getElementById('oHospital').value;
+  const inp=document.getElementById('oCustoHosp');
+  if(HOSP_ORC[val]){inp.value=fN(HOSP_ORC[val].valor);}
+  else if(!val){inp.value='';}
+  calcTotaisOrc();
+}
+
+function salvarOrcamento(){
+  const pac=document.getElementById('oPaciente').value.trim();
+  const data=document.getElementById('oData').value;
+  if(!pac||!data){showToast('⚠️ Preencha paciente e data.','#e74c3c');return;}
+  const servFiltrados=orcServicos.filter(s=>s.proc);
+  if(!servFiltrados.length){showToast('⚠️ Adicione ao menos um serviço.','#e74c3c');return;}
+  const hospKey=document.getElementById('oHospital').value;
+  const hospVal=parseMoeda(document.getElementById('oCustoHosp').value||'0');
+  const hospNome=hospKey&&HOSP_ORC[hospKey]?HOSP_ORC[hospKey].nome+(HOSP_ORC[hospKey].anestesia?' ('+HOSP_ORC[hospKey].anestesia+')':''):(hospVal>0?'Hospital (outro)':'');
+  const subtotal=servFiltrados.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0);
+  const desconto=servFiltrados.reduce((s,x)=>s+((x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100),0);
+  const total=subtotal-desconto+hospVal;
+  const orc={
+    id:Date.now(),paciente:pac,cpf:document.getElementById('oCPF').value.trim(),rg:document.getElementById('oRG').value.trim(),
+    data,validade:document.getElementById('oValidade').value,servicos:[...servFiltrados],
+    hospNome,hospVal,subtotal,desconto,total,obs:document.getElementById('oObs').value.trim(),
+    usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR')
+  };
+  dbRef.child('orcamentos/'+orc.id).set(orc);
+  fbAddLog('ORÇAMENTO',`Orçamento gerado para ${pac} · Total R$ ${fN(total)}`);
+  // Reset
+  orcServicos=[];
+  ['oPaciente','oCPF','oRG','oCustoHosp','oObs'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('oHospital').value='';
+  document.getElementById('oData').value='';document.getElementById('oValidade').value='';
+  initOrcamento();
+  showToast('✓ Orçamento salvo!','#27ae60');
+}
+
+function excluirOrcamento(id){
+  const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
+  if(!confirm(`Excluir orçamento de ${orc.paciente}?\nTotal: R$ ${fN(orc.total)}\n\nRegistrado no log de auditoria.`))return;
+  dbRef.child('orcamentos/'+id).remove();
+  fbAddLog('EXCLUSÃO ORÇAMENTO',`Orçamento de ${orc.paciente} · R$ ${fN(orc.total)} excluído`);
+  showToast('🗑️ Orçamento excluído.','#e67e22');
+}
+
+function renderOrcamentos(){
+  const el=document.getElementById('orcList');if(!el)return;
+  const s=(document.getElementById('searchOrc')?.value||'').toLowerCase();
+  let orcs=Object.values(DATA.orcamentos||{}).sort((a,b)=>b.id-a.id);
+  if(s)orcs=orcs.filter(o=>(o.paciente||'').toLowerCase().includes(s));
+  if(!orcs.length){el.innerHTML='<div class="empty"><div class="ico">📋</div>Nenhum orçamento salvo.</div>';return;}
+  el.innerHTML=orcs.map(o=>`
+    <div style="border:1.5px solid var(--brd);border-radius:9px;padding:13px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:6px">
+        <div style="flex:1;min-width:180px">
+          <div style="font-weight:700;font-size:.95rem">${o.paciente}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:2px">${fD(o.data)} · Válido até ${fD(o.validade)} · por <b>${o.usuario}</b></div>
+          <div style="font-size:.78rem;margin-top:4px;color:var(--text)">${(o.servicos||[]).map(s=>s.proc).join(' · ')||'—'}</div>
+          ${o.hospNome?`<div style="font-size:.75rem;color:var(--muted);margin-top:2px">🏥 ${o.hospNome}: R$ ${fN(o.hospVal)}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:700;color:var(--primary)">R$ ${fN(o.total)}</div>
+          <div style="font-size:.73rem;color:var(--muted)">Criado: ${o.criadoEm||'—'}</div>
+          <div style="display:flex;gap:5px;margin-top:6px;justify-content:flex-end">
+            <button class="btn btn-ok btn-sm" onclick="gerarPDFOrcamento(${o.id})">📄 PDF</button>
+            <button class="btn btn-err btn-sm" onclick="excluirOrcamento(${o.id})">🗑</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function gerarPDFOrcamento(id){
+  const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
+  const{jsPDF}=window.jspdf,doc=new jsPDF();
+  const dt=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  // Cabeçalho
+  doc.setFillColor(26,79,122);doc.rect(0,0,210,30,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(15);doc.setFont('helvetica','bold');
+  doc.text('ORÇAMENTO CIRÚRGICO',105,11,{align:'center'});
+  doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('Dr. Felipe Hissa Coelho · CRM 15420 · Cirurgia Plástica',105,18,{align:'center'});
+  doc.text('R. Gen. Joaquim Inácio, 830, Sala 707  ·  (81) 99479-5101  ·  contato@drfelipehissa.com.br',105,25,{align:'center'});
+  let y=40;
+  // Dados do paciente
+  doc.setTextColor(44,62,80);doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.text('DADOS DO PACIENTE',14,y);y+=3;
+  doc.setLineWidth(.3);doc.setDrawColor(220,227,234);doc.line(14,y,196,y);y+=5;
+  doc.setFillColor(247,249,251);doc.roundedRect(14,y-2,182,23,2,2,'F');
+  doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.setTextColor(127,140,141);
+  doc.text('PACIENTE',17,y+3);doc.text('CPF',90,y+3);doc.text('RG',148,y+3);
+  doc.setTextColor(44,62,80);doc.setFont('helvetica','normal');doc.setFontSize(10);
+  doc.text(orc.paciente||'—',17,y+11);doc.text(orc.cpf||'—',90,y+11);doc.text(orc.rg||'—',148,y+11);
+  doc.setFontSize(8);doc.setTextColor(127,140,141);
+  doc.text(`Data: ${fD(orc.data)}     Válido até: ${fD(orc.validade)}     Elaborado por: ${orc.usuario}`,17,y+18.5);
+  y+=30;
+  // Serviços
+  doc.setTextColor(44,62,80);doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.text('SERVIÇOS',14,y);y+=3;doc.line(14,y,196,y);y+=2;
+  const rows=(orc.servicos||[]).map(s=>{
+    const bruto=(s.valorUnit||0)*(s.qty||1),descVal=bruto*(s.descPct||0)/100,final=bruto-descVal;
+    return[s.proc||'—',String(s.qty||1),'R$ '+fN(s.valorUnit||0),(s.descPct||0)+'%','R$ '+fN(descVal),'R$ '+fN(final)];
+  });
+  doc.autoTable({startY:y,head:[['Serviço','QTD','Custo Unit.','Desconto','Desc. (R$)','Valor Final']],body:rows,
+    styles:{fontSize:8.5,cellPadding:3.5},
+    headStyles:{fillColor:[26,79,122],textColor:255,fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[247,249,251]},
+    columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:14,halign:'center'},2:{cellWidth:30,halign:'right'},3:{cellWidth:22,halign:'center'},4:{cellWidth:27,halign:'right'},5:{cellWidth:32,halign:'right'}},
+    margin:{left:14,right:14}
+  });
+  y=doc.lastAutoTable.finalY+8;
+  // Hospital
+  if(orc.hospNome){
+    doc.setFillColor(240,244,248);doc.roundedRect(14,y-3,182,14,2,2,'F');
+    doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(44,62,80);
+    doc.text('🏥  '+orc.hospNome,18,y+5);
+    doc.setFont('helvetica','bold');doc.text('R$ '+fN(orc.hospVal),196,y+5,{align:'right'});
+    y+=18;
+  }
+  // Totais
+  doc.setFillColor(247,249,251);doc.roundedRect(105,y-2,91,35,2,2,'F');
+  doc.setFontSize(8.5);doc.setFont('helvetica','normal');doc.setTextColor(127,140,141);
+  doc.text('Subtotal serviços:',107,y+5);doc.text('Desconto:',107,y+12);doc.text('Custo hospital:',107,y+19);
+  doc.setTextColor(44,62,80);doc.text('R$ '+fN(orc.subtotal||0),196,y+5,{align:'right'});
+  doc.setTextColor(231,76,60);doc.text('- R$ '+fN(orc.desconto||0),196,y+12,{align:'right'});
+  doc.setTextColor(44,62,80);doc.text('R$ '+fN(orc.hospVal||0),196,y+19,{align:'right'});
+  doc.setFillColor(26,79,122);doc.roundedRect(105,y+23,91,13,2,2,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(9.5);
+  doc.text('TOTAL GERAL',107,y+31.5);doc.text('R$ '+fN(orc.total||0),196,y+31.5,{align:'right'});
+  y+=48;
+  // Observações
+  if(orc.obs){
+    if(y>250){doc.addPage();y=20;}
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(44,62,80);
+    doc.text('OBSERVAÇÕES:',14,y);y+=5;
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);
+    const lines=doc.splitTextToSize(orc.obs,180);
+    doc.text(lines,14,y);y+=lines.length*5+8;
+  }
+  // Assinaturas
+  if(y>245){doc.addPage();y=20;}
+  y=Math.max(y,235);
+  doc.setDrawColor(127,140,141);doc.setLineWidth(.4);
+  doc.line(14,y,90,y);doc.line(110,y,196,y);
+  doc.setFontSize(7.5);doc.setTextColor(127,140,141);doc.setFont('helvetica','normal');
+  doc.text('Assinatura do Paciente',14,y+5);
+  doc.text('Dr. Felipe Hissa Coelho · CRM 15420',110,y+5);
+  // Rodapé
+  const pg=doc.internal.getNumberOfPages();
+  for(let i=1;i<=pg;i++){
+    doc.setPage(i);doc.setFontSize(7);doc.setTextColor(127,140,141);
+    doc.text(`Orçamento gerado em ${dt} · Válido até ${fD(orc.validade)} · Pág ${i}/${pg}`,105,291,{align:'center'});
+  }
+  doc.save(`orcamento_${(orc.paciente||'paciente').replace(/\s+/g,'_')}_${orc.data||'sem_data'}.pdf`);
+  fbAddLog('PDF ORÇAMENTO',`PDF gerado para ${orc.paciente} · R$ ${fN(orc.total)}`);
+  showToast('📄 Orçamento PDF gerado!','#8e44ad');
+}
 </script>
 </body>
 </html>
