@@ -200,6 +200,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div class="tab" onclick="showPage('pacientes',this)">👤 Pacientes</div>
   <div class="tab" onclick="showPage('dre',this)">📋 DRE</div>
   <div class="tab" onclick="showPage('relatorio',this)">📈 Relatórios</div>
+  <div class="tab" onclick="showPage('cfo',this)">🧠 CFO</div>
   <div class="tab" onclick="showPage('orcamento',this);initOrcamento()">💰 Orçamentos</div>
   <div class="tab" onclick="showPage('auditoria',this)">🔒 Auditoria</div>
 </nav>
@@ -298,6 +299,26 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
     <div class="sec"><h3>⚠️ Despesas por Categoria</h3><div id="rkExp"></div></div>
   </div>
   <div class="sec"><h3>💡 Análise</h3><div id="analise"></div></div>
+</div>
+
+<!-- CFO -->
+<div id="page-cfo" class="page">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:1.05rem;font-weight:700;color:var(--primary)">🧠 Modo CFO — Análise Estratégica</div>
+      <div style="font-size:.77rem;color:var(--muted)">Baseado nos seus dados reais · Atualizado automaticamente</div>
+    </div>
+    <div style="display:flex;gap:7px">
+      <select id="cfoScope" onchange="renderCFO()" style="font-size:.8rem;padding:5px 9px;border-radius:7px;border:1.5px solid var(--brd)">
+        <option value="all">Todo o histórico</option>
+        <option value="period">Período selecionado</option>
+        <option value="3m">Últimos 3 meses</option>
+        <option value="6m">Últimos 6 meses</option>
+        <option value="12m">Últimos 12 meses</option>
+      </select>
+    </div>
+  </div>
+  <div id="cfoContent"><div class="empty"><div class="ico">🧠</div>Lance dados para gerar análise CFO.</div></div>
 </div>
 
 <!-- ORÇAMENTO -->
@@ -650,7 +671,7 @@ function getUsuarios(){return[...new Set(getLancs().map(l=>l.usuario).filter(Boo
 
 function renderAll(){
   updateFilters();renderKPIs();renderUserPanel();renderMetas();
-  renderLancs();renderPacientes();renderDRE();renderRelatorio();renderLog();renderOrcamentos();
+  renderLancs();renderPacientes();renderDRE();renderRelatorio();renderLog();renderOrcamentos();renderCFO();
   rChRec();rChExp();rChEvol();rChDRE();rChComp();
 }
 
@@ -1048,6 +1069,211 @@ function renderOrcamentos(){
       </div>
     </div>
   `).join('');
+}
+
+// ==================== CFO ANALYSIS ====================
+function getCfoLancs(){
+  const scope=document.getElementById('cfoScope')?.value||'all';
+  const all=getLancs();
+  if(scope==='all')return all;
+  if(scope==='period')return getLP();
+  const now=new Date();
+  const meses=scope==='3m'?3:scope==='6m'?6:12;
+  const cutoff=new Date(now.getFullYear(),now.getMonth()-meses,1).toISOString().slice(0,7);
+  return all.filter(l=>l.data&&l.data>=cutoff);
+}
+
+function renderCFO(){
+  const el=document.getElementById('cfoContent');if(!el)return;
+  const all=getCfoLancs();
+  if(all.length<2){el.innerHTML='<div class="empty"><div class="ico">🧠</div>Lance pelo menos alguns lançamentos para gerar a análise CFO.</div>';return;}
+
+  const recs=all.filter(l=>l.tipo==='receita');
+  const desps=all.filter(l=>l.tipo==='despesa');
+  const totalRec=recs.reduce((s,l)=>s+l.valor,0);
+  const totalDesp=desps.reduce((s,l)=>s+l.valor,0);
+  const lucro=totalRec-totalDesp;
+  const margem=totalRec>0?lucro/totalRec*100:0;
+  const ticketMedio=recs.length>0?totalRec/recs.length:0;
+
+  // --- Receita por procedimento ---
+  const byProc={};
+  recs.forEach(l=>{
+    const k=(l.procedimento&&l.procedimento.trim())?l.procedimento.trim():(l.categoria||'Outros');
+    if(!byProc[k])byProc[k]={valor:0,count:0};
+    byProc[k].valor+=l.valor;byProc[k].count++;
+  });
+  const procArr=Object.entries(byProc)
+    .map(([p,d])=>({proc:p,valor:d.valor,count:d.count,ticket:d.count>0?d.valor/d.count:0}))
+    .sort((a,b)=>b.valor-a.valor);
+
+  // --- Pareto 80/20 ---
+  let cumVal=0;
+  const paretoArr=procArr.map(p=>{cumVal+=p.valor;return{...p,cumPct:totalRec>0?cumVal/totalRec*100:0};});
+  const top80=paretoArr.filter(p=>p.cumPct<=80.01);
+
+  // --- Despesas por categoria ---
+  const byDesp={};
+  desps.forEach(l=>{if(!byDesp[l.categoria])byDesp[l.categoria]=0;byDesp[l.categoria]+=l.valor;});
+  const despArr=Object.entries(byDesp)
+    .map(([c,v])=>({cat:c,valor:v,pct:totalRec>0?v/totalRec*100:0}))
+    .sort((a,b)=>b.valor-a.valor);
+
+  // --- Tendência mensal (6m) ---
+  const meses6=getMeses(6);
+  const trend=meses6.map(m=>{
+    const mRec=recs.filter(l=>l.data&&l.data.startsWith(m.v)).reduce((s,l)=>s+l.valor,0);
+    const mDesp=desps.filter(l=>l.data&&l.data.startsWith(m.v)).reduce((s,l)=>s+l.valor,0);
+    return{label:m.l,v:m.v,rec:mRec,desp:mDesp,result:mRec-mDesp,mg:mRec>0?(mRec-mDesp)/mRec*100:0};
+  });
+  const comDados=trend.filter(m=>m.rec>0);
+  const crescimento=comDados.length>=2?(comDados[comDados.length-1].rec-comDados[comDados.length-2].rec)/comDados[comDados.length-2].rec*100:null;
+  const melhorMes=trend.reduce((b,m)=>m.rec>b.rec?m:b,{rec:0,label:'—'});
+
+  // --- Score CFO (0–100) ---
+  let score=0;
+  if(margem>=35)score+=30;else if(margem>=25)score+=22;else if(margem>=15)score+=12;else if(margem>0)score+=5;
+  if(ticketMedio>=8000)score+=20;else if(ticketMedio>=3000)score+=14;else if(ticketMedio>0)score+=7;
+  if(crescimento===null)score+=10;else if(crescimento>=10)score+=20;else if(crescimento>=0)score+=14;else if(crescimento>=-10)score+=7;
+  const ratioDesp=totalRec>0?totalDesp/totalRec:1;
+  if(ratioDesp<=0.45)score+=15;else if(ratioDesp<=0.6)score+=10;else if(ratioDesp<=0.75)score+=5;
+  if(procArr.length>=5)score+=15;else if(procArr.length>=3)score+=10;else if(procArr.length>=2)score+=5;
+  const scoreClamp=Math.min(score,100);
+  const scoreC=scoreClamp>=70?'#27ae60':scoreClamp>=45?'#e8a838':'#e74c3c';
+  const scoreLbl=scoreClamp>=70?'SAUDÁVEL':scoreClamp>=45?'ATENÇÃO NECESSÁRIA':'INTERVENÇÃO URGENTE';
+
+  // --- Problemas ---
+  const prob=[];
+  if(!totalDesp)prob.push({s:'y',m:'Nenhuma despesa lançada. Margem calculada sem custos — análise incompleta. Lance despesas fixas e variáveis do consultório imediatamente.'});
+  if(totalRec===0)prob.push({s:'r',m:'Nenhuma receita no período selecionado.'});
+  if(margem<15&&totalDesp>0)prob.push({s:'r',m:`Margem líquida ${margem.toFixed(1)}% — CRÍTICA. Consultórios de cirurgia plástica saudáveis operam com 30–50%. Você está potencialmente consumindo capital próprio.`});
+  else if(margem<25&&totalDesp>0)prob.push({s:'y',m:`Margem ${margem.toFixed(1)}% — abaixo do benchmarck de cirurgia plástica privada (30–50%). Requer ajuste de preços ou corte de custos.`});
+  const despPessoal=despArr.find(d=>(d.cat||'').toLowerCase().includes('pessoal')||d.cat.toLowerCase().includes('pro-labore')||d.cat.toLowerCase().includes('pró'));
+  if(despPessoal&&despPessoal.pct>40)prob.push({s:'r',m:`Folha/Pró-labore consome ${despPessoal.pct.toFixed(0)}% da receita. Limite saudável: 30–35%. Está ${(despPessoal.pct-33).toFixed(0)}pp acima.`});
+  if(crescimento!==null&&crescimento<-10)prob.push({s:'r',m:`Receita caiu ${Math.abs(crescimento).toFixed(0)}% no último mês — tendência de deterioração. Investigar imediatamente.`});
+  if(crescimento!==null&&crescimento<0&&crescimento>=-10)prob.push({s:'y',m:`Receita caiu ${Math.abs(crescimento).toFixed(0)}% no último mês. Monitorar próximo mês.`});
+  if(procArr.length===1)prob.push({s:'r',m:`100% da receita concentrada em "${procArr[0].proc}". Risco de colapso se houver queda de demanda nesse procedimento.`});
+  else if(top80.length===1&&paretoArr.length>2)prob.push({s:'y',m:`Um único procedimento ("${top80[0].proc}") gera ${(top80[0].valor/totalRec*100).toFixed(0)}% da receita. Concentração de risco.`});
+  if(ticketMedio>0&&ticketMedio<3000)prob.push({s:'y',m:`Ticket médio R$ ${fN(ticketMedio)} — baixo para cirurgia plástica. Indica excesso de consultas/retornos vs procedimentos cirúrgicos.`});
+  const subprec=procArr.filter(p=>p.ticket<ticketMedio*0.55&&p.count>=2);
+  if(subprec.length)prob.push({s:'y',m:`Possível subprecificação: ${subprec.map(p=>`${p.proc} (R$ ${fN(p.ticket)}/proc)`).join('; ')} — ticket 45%+ abaixo da média.`});
+  if(!prob.length)prob.push({s:'g',m:'Nenhum problema crítico detectado nos dados disponíveis. Operação financeiramente saudável.'});
+
+  // --- Oportunidades ---
+  const oport=[];
+  if(procArr[0])oport.push(`<b>Procedimento âncora: ${procArr[0].proc}</b> — R$ ${fN(procArr[0].valor)} (${(procArr[0].valor/totalRec*100).toFixed(0)}% da receita) · ticket médio R$ ${fN(procArr[0].ticket)}. Priorize captação para este procedimento.`);
+  if(top80.length<procArr.length)oport.push(`<b>Foco 80/20:</b> ${top80.length} de ${procArr.length} procedimentos geram 80% da receita. Concentre agenda e marketing nesses ${top80.length}.`);
+  if(crescimento!==null&&crescimento>5)oport.push(`<b>Momentum de crescimento</b> (+${crescimento.toFixed(0)}% último mês): momento ideal para investir em captação e marketing.`);
+  if(melhorMes.rec>0&&comDados.length>1)oport.push(`<b>Melhor desempenho: ${melhorMes.label}</b> (R$ ${fN(melhorMes.rec)}). Identifique o que foi diferente — procedimentos, volume, sazonalidade — e replique.`);
+  if(ticketMedio<6000&&procArr.some(p=>p.ticket>8000))oport.push(`Ticket médio atual R$ ${fN(ticketMedio)} vs procedimento top R$ ${fN(procArr.find(p=>p.ticket>8000).ticket)}. Migrar mix de agenda para cirurgias maiores pode dobrar receita sem aumentar volume.`);
+  const margemIdeal=totalRec*0.35;
+  if(totalDesp>0&&lucro<margemIdeal)oport.push(`Para atingir margem de 35% (benchmark): necessário reduzir custos em R$ ${fN(totalDesp-(totalRec*0.65))} ou aumentar receita em R$ ${fN(margemIdeal*1.54-totalRec<0?0:margemIdeal*1.54-totalRec)}.`);
+
+  // --- Veredito e ações ---
+  let verd,verdC,verdI;
+  if(scoreClamp>=70){verd='PROSSEGUIR';verdC='#27ae60';verdI='✅';}
+  else if(scoreClamp>=45){verd='AJUSTAR';verdC='#e8a838';verdI='⚠️';}
+  else{verd='INTERVENÇÃO URGENTE';verdC='#e74c3c';verdI='🚨';}
+
+  const acoes=[];
+  if(!totalDesp)acoes.push('AGORA: Lance todas as despesas do consultório (aluguel, pessoal, impostos, insumos). Sem isso, você está voando cego.');
+  if(margem<25&&totalDesp>0)acoes.push(`Reajuste de preços: aumento de 10–20% nos procedimentos abaixo do ticket médio (R$ ${fN(ticketMedio)}). Simule o impacto antes.`);
+  if(despPessoal&&despPessoal.pct>38)acoes.push(`Auditar folha de pessoal: R$ ${fN(despPessoal.valor)} (${despPessoal.pct.toFixed(0)}% da receita). Avalie se quantidade de funcionários é proporcional ao volume de atendimentos.`);
+  if(procArr[0]&&procArr[0].count<8)acoes.push(`Aumentar volume de "${procArr[0].proc}" — maior retorno por hora médica. Meta: ${Math.max(procArr[0].count+3,5)} procedimentos/mês.`);
+  if(crescimento!==null&&crescimento<0)acoes.push('Comparar mix de procedimentos dos últimos 2 meses. Identificar o que caiu e por quê.');
+  if(ticketMedio<3000)acoes.push('Revisar agenda: reduzir consultas simples e retornos, priorizar procedimentos cirúrgicos. Objetivo: ticket médio acima de R$ 5.000.');
+  if(subprec.length)acoes.push(`Revisar precificação de: ${subprec.map(p=>p.proc).join(', ')}. Referência de mercado: consultar tabelas AMB/CBM e pratica privada local.`);
+  if(acoes.length===0)acoes.push('Manter mix atual de procedimentos — está funcionando bem.','Monitorar margem mensalmente. Alarme se cair abaixo de 30%.','Avaliar expansão de capacidade operacional (mais horários ou segundo consultório).');
+
+  // ======================== HTML ========================
+  el.innerHTML=`
+  <div style="background:#fff;border-radius:12px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div style="width:88px;height:88px;border-radius:50%;border:5px solid ${scoreC};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 0 3px ${scoreC}22">
+      <div style="font-size:1.65rem;font-weight:900;color:${scoreC};line-height:1">${scoreClamp}</div>
+      <div style="font-size:.58rem;font-weight:700;color:${scoreC};letter-spacing:.5px">/ 100</div>
+    </div>
+    <div style="flex:1;min-width:200px">
+      <div style="font-size:1.05rem;font-weight:800;color:${scoreC};letter-spacing:.3px">${scoreLbl}</div>
+      <div style="font-size:.77rem;color:var(--muted);margin-top:2px;margin-bottom:10px">Score CFO · margem, crescimento, controle de custos, diversificação</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="font-size:.77rem;background:#f0f4f8;padding:3px 10px;border-radius:20px">Margem: <b style="color:${margem>=30?'#27ae60':margem>=15?'#e8a838':'#e74c3c'}">${margem.toFixed(1)}%</b></span>
+        <span style="font-size:.77rem;background:#f0f4f8;padding:3px 10px;border-radius:20px">Ticket médio: <b>R$ ${fN(ticketMedio)}</b></span>
+        <span style="font-size:.77rem;background:#f0f4f8;padding:3px 10px;border-radius:20px">Receita: <b>R$ ${fN(totalRec)}</b></span>
+        <span style="font-size:.77rem;background:#f0f4f8;padding:3px 10px;border-radius:20px">Lucro: <b style="color:${lucro>=0?'#27ae60':'#e74c3c'}">R$ ${fN(lucro)}</b></span>
+        ${crescimento!==null?`<span style="font-size:.77rem;background:#f0f4f8;padding:3px 10px;border-radius:20px">Variação mês: <b style="color:${crescimento>=0?'#27ae60':'#e74c3c'}">${crescimento>=0?'+':''}${crescimento.toFixed(0)}%</b></span>`:''}
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="sec">
+      <h3>🔴 Diagnóstico · Problemas Críticos</h3>
+      ${prob.map(p=>`<div style="padding:10px 13px;border-radius:7px;margin-bottom:7px;background:${p.s==='r'?'#fdf0f0':p.s==='y'?'#fef9e7':'#eafaf1'};border-left:4px solid ${p.s==='r'?'#e74c3c':p.s==='y'?'#e8a838':'#27ae60'};font-size:.82rem;line-height:1.5">${p.m}</div>`).join('')}
+    </div>
+    <div class="sec">
+      <h3>🟢 Oportunidades Identificadas</h3>
+      ${oport.length?oport.map(o=>`<div style="padding:10px 13px;border-radius:7px;margin-bottom:7px;background:#eaf3fb;border-left:4px solid var(--primary);font-size:.82rem;line-height:1.5">${o}</div>`).join(''):'<div class="empty" style="padding:18px">Lance mais dados para identificar oportunidades.</div>'}
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>📊 Análise 80/20 — Procedimentos por Receita (Pareto)</h3>
+    <div class="tw"><table>
+      <thead><tr><th>#</th><th>Procedimento / Categoria</th><th style="text-align:right">Receita</th><th style="text-align:right">Qtd</th><th style="text-align:right">Ticket Médio</th><th style="text-align:right">% Total</th><th style="text-align:right">% Acum.</th></tr></thead>
+      <tbody>
+      ${paretoArr.map((p,i)=>`<tr style="${p.cumPct<=80.01?'background:#f0fff4;':i===0?'font-weight:700;':''}">
+        <td style="color:var(--muted);font-size:.73rem">${i+1}</td>
+        <td>${p.proc}${p.cumPct<=80.01?` <span style="background:#27ae60;color:#fff;font-size:.62rem;padding:1px 6px;border-radius:10px;vertical-align:middle">TOP</span>`:''}</td>
+        <td style="text-align:right;font-weight:600;color:var(--ok)">R$ ${fN(p.valor)}</td>
+        <td style="text-align:right">${p.count}</td>
+        <td style="text-align:right">R$ ${fN(p.ticket)}</td>
+        <td style="text-align:right">${totalRec>0?(p.valor/totalRec*100).toFixed(1):0}%</td>
+        <td style="text-align:right;${p.cumPct<=80.01?'color:#27ae60;font-weight:700':''}">${p.cumPct.toFixed(0)}%</td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:7px">🏆 Procedimentos TOP geram 80% da receita. Concentre captação e agenda neles.</div>
+  </div>
+
+  ${despArr.length?`<div class="sec">
+    <h3>💸 Estrutura de Custos vs Receita</h3>
+    ${despArr.map(d=>`<div style="margin-bottom:11px">
+      <div style="display:flex;justify-content:space-between;font-size:.81rem;margin-bottom:3px">
+        <span><b>${d.cat}</b></span>
+        <span>R$ ${fN(d.valor)} — <b style="color:${d.pct>40?'#e74c3c':d.pct>25?'#e8a838':'#27ae60'}">${d.pct.toFixed(1)}% da receita</b></span>
+      </div>
+      <div class="pb"><div class="pf" style="width:${Math.min(d.pct,100)}%;background:${d.pct>40?'#e74c3c':d.pct>25?'#e8a838':'#2d7bbf'}"></div></div>
+    </div>`).join('')}
+    <div style="display:flex;justify-content:space-between;font-size:.82rem;font-weight:700;padding:9px 0;border-top:2px solid var(--brd);margin-top:4px">
+      <span>TOTAL DESPESAS</span>
+      <span style="color:#e74c3c">R$ ${fN(totalDesp)} — ${totalRec>0?(totalDesp/totalRec*100).toFixed(1):0}% da receita</span>
+    </div>
+  </div>`:'<div class="alert aw" style="margin-bottom:16px">⚠️ Nenhuma despesa lançada. Lance despesas para análise de margem real.</div>'}
+
+  <div class="sec">
+    <h3>📅 Tendência Mensal — Últimos 6 Meses</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Mês</th><th style="text-align:right">Receita</th><th style="text-align:right">Despesas</th><th style="text-align:right">Resultado</th><th style="text-align:right">Margem</th><th>Barra</th></tr></thead>
+      <tbody>
+      ${trend.map(m=>`<tr>
+        <td style="font-weight:${m.v===period?'700':'400'}">${m.label}${m.v===period?' ◀':''}</td>
+        <td style="text-align:right;color:#27ae60">${m.rec?'R$ '+fN(m.rec):'—'}</td>
+        <td style="text-align:right;color:#e74c3c">${m.desp?'R$ '+fN(m.desp):'—'}</td>
+        <td style="text-align:right;font-weight:700;color:${m.result>=0?'var(--primary)':'#e74c3c'}">${m.rec||m.desp?'R$ '+fN(m.result):'—'}</td>
+        <td style="text-align:right;color:${m.mg>=30?'#27ae60':m.mg>=15?'#e8a838':'#e74c3c'}">${m.rec?m.mg.toFixed(1)+'%':'—'}</td>
+        <td style="min-width:70px"><div class="pb"><div class="pf" style="width:${META>0?Math.min(m.rec/META*100,100):0}%;background:${m.rec>=META?'#27ae60':m.rec>=META*.7?'#e8a838':'#e74c3c'}"></div></div></td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>
+  </div>
+
+  <div style="background:${verdC};border-radius:12px;padding:22px 24px;color:#fff">
+    <div style="font-size:1.15rem;font-weight:900;margin-bottom:12px;letter-spacing:.3px">${verdI} VEREDITO: ${verd}</div>
+    <div style="font-weight:700;margin-bottom:8px;font-size:.88rem;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Ação Prática — Faça agora:</div>
+    <ol style="margin-left:20px;line-height:2.1">
+      ${acoes.map(a=>`<li style="font-size:.84rem">${a}</li>`).join('')}
+    </ol>
+  </div>`;
 }
 
 /* ---- helpers internos do PDF ---- */
