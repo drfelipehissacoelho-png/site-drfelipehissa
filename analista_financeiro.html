@@ -191,6 +191,39 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
 .sum-tot .val{font-size:1.15rem;font-weight:900;}
 .sum-mg{text-align:center;font-size:.73rem;margin-top:6px;color:var(--muted);}
 
+/* ===== TABELA HOSPITALAR ADMIN ===== */
+.th-layout{display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start;}
+@media(max-width:900px){.th-layout{grid-template-columns:1fr;}}
+.th-filter-card{background:#fff;border-radius:13px;padding:18px 20px;box-shadow:0 1px 5px rgba(0,0,0,.07);border:1.5px solid var(--brd);}
+.th-filter-card h4{font-size:.82rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px;}
+.hosp-pill{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:.83rem;font-weight:600;transition:background .12s;margin-bottom:4px;border:1.5px solid transparent;}
+.hosp-pill:hover{background:#f5f8fb;}
+.hosp-pill.active{background:#eaf3fb;border-color:#c0d8ef;color:var(--primary);}
+.hosp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.th-main-card{background:#fff;border-radius:13px;padding:0;box-shadow:0 1px 5px rgba(0,0,0,.07);border:1.5px solid var(--brd);overflow:hidden;}
+.th-card-hd{padding:16px 20px;border-bottom:1.5px solid var(--brd);display:flex;align-items:center;justify-content:space-between;}
+.th-card-hd h3{font-size:.92rem;font-weight:700;color:var(--primary);}
+.th-tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.th-tbl th{padding:9px 12px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:#f8fafb;border-bottom:1.5px solid var(--brd);text-align:left;white-space:nowrap;}
+.th-tbl td{padding:8px 10px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+.th-tbl tr:last-child td{border-bottom:none;}
+.th-tbl tr:hover td{background:#fafbfd;}
+.th-inp{width:100%;padding:5px 7px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit;color:var(--text);background:#fff;text-align:right;}
+.th-inp:focus{outline:none;border-color:var(--pl);background:#fafeff;}
+.badge-sem{display:inline-flex;align-items:center;gap:4px;background:#fef9e7;color:#9a6e00;border:1px solid #f5d76e;border-radius:5px;padding:2px 7px;font-size:.69rem;font-weight:600;}
+.badge-ok{display:inline-flex;align-items:center;gap:4px;background:#eafaf1;color:#1e8449;border:1px solid #a9dfbf;border-radius:5px;padding:2px 7px;font-size:.69rem;font-weight:600;}
+.th-save-btn{padding:4px 10px;font-size:.75rem;background:var(--ok);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;}
+.th-save-btn:hover{opacity:.88;}
+/* Hospital row table */
+.htbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.htbl th{padding:7px 8px;font-size:.67rem;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:2px solid var(--brd);text-align:left;white-space:nowrap;}
+.htbl td{padding:5px 6px;border-bottom:1px solid #f2f3f5;vertical-align:middle;}
+.htbl tr:last-child td{border-bottom:none;}
+.htbl .sub{font-weight:700;color:var(--primary);white-space:nowrap;text-align:right;font-size:.82rem;}
+.htbl input,.htbl select{padding:4px 6px;font-size:.79rem;border-radius:5px;border:1.5px solid var(--brd);font-family:inherit;color:var(--text);}
+.htbl input:focus,.htbl select:focus{outline:none;border-color:var(--pl);}
+.no-price-warn{font-size:.7rem;color:var(--warn);font-weight:600;display:flex;align-items:center;gap:3px;}
+
 /* ===== MODAL DE EDIÇÃO ===== */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
 .modal-box{background:#fff;border-radius:14px;padding:26px 24px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto;}
@@ -255,6 +288,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div class="tab" onclick="showPage('relatorio',this)">📈 Relatórios</div>
   <div class="tab" onclick="showPage('cfo',this)">🧠 CFO</div>
   <div class="tab" onclick="showPage('orcamento',this);initOrcamento()">💰 Orçamentos</div>
+  <div class="tab" onclick="showPage('tabela-hosp',this);renderTabelaHosp()">🏥 Tabela</div>
   <div class="tab" onclick="showPage('auditoria',this)">🔒 Auditoria</div>
 </nav>
 
@@ -455,18 +489,42 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
 
       <!-- STEP 3 – HOSPITAL -->
       <div class="orc-step">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <div class="orc-num">3</div>
-          <div>
-            <div style="font-weight:700;font-size:.97rem;color:var(--txt)">Hospital / Anestesia</div>
-            <div style="font-size:.75rem;color:var(--muted)">Selecione o local e tipo de anestesia</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="orc-num">3</div>
+            <div>
+              <div style="font-weight:700;font-size:.97rem;color:var(--primary)">Hospital / Centro Cirúrgico</div>
+              <div style="font-size:.75rem;color:var(--muted)">Informe o custo hospitalar por procedimento</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:7px;align-items:center">
+            <a href="#" onclick="showPage('tabela-hosp',document.querySelector('[onclick*=tabela-hosp]'));renderTabelaHosp();return false"
+              style="font-size:.73rem;color:var(--pl);text-decoration:none;white-space:nowrap">⚙ Editar preços</a>
+            <button class="btn btn-ok btn-sm" onclick="addHospRow()">+ Adicionar</button>
           </div>
         </div>
-        <div class="hosp-grid" id="hospGrid"></div>
-        <div id="oCustoHospWrap" style="margin-top:10px;display:none">
-          <label style="font-size:.78rem">Custo do hospital (R$)</label>
-          <input type="text" id="oCustoHosp" class="moeda-input" placeholder="0,00"
-            oninput="maskMoeda(this);calcTotaisOrc()" onblur="fmtMoeda(this)">
+
+        <div id="hospRowsWrap">
+          <div style="overflow-x:auto">
+            <table class="htbl" id="hospRowsTable" style="display:none">
+              <thead>
+                <tr>
+                  <th style="min-width:130px">Hospital</th>
+                  <th style="min-width:130px">Procedimento</th>
+                  <th style="min-width:80px;text-align:right">H. Custo</th>
+                  <th style="min-width:75px;text-align:right">Material</th>
+                  <th style="min-width:75px;text-align:right">Anestesia</th>
+                  <th style="min-width:65px;text-align:right">Extras</th>
+                  <th style="min-width:90px;text-align:right">Subtotal</th>
+                  <th style="width:28px"></th>
+                </tr>
+              </thead>
+              <tbody id="hospRowsTbody"></tbody>
+            </table>
+          </div>
+          <div id="hospRowsEmpty" style="text-align:center;padding:22px 0;color:var(--muted);font-size:.82rem">
+            Nenhum item hospitalar — clique em "+ Adicionar" para incluir
+          </div>
         </div>
       </div>
 
@@ -517,10 +575,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
             <span style="color:var(--muted)">Custo hospital</span>
             <span id="oHospTotal" style="font-weight:600">R$ 0,00</span>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:4px 0;margin-bottom:10px">
-            <span style="color:var(--muted)">Hospital</span>
-            <span id="sumHospNome" style="font-weight:600;color:var(--primary);font-size:.75rem;text-align:right;max-width:120px">—</span>
-          </div>
+          <div id="sumHospDetail" style="margin-bottom:4px"></div>
           <div class="sum-tot">
             <span style="font-size:.78rem;opacity:.85">TOTAL GERAL</span>
             <span style="font-size:1.25rem;font-weight:800" id="oTotal">R$ 0,00</span>
@@ -538,6 +593,52 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
 
     </div><!-- /right column -->
 
+  </div>
+</div>
+
+<!-- TABELA HOSPITALAR -->
+<div id="page-tabela-hosp" class="page">
+  <div class="alert ai" style="margin-bottom:14px">
+    🏥 <strong>Tabela Hospitalar</strong> — Cadastre os custos por hospital e procedimento. Esses valores são preenchidos automaticamente nos orçamentos.
+  </div>
+  <div class="th-layout">
+    <!-- FILTRO HOSPITAL -->
+    <div>
+      <div class="th-filter-card">
+        <h4>Selecionar Hospital</h4>
+        <div id="thHospPills"></div>
+      </div>
+      <div class="th-filter-card" style="margin-top:12px">
+        <h4>Filtrar Procedimento</h4>
+        <input type="text" id="thSearchProc" placeholder="Buscar procedimento..." oninput="renderTabelaHosp()"
+          style="width:100%;font-size:.82rem;padding:7px 10px;border:1.5px solid var(--brd);border-radius:7px;font-family:inherit">
+      </div>
+      <div class="th-filter-card" style="margin-top:12px">
+        <h4>Legenda</h4>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:.77rem">
+          <div><span class="badge-ok">✓ cadastrado</span> — preço disponível</div>
+          <div><span class="badge-sem">⚠ sem preço</span> — sem valor cadastrado</div>
+          <div style="color:var(--muted);margin-top:4px">Clique em "Salvar" em cada linha para gravar o preço no Firebase.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRADE DE PREÇOS -->
+    <div class="th-main-card">
+      <div class="th-card-hd">
+        <div>
+          <h3 id="thCardTitle">Selecione um hospital</h3>
+          <div style="font-size:.74rem;color:var(--muted);margin-top:2px" id="thCardSub">Clique em um hospital à esquerda para ver e editar os preços</div>
+        </div>
+        <button class="btn btn-ok btn-sm" onclick="salvarTodosPrecos()" id="thSaveAllBtn" style="display:none">💾 Salvar Todos</button>
+      </div>
+      <div id="thTableWrap">
+        <div class="empty" style="padding:40px 0">
+          <div class="ico">🏥</div>
+          Selecione um hospital para ver a tabela de preços
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -645,7 +746,7 @@ const UCORS = ['#2d7bbf','#27ae60','#9b59b6','#e8a838','#e74c3c','#1abc9c'];
 
 // ==================== ESTADO ====================
 let CU = '', CUEmail = '', tipo = 'receita', period = '';
-let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{} };
+let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{}, hospitalPrices:{} };
 
 function nomeDoUsuario(email) {
   return USUARIOS[email] || email.split('@')[0];
@@ -728,6 +829,7 @@ function iniciarApp() {
     DATA.log = val.log || {};
     DATA.orcamentos = val.orcamentos || {};
     DATA.patients = val.patients || {};
+    DATA.hospitalPrices = val.hospitalPrices || {};
     renderAll();
   });
 
@@ -865,6 +967,8 @@ function renderAll(){
   updateFilters();renderKPIs();renderUserPanel();renderMetas();
   renderLancs();renderPacientes();renderDRE();renderRelatorio();renderLog();renderOrcamentos();renderCFO();
   rChRec();rChExp();rChEvol();rChDRE();rChComp();
+  // Update tabela if currently visible
+  if(document.getElementById('page-tabela-hosp')?.classList.contains('active'))renderTabelaHosp();
 }
 
 function updateFilters(){
@@ -1096,8 +1200,8 @@ const PROC_ORC=[
   {nome:'Mamoplastia de Aumento',valor:12000},
   {nome:'Mamoplastia Redutora',valor:13000},
   {nome:'Mastopexia',valor:11000},
-  {nome:'Mastopexia com Prótese',valor:14000},
-  {nome:'Lipoaspiração',valor:10000},
+  {nome:'Mastopexia com Protese',valor:14000},
+  {nome:'Lipoaspiracao',valor:10000},
   {nome:'Blefaroplastia Superior',valor:7000},
   {nome:'Blefaroplastia Inferior',valor:7000},
   {nome:'Blefaroplastia Superior e Inferior',valor:12000},
@@ -1111,58 +1215,78 @@ const PROC_ORC=[
   {nome:'Retorno',valor:0},
   {nome:'Outros',valor:0},
 ];
-const HOSPS=[
-  {key:'avila_peri',nome:'Hospital de Avila',tipo:'Anestesia Peridural',custo:3600},
-  {key:'avila_geral',nome:'Hospital de Avila',tipo:'Anestesia Geral',custo:4700},
-  {key:'sao_marcos',nome:'Hospital São Marcos',tipo:'Geral / Peridural',custo:5539.99},
-  {key:'outro',nome:'Outro Hospital',tipo:'Valor manual',custo:0},
+
+// Hospital master list (no prices — prices come from DATA.hospitalPrices)
+const HOSP_KEYS=[
+  {key:'sao_marcos',nome:'Hospital São Marcos',cor:'#2d7bbf'},
+  {key:'avila',nome:'Hospital de Ávila',cor:'#27ae60'},
+  {key:'santa_terezinha',nome:'Sta. Terezinha',cor:'#9b59b6'},
 ];
 
-// State
+// ==================== STATE ====================
 let orcItems=[];     // [{id,proc,qty,valorUnit,descPct}]
 let orcPat=null;     // {id,nome,cpf,rg,tel,email}
-let orcHospSel=null; // HOSPS item or null
+let orcHospRows=[];  // [{id,hospKey,procName,hospitalCost,materialCost,anesthesiaCost,extraCost,manual}]
+let _pacDebTimer=null;
 
-// ---- Util ----
+// ==================== UTIL ====================
 function setEl(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
-// ---- Build master patient list ----
+// ==================== PACIENTE ====================
 function buildAllPatients(){
   const map={};
-  // From lancamentos
   getLancs().filter(l=>l.tipo==='receita'&&l.paciente).forEach(l=>{
     const k=l.paciente.trim().toLowerCase();
     if(!map[k])map[k]={id:'lanc_'+k,nome:l.paciente.trim(),cpf:'',rg:'',tel:'',email:''};
   });
-  // From orcamentos
   Object.values(DATA.orcamentos||{}).forEach(o=>{
     if(!o.paciente)return;
     const k=o.paciente.trim().toLowerCase();
     if(!map[k])map[k]={id:'orc_'+k,nome:o.paciente.trim(),cpf:o.cpf||'',rg:o.rg||'',tel:'',email:''};
     else{if(o.cpf&&!map[k].cpf)map[k].cpf=o.cpf;if(o.rg&&!map[k].rg)map[k].rg=o.rg;}
   });
-  // From patients master
   Object.values(DATA.patients||{}).forEach(p=>{
     if(!p.nome)return;
     const k=p.nome.trim().toLowerCase();
     if(!map[k])map[k]={...p,id:'pat_'+p.id};
-    else{Object.assign(map[k],p);map[k].id='pat_'+p.id;}
+    else{
+      const merged={...map[k],...p,id:'pat_'+p.id};
+      map[k]=merged;
+    }
   });
   return Object.values(map).sort((a,b)=>a.nome.localeCompare(b.nome,'pt'));
 }
 
-// ---- Autocomplete paciente ----
 function searchPacOrc(q){
+  clearTimeout(_pacDebTimer);
+  _pacDebTimer=setTimeout(()=>_doSearchPac(q),120);
+}
+
+function _doSearchPac(q){
   const res=document.getElementById('pacOrcResults');if(!res)return;
-  if(!q||q.length<1){res.style.display='none';return;}
-  const list=buildAllPatients().filter(p=>p.nome.toLowerCase().includes(q.toLowerCase()));
-  if(!list.length){res.style.display='none';return;}
-  res.innerHTML=list.slice(0,8).map(p=>`
-    <div class="ac-item" onclick="selectPacOrc(${JSON.stringify(p).replace(/"/g,'&quot;')})">
-      <div style="font-weight:600;font-size:.88rem">${highlightAc(p.nome,q)}</div>
-      ${p.cpf?`<div style="font-size:.73rem;color:var(--muted)">${p.cpf}</div>`:''}
-    </div>
-  `).join('');
+  const raw=(q||'').trim();
+  if(raw.length<1){res.style.display='none';return;}
+  const ql=raw.toLowerCase();
+  const list=buildAllPatients().filter(p=>{
+    if((p.nome||'').toLowerCase().includes(ql))return true;
+    if((p.cpf||'').replace(/\D/g,'').includes(raw.replace(/\D/g,'')))return true;
+    if((p.tel||'').replace(/\D/g,'').includes(raw.replace(/\D/g,'')))return true;
+    return false;
+  });
+  if(!list.length){
+    res.innerHTML='<div class="ac-empty">Paciente não encontrado. Use "+ Novo paciente".</div>';
+    res.style.display='block';return;
+  }
+  res.innerHTML=list.slice(0,10).map(p=>{
+    const enc=JSON.stringify(p).replace(/"/g,'&quot;');
+    const info=[];
+    if(p.cpf)info.push(p.cpf);
+    if(p.tel)info.push(p.tel);
+    return `<div class="ac-item" onclick="selectPacOrc('${enc}')">
+      <div style="font-weight:600;font-size:.88rem">${highlightAc(p.nome,raw)}</div>
+      ${info.length?`<div style="font-size:.72rem;color:var(--muted)">${info.join(' · ')}</div>`:''}
+    </div>`;
+  }).join('');
   res.style.display='block';
 }
 
@@ -1173,9 +1297,9 @@ function highlightAc(nome,q){
 }
 
 function selectPacOrc(p){
-  if(typeof p==='string')p=JSON.parse(p);
+  if(typeof p==='string')try{p=JSON.parse(p.replace(/&quot;/g,'"'));}catch(e){return;}
   orcPat=p;
-  document.getElementById('pacOrcResults').style.display='none';
+  const res=document.getElementById('pacOrcResults');if(res)res.style.display='none';
   document.getElementById('pacOrcWrap').style.display='none';
   document.getElementById('pacOrcBadge').style.display='flex';
   const av=document.getElementById('pacOrcAv');
@@ -1185,6 +1309,7 @@ function selectPacOrc(p){
   if(p.cpf)info.push('CPF: '+p.cpf);
   if(p.rg)info.push('RG: '+p.rg);
   if(p.tel)info.push(p.tel);
+  if(p.email)info.push(p.email);
   setEl('pacOrcInfo',info.join(' · ')||'Paciente cadastrado');
   setEl('sumPatNome',p.nome);
 }
@@ -1200,6 +1325,7 @@ function clearPaciente(){
 // ---- Novo paciente modal ----
 function abrirNovoPatOrc(){
   document.getElementById('newPatModal').style.display='flex';
+  setTimeout(()=>document.getElementById('npNome').focus(),100);
 }
 function fecharNovoPatOrc(){
   document.getElementById('newPatModal').style.display='none';
@@ -1207,56 +1333,23 @@ function fecharNovoPatOrc(){
 }
 function salvarNovoPatOrc(){
   const nome=document.getElementById('npNome').value.trim();
-  if(!nome){showToast('⚠️ Informe o nome do paciente.','#e74c3c');return;}
-  const p={
-    id:Date.now(),nome,
+  if(!nome){showToast('Informe o nome do paciente.','#e74c3c');return;}
+  const pid=Date.now();
+  const p={id:pid,nome,
     cpf:document.getElementById('npCPF').value.trim(),
     rg:document.getElementById('npRG').value.trim(),
     tel:document.getElementById('npTel').value.trim(),
     email:document.getElementById('npEmail').value.trim(),
     criadoEm:new Date().toISOString(),usuario:CU
   };
-  dbRef.child('patients/'+p.id).set(p);
+  dbRef.child('patients/'+pid).set(p);
   fbAddLog('PACIENTE',`Novo paciente cadastrado: ${nome}`);
   fecharNovoPatOrc();
-  selectPacOrc({...p,id:'pat_'+p.id});
-  showToast('✓ Paciente salvo!','#27ae60');
+  selectPacOrc({...p,id:'pat_'+pid});
+  showToast('Paciente salvo!','#27ae60');
 }
 
-// ---- Hospital grid ----
-function renderHospGrid(){
-  const el=document.getElementById('hospGrid');if(!el)return;
-  el.innerHTML=HOSPS.map(h=>`
-    <div class="hc${orcHospSel&&orcHospSel.key===h.key?' sel':''}" onclick="selectHospOrc('${h.key}')">
-      <div style="font-weight:700;font-size:.82rem;margin-bottom:3px">${h.nome}</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">${h.tipo}</div>
-      <div style="font-size:.9rem;font-weight:700;color:var(--primary)">${h.custo>0?'R$ '+fN(h.custo):'Manual'}</div>
-    </div>
-  `).join('');
-}
-
-function selectHospOrc(key){
-  orcHospSel=HOSPS.find(h=>h.key===key)||null;
-  const wrap=document.getElementById('oCustoHospWrap');
-  const inp=document.getElementById('oCustoHosp');
-  if(orcHospSel){
-    if(orcHospSel.key==='outro'){
-      if(wrap)wrap.style.display='block';
-      if(inp)inp.value='';
-    } else {
-      if(wrap)wrap.style.display='none';
-      if(inp)inp.value=fN(orcHospSel.custo);
-    }
-    setEl('sumHospNome',orcHospSel.nome+' · '+orcHospSel.tipo);
-  } else {
-    if(wrap)wrap.style.display='none';
-    setEl('sumHospNome','—');
-  }
-  renderHospGrid();
-  calcTotaisOrc();
-}
-
-// ---- Items (procedimentos) ----
+// ==================== PROCEDIMENTOS ====================
 function addItemOrc(){
   orcItems.push({id:Date.now(),proc:'',qty:1,valorUnit:0,descPct:0});
   renderItemsOrc();
@@ -1265,8 +1358,36 @@ function addItemOrc(){
 function removeItemOrc(id){
   orcItems=orcItems.filter(x=>x.id!==id);
   renderItemsOrc();
-  calcTotaisOrc();
 }
+
+function updateItemField(id,field,val){
+  const item=orcItems.find(x=>x.id===id);if(!item)return;
+  item[field]=val;
+  if(field==='proc'){
+    const p=PROC_ORC.find(x=>x.nome===val);
+    // Always auto-fill when procedure changes (overwrite allows manual correction)
+    if(p&&p.valor>0)item.valorUnit=p.valor;
+  }
+  renderItemsOrc();
+}
+
+function updateItemValor(id,rawVal){
+  const item=orcItems.find(x=>x.id===id);if(!item)return;
+  item.valorUnit=parseMoeda(rawVal);
+  // Re-render to update the subtotal cell immediately — this was the bug
+  renderItemsOrc();
+}
+
+function updateItemDisc(id,pct){
+  const item=orcItems.find(x=>x.id===id);if(!item)return;
+  item.descPct=Math.max(0,Math.min(100,+pct||0));
+  calcTotaisOrc();
+  // Update just the subtotal cell without full re-render to avoid focus loss
+  const sub=document.getElementById('sub_'+id);
+  if(sub)sub.textContent='R$ '+fN(_itemSub(item));
+}
+
+function _itemSub(s){return(s.valorUnit||0)*(s.qty||1)*(1-(s.descPct||0)/100);}
 
 function renderItemsOrc(){
   const tbody=document.getElementById('oItemsTbody');
@@ -1276,171 +1397,285 @@ function renderItemsOrc(){
   if(!orcItems.length){
     if(table)table.style.display='none';
     if(empty)empty.style.display='block';
-    calcTotaisOrc();
-    return;
+    calcTotaisOrc();return;
   }
   if(table)table.style.display='table';
   if(empty)empty.style.display='none';
   tbody.innerHTML=orcItems.map(s=>`
-    <tr style="border-bottom:1px solid #f0f0f0">
-      <td style="padding:5px 7px">
-        <select onchange="updateItemField(${s.id},'proc',this.value)" style="width:100%;font-size:.8rem;border:1px solid var(--brd);border-radius:5px;padding:3px">
+    <tr>
+      <td>
+        <select class="itbl" onchange="updateItemField(${s.id},'proc',this.value)"
+          style="width:100%;padding:5px 6px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px">
           <option value="">Selecione...</option>
           ${PROC_ORC.map(p=>`<option value="${p.nome}"${s.proc===p.nome?' selected':''}>${p.nome}</option>`).join('')}
         </select>
       </td>
-      <td style="padding:5px 7px;text-align:center">
-        <input type="number" min="1" value="${s.qty||1}" style="width:44px;text-align:center;border:1px solid var(--brd);border-radius:5px;padding:3px;font-size:.8rem"
+      <td style="text-align:center">
+        <input type="number" min="1" value="${s.qty||1}"
+          style="width:50px;text-align:center;padding:5px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px"
           oninput="updateItemField(${s.id},'qty',+this.value)">
       </td>
-      <td style="padding:5px 7px;text-align:right">
-        <input type="text" class="moeda-input" value="${s.valorUnit?fN(s.valorUnit):''}" style="width:100%;text-align:right;border:1px solid var(--brd);border-radius:5px;padding:3px;font-size:.8rem"
-          oninput="maskMoeda(this)" onblur="updateItemValor(${s.id},this.value);fmtMoeda(this)">
+      <td style="text-align:right">
+        <input type="text" class="moeda-input" value="${s.valorUnit?fN(s.valorUnit):''}"
+          style="width:105px;text-align:right;padding:5px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px"
+          placeholder="0,00"
+          oninput="maskMoeda(this)"
+          onblur="updateItemValor(${s.id},this.value);fmtMoeda(this)">
       </td>
-      <td style="padding:5px 7px;text-align:center">
-        <input type="number" min="0" max="100" value="${s.descPct||0}" style="width:48px;text-align:center;border:1px solid var(--brd);border-radius:5px;padding:3px;font-size:.8rem"
-          oninput="updateItemField(${s.id},'descPct',+this.value)">
+      <td style="text-align:center">
+        <input type="number" min="0" max="100" value="${s.descPct||0}"
+          style="width:52px;text-align:center;padding:5px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px"
+          oninput="updateItemDisc(${s.id},this.value)">
       </td>
-      <td style="padding:5px 7px;text-align:right;font-weight:600;font-size:.8rem;color:var(--primary)">
-        R$ ${fN((s.valorUnit||0)*(s.qty||1)*(1-(s.descPct||0)/100))}
-      </td>
-      <td style="padding:5px 4px;text-align:center">
-        <button onclick="removeItemOrc(${s.id})" style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:.9rem" title="Remover">✕</button>
+      <td class="sub" id="sub_${s.id}">R$ ${fN(_itemSub(s))}</td>
+      <td style="text-align:center">
+        <button onclick="removeItemOrc(${s.id})"
+          style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:1rem;line-height:1" title="Remover">✕</button>
       </td>
     </tr>
   `).join('');
   calcTotaisOrc();
 }
 
-function updateItemField(id,field,val){
-  const item=orcItems.find(x=>x.id===id);
-  if(!item)return;
-  item[field]=val;
-  if(field==='proc')autoFillItemValor(item);
-  renderItemsOrc();
+// ==================== HOSPITAL ROWS ====================
+function addHospRow(){
+  orcHospRows.push({id:Date.now(),hospKey:'',procName:'',hospitalCost:0,materialCost:0,anesthesiaCost:0,extraCost:0,manual:false});
+  renderHospRows();
 }
 
-function autoFillItemValor(item){
-  const p=PROC_ORC.find(x=>x.nome===item.proc);
-  if(p&&p.valor>0&&!item.valorUnit)item.valorUnit=p.valor;
+function removeHospRow(id){
+  orcHospRows=orcHospRows.filter(x=>x.id!==id);
+  renderHospRows();
 }
 
-function updateItemValor(id,val){
-  const item=orcItems.find(x=>x.id===id);
-  if(item)item.valorUnit=parseMoeda(val);
+function updateHospSelect(id,field,val){
+  const row=orcHospRows.find(x=>x.id===id);if(!row)return;
+  row[field]=val;
+  if(field==='hospKey'||field==='procName'){
+    // Auto-fill from DB when both fields set
+    if(row.hospKey&&row.procName&&!row.manual){
+      const prices=DATA.hospitalPrices?.[row.hospKey]?.[row.procName];
+      if(prices){
+        row.hospitalCost=prices.hospitalCost||0;
+        row.materialCost=prices.materialCost||0;
+        row.anesthesiaCost=prices.anesthesiaCost||0;
+        row.extraCost=prices.extraCost||0;
+      } else {
+        row.hospitalCost=0;row.materialCost=0;row.anesthesiaCost=0;row.extraCost=0;
+      }
+    }
+  }
+  renderHospRows();
+}
+
+function updateHospValor(id,field,rawVal){
+  const row=orcHospRows.find(x=>x.id===id);if(!row)return;
+  row[field]=parseMoeda(rawVal);
+  row.manual=true;
+  calcTotaisOrc();
+  _updateHospRowSub(id);
+}
+
+function _hospRowSub(row){
+  return(row.hospitalCost||0)+(row.materialCost||0)+(row.anesthesiaCost||0)+(row.extraCost||0);
+}
+
+function _updateHospRowSub(id){
+  const row=orcHospRows.find(x=>x.id===id);if(!row)return;
+  const el=document.getElementById('hsub_'+id);
+  if(el)el.textContent='R$ '+fN(_hospRowSub(row));
+}
+
+function _hasPrice(row){
+  if(!row.hospKey||!row.procName)return null; // not configured
+  const prices=DATA.hospitalPrices?.[row.hospKey]?.[row.procName];
+  return prices?true:false;
+}
+
+function renderHospRows(){
+  const tbody=document.getElementById('hospRowsTbody');
+  const table=document.getElementById('hospRowsTable');
+  const empty=document.getElementById('hospRowsEmpty');
+  if(!tbody)return;
+  if(!orcHospRows.length){
+    if(table)table.style.display='none';
+    if(empty)empty.style.display='block';
+    calcTotaisOrc();return;
+  }
+  if(table)table.style.display='table';
+  if(empty)empty.style.display='none';
+  tbody.innerHTML=orcHospRows.map(row=>{
+    const sub=_hospRowSub(row);
+    const hasPriceResult=_hasPrice(row);
+    const noPrice=hasPriceResult===false&&!row.manual;
+    const borderC=noPrice?'#f39c12':row.manual?'#3498db':'var(--brd)';
+    const hSel=s=>`<option value="">Selecione...</option>${HOSP_KEYS.map(h=>`<option value="${h.key}"${row.hospKey===h.key?' selected':''}>${h.nome}</option>`).join('')}`;
+    const pSel=`<option value="">Selecione...</option>${PROC_ORC.map(p=>`<option value="${p.nome}"${row.procName===p.nome?' selected':''}>${p.nome}</option>`).join('')}`;
+    return `<tr>
+      <td><select style="width:100%;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
+          onchange="updateHospSelect(${row.id},'hospKey',this.value)">${hSel()}</select></td>
+      <td><select style="width:100%;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
+          onchange="updateHospSelect(${row.id},'procName',this.value)">${pSel}</select></td>
+      <td>${noPrice?`<div class="no-price-warn">⚠ sem preço</div>`:`<input type="text" class="moeda-input" value="${row.hospitalCost?fN(row.hospitalCost):''}"
+          style="width:90px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid ${borderC};border-radius:6px"
+          placeholder="0,00" oninput="maskMoeda(this)"
+          onblur="updateHospValor(${row.id},'hospitalCost',this.value);fmtMoeda(this)">`}</td>
+      <td><input type="text" class="moeda-input" value="${row.materialCost?fN(row.materialCost):''}"
+          style="width:78px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
+          placeholder="0,00" oninput="maskMoeda(this)"
+          onblur="updateHospValor(${row.id},'materialCost',this.value);fmtMoeda(this)"></td>
+      <td><input type="text" class="moeda-input" value="${row.anesthesiaCost?fN(row.anesthesiaCost):''}"
+          style="width:78px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
+          placeholder="0,00" oninput="maskMoeda(this)"
+          onblur="updateHospValor(${row.id},'anesthesiaCost',this.value);fmtMoeda(this)"></td>
+      <td><input type="text" class="moeda-input" value="${row.extraCost?fN(row.extraCost):''}"
+          style="width:65px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
+          placeholder="0,00" oninput="maskMoeda(this)"
+          onblur="updateHospValor(${row.id},'extraCost',this.value);fmtMoeda(this)"></td>
+      <td class="sub" id="hsub_${row.id}">${sub>0?'R$ '+fN(sub):'—'}</td>
+      <td><button onclick="removeHospRow(${row.id})"
+          style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:1rem" title="Remover">✕</button></td>
+    </tr>`;
+  }).join('');
   calcTotaisOrc();
 }
 
+// ==================== CÁLCULO REATIVO ====================
+// SINGLE SOURCE OF TRUTH — chamado sempre que qualquer campo muda
 function calcTotaisOrc(){
-  const subtotal=orcItems.reduce((sum,s)=>(s.valorUnit||0)*(s.qty||1)+sum,0);
-  const desconto=orcItems.reduce((sum,s)=>(s.valorUnit||0)*(s.qty||1)*(s.descPct||0)/100+sum,0);
-  let hospVal=0;
-  if(orcHospSel){
-    hospVal=orcHospSel.key==='outro'?parseMoeda(document.getElementById('oCustoHosp')?.value||'0'):orcHospSel.custo;
-  }
-  const total=subtotal-desconto+hospVal;
+  // Serviços
+  const subtotal=orcItems.reduce((s,x)=>(x.valorUnit||0)*(x.qty||1)+s,0);
+  const desconto=orcItems.reduce((s,x)=>(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100+s,0);
+  const servFinal=subtotal-desconto;
+  // Hospital
+  const hospTotal=orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0);
+  const grandTotal=servFinal+hospTotal;
+
   setEl('oSubtotal','R$ '+fN(subtotal));
   setEl('oDesconto','- R$ '+fN(desconto));
-  setEl('oHospTotal','R$ '+fN(hospVal));
-  setEl('oTotal','R$ '+fN(total));
+  setEl('oHospTotal','R$ '+fN(hospTotal));
+  setEl('oTotal','R$ '+fN(grandTotal));
+
+  // Hospital detail in sidebar
+  const det=document.getElementById('sumHospDetail');
+  if(det&&orcHospRows.length){
+    det.innerHTML=orcHospRows.map(r=>{
+      const h=HOSP_KEYS.find(x=>x.key===r.hospKey);
+      if(!h||!r.procName)return'';
+      return`<div style="display:flex;justify-content:space-between;font-size:.73rem;padding:2px 0;color:var(--muted)">
+        <span>${h.nome.replace('Hospital ','')}</span>
+        <span style="font-weight:600">R$ ${fN(_hospRowSub(r))}</span>
+      </div>`;
+    }).join('');
+  } else if(det){det.innerHTML='';}
 }
 
-// ---- Init / reset ----
+// ==================== INIT / RESET ====================
 function novoOrcamento(){
-  orcItems=[];orcPat=null;orcHospSel=null;
+  orcItems=[];orcPat=null;orcHospRows=[];
   clearPaciente();
   renderItemsOrc();
-  renderHospGrid();
+  renderHospRows();
   calcTotaisOrc();
-  document.getElementById('oCustoHosp').value='';
   document.getElementById('oObs').value='';
-  const today=new Date();
+  const today=new Date().toISOString().split('T')[0];
+  const v30=new Date();v30.setDate(v30.getDate()+30);
   const oDataEl=document.getElementById('oData');
-  if(oDataEl)oDataEl.value=today.toISOString().split('T')[0];
-  const val=new Date(today);val.setDate(val.getDate()+30);
   const oValEl=document.getElementById('oValidade');
-  if(oValEl)oValEl.value=val.toISOString().split('T')[0];
-  setEl('sumHospNome','—');
+  if(oDataEl)oDataEl.value=today;
+  if(oValEl)oValEl.value=v30.toISOString().split('T')[0];
+  const det=document.getElementById('sumHospDetail');if(det)det.innerHTML='';
 }
 
-function initOrcamento(){
-  novoOrcamento();
-}
+function initOrcamento(){novoOrcamento();}
 
-// ---- Salvar ----
+// ==================== SALVAR ====================
 function salvarOrcamento(){
+  if(!orcPat){showToast('Selecione um paciente.','#e74c3c');return;}
   const data=document.getElementById('oData').value;
-  if(!orcPat){showToast('⚠️ Selecione um paciente.','#e74c3c');return;}
-  if(!data){showToast('⚠️ Informe a data.','#e74c3c');return;}
+  if(!data){showToast('Informe a data.','#e74c3c');return;}
   const itens=orcItems.filter(s=>s.proc);
-  if(!itens.length){showToast('⚠️ Adicione ao menos um procedimento.','#e74c3c');return;}
-  let hospVal=0,hospNome='';
-  if(orcHospSel){
-    hospVal=orcHospSel.key==='outro'?parseMoeda(document.getElementById('oCustoHosp')?.value||'0'):orcHospSel.custo;
-    hospNome=orcHospSel.nome+(orcHospSel.tipo?' ('+orcHospSel.tipo+')':'');
-  }
+  if(!itens.length){showToast('Adicione ao menos um procedimento.','#e74c3c');return;}
+
   const subtotal=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0);
   const desconto=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0);
-  const total=subtotal-desconto+hospVal;
+  const hospTotal=orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0);
+  const total=subtotal-desconto+hospTotal;
+
+  const hospRows=orcHospRows.map(r=>({
+    hospKey:r.hospKey,
+    hospNome:(HOSP_KEYS.find(h=>h.key===r.hospKey)||{}).nome||r.hospKey,
+    procName:r.procName,
+    hospitalCost:r.hospitalCost||0,
+    materialCost:r.materialCost||0,
+    anesthesiaCost:r.anesthesiaCost||0,
+    extraCost:r.extraCost||0,
+    subtotal:_hospRowSub(r),
+    manual:r.manual||false
+  }));
+
   const orc={
     id:Date.now(),
-    paciente:orcPat.nome,cpf:orcPat.cpf||'',rg:orcPat.rg||'',
+    paciente:orcPat.nome,cpf:orcPat.cpf||'',rg:orcPat.rg||'',tel:orcPat.tel||'',
     data,validade:document.getElementById('oValidade').value,
-    servicos:itens.map(x=>({proc:x.proc,qty:x.qty,valorUnit:x.valorUnit,descPct:x.descPct})),
-    hospNome,hospVal,subtotal,desconto,total,
+    servicos:itens.map(x=>({proc:x.proc,qty:x.qty,valorUnit:x.valorUnit,descPct:x.descPct,subtotal:_itemSub(x)})),
+    hospRows,subtotal,desconto,hospTotal,total,
     obs:document.getElementById('oObs').value.trim(),
     usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR')
   };
   dbRef.child('orcamentos/'+orc.id).set(orc);
-  fbAddLog('ORÇAMENTO',`Orçamento gerado para ${orcPat.nome} · Total R$ ${fN(total)}`);
+  fbAddLog('ORCAMENTO',`Orcamento gerado para ${orcPat.nome} - Total R$ ${fN(total)}`);
   novoOrcamento();
-  showToast('✓ Orçamento salvo!','#27ae60');
+  showToast('Orcamento salvo!','#27ae60');
 }
 
 function gerarPDFOrcRapido(){
+  if(!orcPat){showToast('Selecione um paciente.','#e74c3c');return;}
   const data=document.getElementById('oData').value;
-  const nomePac=orcPat?orcPat.nome:'';
-  if(!nomePac||!data){showToast('⚠️ Preencha paciente e data antes de gerar PDF.','#e74c3c');return;}
+  if(!data){showToast('Informe a data.','#e74c3c');return;}
   const itens=orcItems.filter(s=>s.proc);
-  if(!itens.length){showToast('⚠️ Adicione ao menos um procedimento.','#e74c3c');return;}
-  let hospVal=0,hospNome='';
-  if(orcHospSel){
-    hospVal=orcHospSel.key==='outro'?parseMoeda(document.getElementById('oCustoHosp')?.value||'0'):orcHospSel.custo;
-    hospNome=orcHospSel.nome+(orcHospSel.tipo?' · '+orcHospSel.tipo:'');
-  }
+  if(!itens.length){showToast('Adicione ao menos um procedimento.','#e74c3c');return;}
   const subtotal=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0);
   const desconto=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0);
-  const total=subtotal-desconto+hospVal;
-  const fakeOrc={
-    paciente:nomePac,cpf:orcPat?orcPat.cpf||'':'',rg:orcPat?orcPat.rg||'':'',
+  const hospTotal=orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0);
+  const total=subtotal-desconto+hospTotal;
+  const hospRows=orcHospRows.map(r=>({
+    hospNome:(HOSP_KEYS.find(h=>h.key===r.hospKey)||{}).nome||r.hospKey,
+    procName:r.procName,
+    hospitalCost:r.hospitalCost||0,materialCost:r.materialCost||0,
+    anesthesiaCost:r.anesthesiaCost||0,extraCost:r.extraCost||0,subtotal:_hospRowSub(r)
+  }));
+  gerarPDFOrcamento({
+    paciente:orcPat.nome,cpf:orcPat.cpf||'',rg:orcPat.rg||'',
     data,validade:document.getElementById('oValidade').value,
-    servicos:itens,hospNome,hospVal,subtotal,desconto,total,
+    servicos:itens,hospRows,subtotal,desconto,hospTotal,total,
     obs:document.getElementById('oObs').value.trim(),id:Date.now()
-  };
-  gerarPDFOrcamento(fakeOrc);
+  });
 }
 
 function excluirOrcamento(id){
   const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
-  if(!confirm(`Excluir orçamento de ${orc.paciente}?\nTotal: R$ ${fN(orc.total)}\n\nRegistrado no log de auditoria.`))return;
+  if(!confirm(`Excluir orcamento de ${orc.paciente}?\nTotal: R$ ${fN(orc.total)}\n\nRegistrado no log de auditoria.`))return;
   dbRef.child('orcamentos/'+id).remove();
-  fbAddLog('EXCLUSÃO ORÇAMENTO',`Orçamento de ${orc.paciente} · R$ ${fN(orc.total)} excluido`);
-  showToast('🗑️ Orçamento excluído.','#e67e22');
+  fbAddLog('EXCLUSAO ORCAMENTO',`Orcamento de ${orc.paciente} R$ ${fN(orc.total)} excluido`);
+  showToast('Orcamento excluido.','#e67e22');
 }
 
 function renderOrcamentos(){
   const el=document.getElementById('orcList');if(!el)return;
   const s=(document.getElementById('searchOrc')?.value||'').toLowerCase();
   let orcs=Object.values(DATA.orcamentos||{}).sort((a,b)=>b.id-a.id);
-  if(s)orcs=orcs.filter(o=>(o.paciente||'').toLowerCase().includes(s));
-  if(!orcs.length){el.innerHTML='<div class="empty" style="padding:18px 0"><div class="ico" style="font-size:1.5rem">📋</div>Nenhum orçamento</div>';return;}
+  if(s)orcs=orcs.filter(o=>(o.paciente||'').toLowerCase().includes(s)||
+    (o.cpf||'').includes(s)||(o.tel||'').includes(s));
+  if(!orcs.length){el.innerHTML='<div class="empty" style="padding:18px 0"><div class="ico" style="font-size:1.5rem">📋</div>Nenhum orcamento</div>';return;}
   el.innerHTML=orcs.map(o=>`
     <div style="border:1.5px solid var(--brd);border-radius:9px;padding:11px;margin-bottom:9px">
       <div style="display:flex;justify-content:space-between;align-items:start;gap:6px">
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.paciente}</div>
           <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${fD(o.data)} · por <b>${o.usuario}</b></div>
-          <div style="font-size:.75rem;margin-top:3px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(o.servicos||[]).map(s=>s.proc).join(' · ')||'—'}</div>
+          <div style="font-size:.74rem;margin-top:3px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${(o.servicos||[]).map(s=>s.proc).join(' · ')||'—'}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:1rem;font-weight:700;color:var(--primary)">R$ ${fN(o.total)}</div>
@@ -1452,6 +1687,139 @@ function renderOrcamentos(){
       </div>
     </div>
   `).join('');
+}
+
+// ==================== TABELA HOSPITALAR (ADMIN) ====================
+let _thHospSel='';
+
+function renderTabelaHosp(){
+  // Render hospital pills
+  const pills=document.getElementById('thHospPills');
+  if(pills){
+    pills.innerHTML=HOSP_KEYS.map(h=>`
+      <div class="hosp-pill${_thHospSel===h.key?' active':''}" onclick="_thSelectHosp('${h.key}')">
+        <div class="hosp-dot" style="background:${h.cor}"></div>${h.nome}
+      </div>
+    `).join('');
+  }
+  if(!_thHospSel){
+    document.getElementById('thTableWrap').innerHTML='<div class="empty" style="padding:40px 0"><div class="ico">🏥</div>Selecione um hospital para ver a tabela de precos</div>';
+    return;
+  }
+  _renderThTable();
+}
+
+function _thSelectHosp(key){
+  _thHospSel=key;
+  renderTabelaHosp();
+}
+
+function _renderThTable(){
+  const hosp=HOSP_KEYS.find(h=>h.key===_thHospSel);
+  const search=(document.getElementById('thSearchProc')?.value||'').toLowerCase();
+  setEl('thCardTitle',hosp?hosp.nome:'Hospital');
+  setEl('thCardSub','Precos por procedimento — clique em Salvar em cada linha');
+  const sb=document.getElementById('thSaveAllBtn');if(sb)sb.style.display='block';
+
+  const procs=PROC_ORC.filter(p=>!search||p.nome.toLowerCase().includes(search));
+  const prices=DATA.hospitalPrices?.[_thHospSel]||{};
+
+  document.getElementById('thTableWrap').innerHTML=`
+    <div style="overflow-x:auto">
+    <table class="th-tbl">
+      <thead>
+        <tr>
+          <th>Procedimento</th>
+          <th style="text-align:right">H. Custo</th>
+          <th style="text-align:right">Material</th>
+          <th style="text-align:right">Anestesia</th>
+          <th style="text-align:right">Extras</th>
+          <th style="text-align:right">Total</th>
+          <th>Obs. interna</th>
+          <th style="text-align:center">Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${procs.map(p=>{
+          const pr=prices[p.nome]||{};
+          const tot=(pr.hospitalCost||0)+(pr.materialCost||0)+(pr.anesthesiaCost||0)+(pr.extraCost||0);
+          const hasPr=!!prices[p.nome];
+          const eid='thpr_'+_thHospSel+'_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
+          return `<tr id="row_${eid}">
+            <td style="font-weight:600;font-size:.83rem;min-width:160px">${p.nome}</td>
+            <td><input type="text" class="moeda-input th-inp" id="${eid}_hc"
+              value="${pr.hospitalCost?fN(pr.hospitalCost):''}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="_thUpdateTotal('${eid}');fmtMoeda(this)"></td>
+            <td><input type="text" class="moeda-input th-inp" id="${eid}_mc"
+              value="${pr.materialCost?fN(pr.materialCost):''}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="_thUpdateTotal('${eid}');fmtMoeda(this)"></td>
+            <td><input type="text" class="moeda-input th-inp" id="${eid}_ac"
+              value="${pr.anesthesiaCost?fN(pr.anesthesiaCost):''}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="_thUpdateTotal('${eid}');fmtMoeda(this)"></td>
+            <td><input type="text" class="moeda-input th-inp" id="${eid}_ec"
+              value="${pr.extraCost?fN(pr.extraCost):''}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="_thUpdateTotal('${eid}');fmtMoeda(this)"></td>
+            <td style="text-align:right;font-weight:700;color:var(--primary);font-size:.85rem;min-width:80px" id="${eid}_tot">
+              ${tot>0?'R$ '+fN(tot):'—'}</td>
+            <td><input type="text" id="${eid}_obs" value="${pr.notes||''}" placeholder="Obs..."
+              style="width:100%;padding:5px 7px;font-size:.78rem;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit"></td>
+            <td style="text-align:center">
+              ${hasPr?'<span class="badge-ok">✓ cadastrado</span>':'<span class="badge-sem">⚠ sem preco</span>'}
+            </td>
+            <td>
+              <button class="th-save-btn" onclick="salvarPrecoHosp('${_thHospSel}','${p.nome.replace(/'/g,"\\'")}','${eid}')">Salvar</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    </div>
+  `;
+}
+
+function _thUpdateTotal(eid){
+  const g=id=>parseMoeda(document.getElementById(id)?.value||'0');
+  const tot=g(eid+'_hc')+g(eid+'_mc')+g(eid+'_ac')+g(eid+'_ec');
+  const el=document.getElementById(eid+'_tot');
+  if(el)el.textContent=tot>0?'R$ '+fN(tot):'—';
+}
+
+function salvarPrecoHosp(hospKey,procName,eid){
+  const g=id=>parseMoeda(document.getElementById(id)?.value||'0');
+  const price={
+    hospitalCost:g(eid+'_hc'),
+    materialCost:g(eid+'_mc'),
+    anesthesiaCost:g(eid+'_ac'),
+    extraCost:g(eid+'_ec'),
+    notes:document.getElementById(eid+'_obs')?.value.trim()||'',
+    updatedAt:new Date().toISOString(),updatedBy:CU
+  };
+  const path='hospitalPrices/'+hospKey+'/'+procName;
+  dbRef.child(path).set(price);
+  fbAddLog('TABELA HOSPITALAR',`Preco salvo: ${hospKey} + ${procName}`);
+  showToast('Preco salvo!','#27ae60');
+}
+
+function salvarTodosPrecos(){
+  const procs=PROC_ORC;
+  procs.forEach(p=>{
+    const eid='thpr_'+_thHospSel+'_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
+    const hcEl=document.getElementById(eid+'_hc');
+    if(!hcEl)return;
+    const g=id=>parseMoeda(document.getElementById(id)?.value||'0');
+    const tot=g(eid+'_hc')+g(eid+'_mc')+g(eid+'_ac')+g(eid+'_ec');
+    if(tot===0)return; // skip empty rows
+    const price={
+      hospitalCost:g(eid+'_hc'),materialCost:g(eid+'_mc'),
+      anesthesiaCost:g(eid+'_ac'),extraCost:g(eid+'_ec'),
+      notes:document.getElementById(eid+'_obs')?.value.trim()||'',
+      updatedAt:new Date().toISOString(),updatedBy:CU
+    };
+    dbRef.child('hospitalPrices/'+_thHospSel+'/'+p.nome).set(price);
+  });
+  fbAddLog('TABELA HOSPITALAR',`Todos os precos salvos para ${_thHospSel}`);
+  showToast('Todos os precos salvos!','#27ae60');
 }
 
 // ==================== CFO ANALYSIS ====================
@@ -1689,104 +2057,170 @@ function gerarPDFOrcamento(id){
   const orc=typeof id==='object'?id:(DATA.orcamentos&&DATA.orcamentos[id]);if(!orc)return;
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'mm',format:'a4'});
-  const M=14,MR=196,PH=297;
+  const ML=14,MR=196,PW=210,PH=297;
+  const NAVY=[26,79,122],STEEL=[44,62,80],MUTED=[120,130,140],LIGHT=[240,244,248],WHITE=[255,255,255];
+  const ACCENT=[26,79,122];
 
-  // ======================== LOGO (topo esquerdo) ========================
-  _oPdfLogo(doc,M,10,1);
+  // ======================== LOGO TOPO ========================
+  _oPdfLogo(doc,ML,10,1);
 
-  // ======================== CABEÇALHO PACIENTE (duas colunas) ========================
-  let y=52;
-  const C2=108; // coluna direita começa aqui
+  // ======================== CABEÇALHO (duas colunas) ========================
+  let y=50;
+  // Linha sep acima do paciente
+  _oPdfLine(doc,y,ML,MR,.5,...NAVY);y+=6;
 
-  // Linha 1: Nome | "De: Dr. Felipe Hissa Coelho"
-  _oPdfTxt(doc,(orc.paciente||'').toUpperCase(),M,y,11,true);
-  _oPdfTxt(doc,'De: Dr. Felipe Hissa Coelho',C2,y,10,true);
-  y+=2;_oPdfLine(doc,y,M,MR);y+=6;
+  // Paciente (esq) | Médico (dir)
+  const C2=108;
+  _oPdfTxt(doc,(orc.paciente||'').toUpperCase(),ML,y,11,true,...NAVY);
+  _oPdfTxt(doc,'Dr. Felipe Hissa Coelho',C2,y,9,true,...STEEL);y+=5;
+  _oPdfTxt(doc,'CPF: '+(orc.cpf||'nao informado'),ML,y,8.5,false,...MUTED);
+  _oPdfTxt(doc,'CRM-PE 15420',C2,y,8.5,false,...MUTED);y+=4.5;
+  _oPdfTxt(doc,'RG: '+(orc.rg||'nao informado'),ML,y,8.5,false,...MUTED);
+  _oPdfTxt(doc,'Cirurgia Plastica',C2,y,8.5,false,...MUTED);y+=4.5;
+  if(orc.tel){_oPdfTxt(doc,'Tel: '+orc.tel,ML,y,8.5,false,...MUTED);y+=4.5;}
+  _oPdfTxt(doc,'Data: '+fD(orc.data)+'    Validade: '+fD(orc.validade),ML,y,8.5,false,...MUTED);y+=3;
+  _oPdfLine(doc,y,ML,MR,.5,...NAVY);y+=8;
 
-  // Linha 2: CPF | CRM
-  _oPdfTxt(doc,'CPF: '+(orc.cpf||'nao informado'),M,y,9,true);
-  _oPdfTxt(doc,'CRM: 15420_________',C2,y,9,true);
-  y+=2;_oPdfLine(doc,y,M,MR);y+=6;
+  // ======================== SEÇÃO HONORÁRIOS ========================
+  // Cabeçalho de seção
+  doc.setFillColor(...LIGHT);
+  doc.rect(ML,y-1,MR-ML,6,`F`);
+  _oPdfTxt(doc,'HONORARIOS MEDICOS',ML+2,y+3.5,8,true,...NAVY);y+=9;
 
-  // Linha 3: RG | Orçado por
-  _oPdfTxt(doc,'RG ID: '+(orc.rg||'nao informado'),M,y,9,true);
-  _oPdfTxt(doc,'Orcado por: Felipe Hissa Coelho',C2,y,9,true);
-  y+=2;_oPdfLine(doc,y,M,MR);y+=8;
-
-  // ======================== TABELA DE SERVICOS ========================
-  const rows=(orc.servicos||[]).map(s=>{
+  const servRows=(orc.servicos||[]).map(s=>{
     const custo=s.valorUnit||0,qty=s.qty||1;
-    const valor=custo*qty,descVal=valor*(s.descPct||0)/100,final=valor-descVal;
-    return[(s.proc||'—').toUpperCase(),String(qty),'R$ '+fN(custo),'R$ '+fN(valor),'R$ '+fN(descVal),'R$ '+fN(final)];
+    const bruto=custo*qty,desc=bruto*(s.descPct||0)/100,final=bruto-desc;
+    return[
+      (s.proc||'—'),
+      String(qty),
+      'R$ '+fN(custo),
+      s.descPct?s.descPct+'%':'—',
+      'R$ '+fN(final)
+    ];
   });
+
   doc.autoTable({
     startY:y,
-    head:[['Servico','QTD','Custo','Valor','Desconto','Valor com desconto']],
-    body:rows,
-    styles:{fontSize:8.5,cellPadding:3.8,lineColor:[200,210,220],lineWidth:.2,textColor:[44,62,80]},
-    headStyles:{fillColor:[240,244,248],textColor:[44,62,80],fontStyle:'bold',lineColor:[180,195,210],lineWidth:.3},
-    bodyStyles:{fillColor:[255,255,255]},
+    head:[['Procedimento','Qtd','Valor Unit.','Desc.','Subtotal']],
+    body:servRows,
+    styles:{fontSize:8.5,cellPadding:3.5,lineColor:[210,218,226],lineWidth:.2,textColor:[...STEEL]},
+    headStyles:{fillColor:[...LIGHT],textColor:[...STEEL],fontStyle:'bold',lineColor:[180,195,210],lineWidth:.25,fontSize:7.5},
+    bodyStyles:{fillColor:[...WHITE]},
+    alternateRowStyles:{fillColor:[248,251,253]},
     columnStyles:{
-      0:{cellWidth:'auto'},
-      1:{cellWidth:12,halign:'center'},
-      2:{cellWidth:28,halign:'right'},
-      3:{cellWidth:28,halign:'right'},
-      4:{cellWidth:24,halign:'right'},
-      5:{cellWidth:36,halign:'right'},
+      0:{cellWidth:'auto',fontStyle:'bold'},
+      1:{cellWidth:11,halign:'center'},
+      2:{cellWidth:30,halign:'right'},
+      3:{cellWidth:18,halign:'center'},
+      4:{cellWidth:32,halign:'right',fontStyle:'bold'},
     },
-    margin:{left:M,right:M},
-    tableLineColor:[180,195,210],tableLineWidth:.2,
+    margin:{left:ML,right:ML},
+    tableLineColor:[200,210,220],tableLineWidth:.2,
   });
-  y=doc.lastAutoTable.finalY+5;
+  y=doc.lastAutoTable.finalY+3;
 
-  // ======================== TOTAIS (alinhados à direita) ========================
-  _oPdfTxt(doc,'Valor total:  R$ '+fN(orc.subtotal||0),MR,y,9,false,80,95,110,'right');y+=6;
-  _oPdfTxt(doc,'Valor com desconto:  R$ '+fN((orc.subtotal||0)-(orc.desconto||0)),MR,y,10,true,32,52,68,'right');y+=11;
+  // Subtotal serviços (alinhado à direita)
+  const servFinal=(orc.subtotal||0)-(orc.desconto||0);
+  _oPdfTxt(doc,'Subtotal honorarios: R$ '+fN(orc.subtotal||0),MR,y,8,false,...MUTED,'right');y+=4.5;
+  if((orc.desconto||0)>0){
+    _oPdfTxt(doc,'Desconto: - R$ '+fN(orc.desconto),MR,y,8,false,180,60,60,'right');y+=4.5;
+  }
+  _oPdfTxt(doc,'Total honorarios: R$ '+fN(servFinal),MR,y,9,true,...ACCENT,'right');y+=8;
 
-  // ======================== DATA E VALIDADE ========================
-  _oPdfTxt(doc,'Data: '+fD(orc.data),M,y,9);y+=5.5;
-  _oPdfTxt(doc,'Validade: '+fD(orc.validade),M,y,9);y+=11;
+  // ======================== SEÇÃO HOSPITAL ========================
+  const hospRows=orc.hospRows||[];
+  const legacyHosp=!hospRows.length&&orc.hospNome&&(orc.hospVal||0)>0;
 
-  // ======================== OBSERVACOES ========================
-  _oPdfLine(doc,y,M,MR,.3);y+=5;
-  _oPdfTxt(doc,'Observacoes',M,y,9,true);y+=5;
+  if(hospRows.length||legacyHosp){
+    doc.setFillColor(...LIGHT);
+    doc.rect(ML,y-1,MR-ML,6,'F');
+    _oPdfTxt(doc,'CUSTOS HOSPITALARES',ML+2,y+3.5,8,true,...NAVY);y+=9;
 
-  // Monta texto das observações (obs + hospital se houver)
-  const hospObs=orc.hospNome?orc.hospNome+(orc.hospVal?' R$: '+fN(orc.hospVal):''):'';
-  const obsCompleto=[orc.obs||'',hospObs].filter(Boolean).join('\n');
-  if(obsCompleto.trim()){
-    doc.setFontSize(8.5);doc.setFont('helvetica','normal');doc.setTextColor(44,62,80);
-    const obsLines=doc.splitTextToSize(obsCompleto,MR-M);
-    doc.text(obsLines,M,y);y+=obsLines.length*4.8+5;
-  } else y+=4;
-  _oPdfLine(doc,y,M,MR,.3);
+    const hRows=hospRows.length?hospRows:[{
+      hospNome:orc.hospNome,procName:'',
+      hospitalCost:orc.hospVal||0,materialCost:0,anesthesiaCost:0,extraCost:0,
+      subtotal:orc.hospVal||0
+    }];
 
-  // ======================== RODAPE (todas as paginas) ========================
+    const hBody=hRows.map(r=>[
+      r.hospNome||'—',r.procName||'—',
+      r.hospitalCost>0?'R$ '+fN(r.hospitalCost):'—',
+      r.materialCost>0?'R$ '+fN(r.materialCost):'—',
+      r.anesthesiaCost>0?'R$ '+fN(r.anesthesiaCost):'—',
+      r.extraCost>0?'R$ '+fN(r.extraCost):'—',
+      'R$ '+fN(r.subtotal||((r.hospitalCost||0)+(r.materialCost||0)+(r.anesthesiaCost||0)+(r.extraCost||0)))
+    ]);
+
+    doc.autoTable({
+      startY:y,
+      head:[['Hospital','Procedimento','H. Custo','Material','Anestesia','Extras','Subtotal']],
+      body:hBody,
+      styles:{fontSize:8,cellPadding:3.2,lineColor:[210,218,226],lineWidth:.2,textColor:[...STEEL]},
+      headStyles:{fillColor:[...LIGHT],textColor:[...STEEL],fontStyle:'bold',lineColor:[180,195,210],lineWidth:.25,fontSize:7.5},
+      bodyStyles:{fillColor:[...WHITE]},
+      alternateRowStyles:{fillColor:[248,251,253]},
+      columnStyles:{
+        0:{cellWidth:'auto',fontStyle:'bold'},
+        1:{cellWidth:'auto'},
+        2:{cellWidth:24,halign:'right'},
+        3:{cellWidth:22,halign:'right'},
+        4:{cellWidth:22,halign:'right'},
+        5:{cellWidth:18,halign:'right'},
+        6:{cellWidth:26,halign:'right',fontStyle:'bold'},
+      },
+      margin:{left:ML,right:ML},
+      tableLineColor:[200,210,220],tableLineWidth:.2,
+    });
+    y=doc.lastAutoTable.finalY+3;
+
+    const hospTot=orc.hospTotal||orc.hospVal||hRows.reduce((s,r)=>s+(r.subtotal||0),0);
+    _oPdfTxt(doc,'Total hospitalar: R$ '+fN(hospTot),MR,y,9,true,...ACCENT,'right');y+=8;
+  }
+
+  // ======================== TOTAL GERAL (caixa destaque) ========================
+  const grandTotal=orc.total||0;
+  // Caixa azul
+  doc.setFillColor(...NAVY);
+  doc.roundedRect(ML,y,MR-ML,13,2,2,'F');
+  _oPdfTxt(doc,'TOTAL GERAL',ML+6,y+8.5,9,true,...WHITE);
+  _oPdfTxt(doc,'R$ '+fN(grandTotal),MR-4,y+8.5,12,true,...WHITE,'right');
+  y+=20;
+
+  // ======================== OBSERVAÇÕES ========================
+  const obsText=(orc.obs||'').trim();
+  if(obsText){
+    doc.setFillColor(...LIGHT);
+    doc.rect(ML,y-1,MR-ML,6,'F');
+    _oPdfTxt(doc,'OBSERVACOES E CONDICOES',ML+2,y+3.5,8,true,...NAVY);y+=9;
+    doc.setFontSize(8.5);doc.setFont('helvetica','normal');doc.setTextColor(...STEEL);
+    const lines=doc.splitTextToSize(obsText,MR-ML-4);
+    doc.text(lines,ML+2,y);y+=lines.length*4.8+6;
+  }
+
+  _oPdfLine(doc,y,ML,MR,.3,...MUTED);
+
+  // ======================== RODAPÉ (todas as páginas) ========================
   const totalPags=doc.internal.getNumberOfPages();
   for(let pg=1;pg<=totalPags;pg++){
     doc.setPage(pg);
     const fy=PH-26;
-    _oPdfLine(doc,fy-1,M,MR,.3);
-
-    // Logo pequena
-    _oPdfLogo(doc,M,fy+1,.42);
-
-    // Wordmark FELIPE HISSA
-    const wx=M+13;
-    _oPdfTxt(doc,'CRM 15420',wx,fy+3,5.5,false,110,125,140);
-    _oPdfTxt(doc,'FELIPE',wx,fy+8,8.5,true,32,52,68);
-    _oPdfTxt(doc,'HISSA',wx,fy+14.5,8.5,true,32,52,68);
-
-    // Contatos
-    const cx=wx+29;
-    _oPdfTxt(doc,'(c)  81 994795101',cx,fy+5,7.5,false,80,95,110);
-    _oPdfTxt(doc,'(e)  contato@drfelipehissa.com.br',cx,fy+10,7.5,false,80,95,110);
-    _oPdfTxt(doc,'(a)  R. Gen. Joaquim Inacio, 830, Sala 707',cx,fy+15,7.5,false,80,95,110);
+    _oPdfLine(doc,fy-2,ML,MR,.4,...NAVY);
+    _oPdfLogo(doc,ML,fy+1,.42);
+    const wx=ML+13;
+    _oPdfTxt(doc,'CRM 15420',wx,fy+3,5.5,false,...MUTED);
+    _oPdfTxt(doc,'FELIPE',wx,fy+8,8.5,true,...STEEL);
+    _oPdfTxt(doc,'HISSA',wx,fy+14.5,8.5,true,...STEEL);
+    const cx=wx+30;
+    _oPdfTxt(doc,'(c)  81 99479-5101',cx,fy+5,7.5,false,...MUTED);
+    _oPdfTxt(doc,'(e)  contato@drfelipehissa.com.br',cx,fy+10,7.5,false,...MUTED);
+    _oPdfTxt(doc,'(a)  R. Gen. Joaquim Inacio, 830, Sala 707 - Recife/PE',cx,fy+15,7.5,false,...MUTED);
+    // Número de página
+    _oPdfTxt(doc,'Pag. '+pg+'/'+totalPags,MR,fy+15,7,false,...MUTED,'right');
   }
 
   doc.save('orcamento_'+(orc.paciente||'paciente').replace(/\s+/g,'_')+'_'+(orc.data||'sem_data')+'.pdf');
-  fbAddLog('PDF ORCAMENTO','PDF gerado para '+orc.paciente+' - R$ '+fN(orc.total));
-  showToast('Orcamento PDF gerado!','#8e44ad');
+  fbAddLog('PDF ORCAMENTO','PDF gerado para '+(orc.paciente||'')+'  R$ '+fN(grandTotal));
+  showToast('PDF gerado!','#8e44ad');
 }
 </script>
 </body>
