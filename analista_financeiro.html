@@ -276,7 +276,9 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
     <button class="sb" onclick="gerarPDF()">📄 PDF</button>
     <button class="sb" onclick="exportarJSON()">⬇ Backup</button>
     <button class="sb" onclick="document.getElementById('importInput').click()">⬆ Restaurar</button>
+    <button class="sb" title="Carregar logo para o PDF" onclick="document.getElementById('logoInput').click()">🖼 Logo PDF</button>
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importarJSON(this)">
+    <input type="file" id="logoInput" accept="image/*" style="display:none" onchange="carregarLogoPDF(this)">
   </div>
 </div>
 
@@ -661,6 +663,28 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
 
 </div><!-- /content -->
 
+<!-- ===== MODAL EDITAR PACIENTE ===== -->
+<div class="modal-overlay" id="editPatModal" style="display:none" onclick="if(event.target===this)fecharEdicaoPaciente()">
+  <div class="modal-box">
+    <h3>✏️ Editar Paciente</h3>
+    <input type="hidden" id="epId">
+    <div class="fg"><label>Nome completo *</label><input type="text" id="epNome" placeholder="Nome do paciente"></div>
+    <div class="fr">
+      <div><label>CPF</label><input type="text" id="epCPF" placeholder="000.000.000-00"></div>
+      <div><label>RG</label><input type="text" id="epRG" placeholder="0.000.000"></div>
+    </div>
+    <div class="fr">
+      <div><label>Telefone</label><input type="text" id="epTel" placeholder="(99) 99999-9999"></div>
+      <div><label>E-mail</label><input type="text" id="epEmail" placeholder="paciente@email.com"></div>
+    </div>
+    <div class="fg"><label>Observações</label><textarea id="epObs" rows="2" placeholder="Observações sobre o paciente..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ok" style="flex:1" onclick="salvarEdicaoPaciente()">✓ Salvar Alterações</button>
+      <button class="btn btn-neu" onclick="fecharEdicaoPaciente()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL NOVO PACIENTE (ORÇAMENTO) ===== -->
 <div class="modal-overlay" id="newPatModal" style="display:none" onclick="if(event.target===this)fecharNovoPatOrc()">
   <div class="modal-box">
@@ -810,6 +834,7 @@ let connListener = null;
 
 function iniciarApp() {
   fillPeriods(); setDate(); setTipo('receita');
+  _tentarCarregarLogoAuto(); // tenta carregar logo_v1.png do servidor
 
   // Monitor de conexão
   connListener = firebase.database().ref('.info/connected').on('value', snap => {
@@ -1026,48 +1051,125 @@ function renderLancs(){
   }).join('');
 }
 
+// ---- Editar paciente ----
+function editarPaciente(pid){
+  const p=DATA.patients&&DATA.patients[pid];
+  if(!p){showToast('Paciente nao encontrado no cadastro.','#e74c3c');return;}
+  document.getElementById('epId').value=pid;
+  document.getElementById('epNome').value=p.nome||'';
+  document.getElementById('epCPF').value=p.cpf||'';
+  document.getElementById('epRG').value=p.rg||'';
+  document.getElementById('epTel').value=p.tel||'';
+  document.getElementById('epEmail').value=p.email||'';
+  document.getElementById('epObs').value=p.obs||'';
+  document.getElementById('editPatModal').style.display='flex';
+  setTimeout(()=>document.getElementById('epNome').focus(),100);
+}
+
+function fecharEdicaoPaciente(){
+  document.getElementById('editPatModal').style.display='none';
+}
+
+function salvarEdicaoPaciente(){
+  const pid=document.getElementById('epId').value;
+  if(!pid){showToast('Erro: ID nao encontrado.','#e74c3c');return;}
+  const nome=document.getElementById('epNome').value.trim();
+  if(!nome){showToast('Informe o nome.','#e74c3c');return;}
+  const old=DATA.patients[pid]||{};
+  const updated={
+    ...old,id:+pid,nome,
+    cpf:document.getElementById('epCPF').value.trim(),
+    rg:document.getElementById('epRG').value.trim(),
+    tel:document.getElementById('epTel').value.trim(),
+    email:document.getElementById('epEmail').value.trim(),
+    obs:document.getElementById('epObs').value.trim(),
+    updatedAt:new Date().toISOString(),updatedBy:CU
+  };
+  dbRef.child('patients/'+pid).set(updated);
+  fbAddLog('EDIÇÃO PACIENTE',`Paciente editado: ${nome} (ID ${pid}) por ${CU}`);
+  fecharEdicaoPaciente();
+  showToast('Paciente atualizado!','#27ae60');
+}
+
+function cadastrarNovoPacienteManual(){
+  // Abre modal de novo paciente (mesmo fluxo do orçamento)
+  abrirNovoPatOrc();
+}
+
 function renderPacientes(){
   const el=document.getElementById('pacList');if(!el)return;
   const s=(document.getElementById('searchPac')?.value||'').toLowerCase();
   const map={};
-  // Pacientes de lançamentos (receitas)
+
+  // 1. Pacientes do cadastro master (DATA.patients)
+  Object.values(DATA.patients||{}).forEach(p=>{
+    if(!p.nome)return;
+    const k=p.nome.trim().toUpperCase();
+    if(s&&!k.toLowerCase().includes(s)&&!(p.cpf||'').includes(s)&&!(p.tel||'').includes(s))return;
+    if(!map[k])map[k]={nome:p.nome.trim(),visitas:[],total:0,procs:[],orcs:0,totalOrc:0,usuarios:[],patId:p.id,cpf:p.cpf||'',tel:p.tel||''};
+    else{map[k].patId=p.id;map[k].cpf=p.cpf||map[k].cpf;map[k].tel=p.tel||map[k].tel;}
+  });
+
+  // 2. Pacientes de lançamentos (receitas)
   getLancs().filter(l=>l.tipo==='receita'&&l.paciente&&l.paciente.trim()).forEach(l=>{
     const k=l.paciente.trim().toUpperCase();
     if(s&&!k.toLowerCase().includes(s))return;
-    if(!map[k])map[k]={nome:l.paciente.trim(),visitas:[],total:0,procs:[],orcs:0,totalOrc:0,usuarios:[]};
+    if(!map[k])map[k]={nome:l.paciente.trim(),visitas:[],total:0,procs:[],orcs:0,totalOrc:0,usuarios:[],patId:null,cpf:'',tel:''};
     map[k].visitas.push(l);map[k].total+=l.valor;
     if(l.procedimento&&!map[k].procs.includes(l.procedimento))map[k].procs.push(l.procedimento);
     if(l.usuario&&!map[k].usuarios.includes(l.usuario))map[k].usuarios.push(l.usuario);
   });
-  // Pacientes de orçamentos
+
+  // 3. Pacientes de orçamentos
   Object.values(DATA.orcamentos||{}).forEach(o=>{
     if(!o.paciente)return;
     const k=o.paciente.trim().toUpperCase();
     if(s&&!k.toLowerCase().includes(s))return;
-    if(!map[k])map[k]={nome:o.paciente.trim(),visitas:[],total:0,procs:[],orcs:0,totalOrc:0,usuarios:[]};
+    if(!map[k])map[k]={nome:o.paciente.trim(),visitas:[],total:0,procs:[],orcs:0,totalOrc:0,usuarios:[],patId:null,cpf:o.cpf||'',tel:''};
     map[k].orcs=(map[k].orcs||0)+1;
-    map[k].totalOrc=(map[k].totalOrc||0)+o.total;
+    map[k].totalOrc=(map[k].totalOrc||0)+(o.total||0);
     (o.servicos||[]).forEach(sv=>{if(sv.proc&&!map[k].procs.includes(sv.proc))map[k].procs.push(sv.proc);});
     if(o.usuario&&!map[k].usuarios.includes(o.usuario))map[k].usuarios.push(o.usuario);
+    if(!map[k].cpf&&o.cpf)map[k].cpf=o.cpf;
   });
+
   const pacs=Object.values(map).sort((a,b)=>(b.total+b.totalOrc)-(a.total+a.totalOrc));
-  if(!pacs.length){el.innerHTML='<div class="empty"><div class="ico">👤</div>Nenhum paciente cadastrado ainda.</div>';return;}
+  if(!pacs.length){
+    el.innerHTML='<div class="empty"><div class="ico">👤</div>Nenhum paciente cadastrado ainda.</div>';return;
+  }
   const ucm={};getUsuarios().forEach((u,i)=>{ucm[u]=UCORS[i%UCORS.length];});
-  el.innerHTML=`<table><thead><tr><th>Paciente</th><th>Procedimentos</th><th>Atendimentos</th><th>Orçamentos</th><th>Último</th><th>Por</th><th style="text-align:right">Faturado</th></tr></thead><tbody>`+
+
+  el.innerHTML=`
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn btn-ok btn-sm" onclick="cadastrarNovoPacienteManual()">+ Novo Paciente</button>
+    </div>
+    <table><thead><tr>
+      <th>Paciente</th><th>Contato</th><th>Procedimentos</th>
+      <th style="text-align:center">Atend.</th><th style="text-align:center">Orç.</th>
+      <th>Último</th><th>Por</th>
+      <th style="text-align:right">Faturado</th><th></th>
+    </tr></thead><tbody>`+
   pacs.map(p=>{
-    const visOrd=p.visitas.sort((a,b)=>b.data.localeCompare(a.data));
+    const visOrd=[...p.visitas].sort((a,b)=>b.data.localeCompare(a.data));
     const ult=visOrd[0];
     const orcTags=p.orcs?`<span style="background:#eaf3fb;color:var(--primary);border-radius:5px;padding:1px 7px;font-size:.69rem;font-weight:700">${p.orcs} orç.</span>`:'—';
     const usHtml=p.usuarios.map(u=>`<span style="color:${ucm[u]||'#95a5a6'};font-weight:700;font-size:.76rem">${u}</span>`).join(', ');
+    const editBtn=p.patId
+      ?`<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;white-space:nowrap" onclick="editarPaciente(${p.patId})">✏️ Editar</button>`
+      :`<button class="btn btn-sm" style="background:#f5f5f5;color:var(--muted);border:1px solid var(--brd);white-space:nowrap;font-size:.72rem" onclick="abrirNovoPatOrc()" title="Cadastrar no sistema">+ Cadastrar</button>`;
+    const info=[];
+    if(p.cpf)info.push(p.cpf);if(p.tel)info.push(p.tel);
     return`<tr>
       <td><b>${p.nome}</b>${p.totalOrc?`<div style="font-size:.69rem;color:var(--muted)">Orç.: R$ ${fN(p.totalOrc)}</div>`:''}
       </td>
-      <td style="font-size:.76rem">${p.procs.slice(0,3).join(', ')+(p.procs.length>3?'…':'')||'—'}</td>
+      <td style="font-size:.75rem;color:var(--muted)">${info.join('<br>')||'—'}</td>
+      <td style="font-size:.75rem">${p.procs.slice(0,3).join(', ')+(p.procs.length>3?'…':'')||'—'}</td>
       <td style="text-align:center">${p.visitas.length||'—'}</td>
       <td style="text-align:center">${orcTags}</td>
       <td>${ult?fD(ult.data):'—'}</td>
       <td>${usHtml||'—'}</td>
       <td style="text-align:right;font-weight:700;color:var(--ok)">${p.total?'R$ '+fN(p.total):'—'}</td>
+      <td>${editBtn}</td>
     </tr>`;
   }).join('')+'</tbody></table>';
 }
@@ -1221,6 +1323,7 @@ const HOSP_KEYS=[
   {key:'sao_marcos',nome:'Hospital São Marcos',cor:'#2d7bbf'},
   {key:'avila',nome:'Hospital de Ávila',cor:'#27ae60'},
   {key:'santa_terezinha',nome:'Sta. Terezinha',cor:'#9b59b6'},
+  {key:'sabin',nome:'Clínica Sabin',cor:'#e8a838'},
 ];
 
 // ==================== STATE ====================
@@ -2027,22 +2130,78 @@ function renderCFO(){
   </div>`;
 }
 
+/* ---- Logo PDF ---- */
+let PDF_LOGO_DATA = null; // base64 PNG, carregado via arquivo ou URL
+
+function carregarLogoPDF(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    PDF_LOGO_DATA = e.target.result;
+    showToast('Logo carregado! Sera usado nos proximos PDFs.', '#27ae60');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function _tentarCarregarLogoAuto() {
+  // Tenta carregar automaticamente do mesmo dominio (funciona quando hospedado no site)
+  const candidates = [
+    window.location.origin + '/logo_v1.png',
+    window.location.origin + '/logo.png',
+    window.location.origin + '/images/logo_v1.png',
+  ];
+  function tryNext(i) {
+    if(i >= candidates.length || PDF_LOGO_DATA) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        const MAX_W = 600, MAX_H = 300;
+        const ratio = Math.min(MAX_W / img.naturalWidth, MAX_H / img.naturalHeight, 1);
+        c.width = Math.round(img.naturalWidth * ratio);
+        c.height = Math.round(img.naturalHeight * ratio);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        PDF_LOGO_DATA = c.toDataURL('image/png');
+      } catch(e) { tryNext(i+1); }
+    };
+    img.onerror = () => tryNext(i+1);
+    img.src = candidates[i];
+  }
+  tryNext(0);
+}
+
 /* ---- helpers internos do PDF ---- */
+function _oPdfInsertLogo(doc, ML, y) {
+  // Usa logo real se disponivel, senao desenha logo vetorial de fallback
+  if (PDF_LOGO_DATA) {
+    // Logo real: caber em ~55mm x 30mm mantendo proporcao
+    const IMG_MAX_W = 55, IMG_MAX_H = 30;
+    // Deduz proporcao da imagem a partir do data URL via Image (sincrono impossivel, usar dimensoes fixas)
+    // Usa area padrao 55x30 e deixa jsPDF recortar
+    doc.addImage(PDF_LOGO_DATA, 'PNG', ML, y, IMG_MAX_W, IMG_MAX_H, '', 'FAST');
+    return y + IMG_MAX_H + 4; // retorna y apos o logo
+  } else {
+    // Fallback: logo vetorial desenhada
+    _oPdfLogo(doc, ML, y + 5, 1);
+    return y + 40;
+  }
+}
+
 function _oPdfLogo(doc,x,y,s){
-  // Oval esquerda (azul-marinho escuro)
-  doc.setFillColor(32,52,68);doc.ellipse(x+9*s,y+13*s,9*s,12*s,'F');
-  // Oval direita (teal)
-  doc.setFillColor(38,115,130);doc.ellipse(x+17*s,y+11*s,9*s,12*s,'F');
-  // Olhos — fundo branco
-  doc.setFillColor(248,250,252);
-  doc.ellipse(x+12.5*s,y+9*s,3.2*s,4*s,'F');
-  doc.ellipse(x+19*s,y+7.8*s,2.8*s,3.6*s,'F');
-  // Pupilas
-  doc.setFillColor(32,52,68);
-  doc.ellipse(x+12.5*s,y+9.8*s,1.8*s,2.3*s,'F');
-  doc.ellipse(x+19*s,y+8.6*s,1.6*s,2*s,'F');
-  // Arco inferior (queixo/máscara)
-  doc.setFillColor(32,52,68);doc.ellipse(x+15*s,y+18*s,5.2*s,2.5*s,'F');
+  // Circulo azul-marinho (oval do logo)
+  doc.setFillColor(26,60,90);doc.ellipse(x+14*s,y+14*s,12*s,14*s,'F');
+  // Linha vertical central (traço branco)
+  doc.setDrawColor(255,255,255);doc.setLineWidth(s*.8);
+  doc.line(x+14*s,y+3*s,x+14*s,y+26*s);
+  // Face: arco dourado (olho e contorno)
+  doc.setDrawColor(200,160,60);doc.setLineWidth(s*.7);
+  doc.ellipse(x+16*s,y+11*s,5*s,7*s,'S');
+  doc.ellipse(x+11*s,y+8*s,1.8*s,2.5*s,'S');
+  // Highlight claro
+  doc.setFillColor(180,200,220);
+  doc.ellipse(x+8.5*s,y+7*s,1.2*s,1.2*s,'F');
 }
 function _oPdfLine(doc,y,x1,x2,w,r,g,b){
   doc.setLineWidth(w||.25);doc.setDrawColor(r||180,g||190,b||200);doc.line(x1,y,x2,y);
@@ -2062,10 +2221,10 @@ function gerarPDFOrcamento(id){
   const ACCENT=[26,79,122];
 
   // ======================== LOGO TOPO ========================
-  _oPdfLogo(doc,ML,10,1);
+  let y = _oPdfInsertLogo(doc, ML, 8);
+  if(y < 46) y = 46; // garante espaco minimo para cabecalho
 
   // ======================== CABEÇALHO (duas colunas) ========================
-  let y=50;
   // Linha sep acima do paciente
   _oPdfLine(doc,y,ML,MR,.5,...NAVY);y+=6;
 
@@ -2205,8 +2364,9 @@ function gerarPDFOrcamento(id){
     doc.setPage(pg);
     const fy=PH-26;
     _oPdfLine(doc,fy-2,ML,MR,.4,...NAVY);
-    _oPdfLogo(doc,ML,fy+1,.42);
-    const wx=ML+13;
+    if(PDF_LOGO_DATA){doc.addImage(PDF_LOGO_DATA,'PNG',ML,fy+1,18,11,'','FAST');}
+    else{_oPdfLogo(doc,ML,fy+1,.42);}
+    const wx=ML+20;
     _oPdfTxt(doc,'CRM 15420',wx,fy+3,5.5,false,...MUTED);
     _oPdfTxt(doc,'FELIPE',wx,fy+8,8.5,true,...STEEL);
     _oPdfTxt(doc,'HISSA',wx,fy+14.5,8.5,true,...STEEL);
