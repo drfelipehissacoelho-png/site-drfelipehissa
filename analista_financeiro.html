@@ -554,12 +554,9 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
             <table class="htbl" id="hospRowsTable" style="display:none">
               <thead>
                 <tr>
-                  <th style="min-width:130px">Hospital</th>
-                  <th style="min-width:130px">Procedimento</th>
-                  <th style="min-width:80px;text-align:right">H. Custo</th>
-                  <th style="min-width:75px;text-align:right">Material</th>
-                  <th style="min-width:75px;text-align:right">Anestesia</th>
-                  <th style="min-width:65px;text-align:right">Extras</th>
+                  <th style="min-width:140px">Hospital</th>
+                  <th style="min-width:140px">Procedimento</th>
+                  <th style="min-width:110px;text-align:right">Custo Hospitalar</th>
                   <th style="min-width:90px;text-align:right">Subtotal</th>
                   <th style="width:28px"></th>
                 </tr>
@@ -644,7 +641,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
 <!-- TABELA HOSPITALAR -->
 <div id="page-tabela-hosp" class="page">
   <div class="alert ai" style="margin-bottom:14px">
-    🏥 <strong>Tabela Hospitalar</strong> — Cadastre os custos por hospital e procedimento. Esses valores são preenchidos automaticamente nos orçamentos.
+    🏥 <strong>Tabela Hospitalar</strong> — Cadastre o <b>custo hospitalar</b> cobrado ao paciente por hospital e procedimento. Esses valores são preenchidos automaticamente nos orçamentos e aparecerão no PDF do paciente. Os custos internos de equipe (anestesista, instrumentadora, auxiliar) ficam na seção abaixo e são usados apenas para lançamentos financeiros internos.
   </div>
   <div class="th-layout">
     <!-- FILTRO HOSPITAL -->
@@ -661,9 +658,9 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       <div class="th-filter-card" style="margin-top:12px">
         <h4>Legenda</h4>
         <div style="display:flex;flex-direction:column;gap:6px;font-size:.77rem">
-          <div><span class="badge-ok">✓ cadastrado</span> — preço disponível</div>
-          <div><span class="badge-sem">⚠ sem preço</span> — sem valor cadastrado</div>
-          <div style="color:var(--muted);margin-top:4px">Clique em "Salvar" em cada linha para gravar o preço no Firebase.</div>
+          <div><span class="badge-ok">✓ cadastrado</span> — custo hospitalar disponível</div>
+          <div><span class="badge-sem">⚠ sem preco</span> — ainda não cadastrado</div>
+          <div style="color:var(--muted);margin-top:4px">Apenas o <b>custo hospitalar</b> é mostrado ao paciente. Custos de equipe ficam na seção abaixo.</div>
         </div>
       </div>
     </div>
@@ -690,8 +687,8 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div class="sec" style="margin-top:18px">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
       <div>
-        <h3 style="margin:0">👥 Custos de Equipe Cirúrgica</h3>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:3px">Configure os valores pagos à equipe por procedimento. Esses valores são usados para gerar despesas automáticas nos lançamentos.</div>
+        <h3 style="margin:0">🔒 Custos Internos de Equipe <span style="font-size:.72rem;font-weight:400;color:var(--muted)">(não aparecem para o paciente)</span></h3>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:3px">Valores pagos à equipe cirúrgica por procedimento. Ficam escondidos do paciente — usados apenas para gerar despesas automáticas nos lançamentos financeiros e calcular margem.</div>
       </div>
     </div>
     <div id="teamCostList"></div>
@@ -1450,7 +1447,7 @@ const HOSP_KEYS=[
 // ==================== STATE ====================
 let orcItems=[];     // [{id,proc,qty,valorUnit,descPct}]
 let orcPat=null;     // {id,nome,cpf,rg,tel,email}
-let orcHospRows=[];  // [{id,hospKey,procName,hospitalCost,materialCost,anesthesiaCost,extraCost,manual}]
+let orcHospRows=[];  // [{id,hospKey,procName,hospitalCost,manual}]
 let _pacDebTimer=null;
 // Lançamentos patient state
 let _lancPat=null;   // {id,nome,cpf,rg,tel,email}
@@ -1782,7 +1779,7 @@ function renderItemsOrc(){
 
 // ==================== HOSPITAL ROWS ====================
 function addHospRow(){
-  orcHospRows.push({id:Date.now(),hospKey:'',procName:'',hospitalCost:0,materialCost:0,anesthesiaCost:0,extraCost:0,manual:false});
+  orcHospRows.push({id:Date.now(),hospKey:'',procName:'',hospitalCost:0,manual:false});
   renderHospRows();
 }
 
@@ -1795,16 +1792,13 @@ function updateHospSelect(id,field,val){
   const row=orcHospRows.find(x=>x.id===id);if(!row)return;
   row[field]=val;
   if(field==='hospKey'||field==='procName'){
-    // Auto-fill from DB when both fields set
+    // Auto-fill hospital_cost from DB when both fields set
     if(row.hospKey&&row.procName&&!row.manual){
       const prices=DATA.hospitalPrices?.[row.hospKey]?.[row.procName];
       if(prices){
-        row.hospitalCost=prices.hospitalCost||0;
-        row.materialCost=prices.materialCost||0;
-        row.anesthesiaCost=prices.anesthesiaCost||0;
-        row.extraCost=prices.extraCost||0;
+        row.hospitalCost=prices.hospital_cost||prices.hospitalCost||0;
       } else {
-        row.hospitalCost=0;row.materialCost=0;row.anesthesiaCost=0;row.extraCost=0;
+        row.hospitalCost=0;
       }
     }
   }
@@ -1813,14 +1807,14 @@ function updateHospSelect(id,field,val){
 
 function updateHospValor(id,field,rawVal){
   const row=orcHospRows.find(x=>x.id===id);if(!row)return;
-  row[field]=parseMoeda(rawVal);
+  row.hospitalCost=parseMoeda(rawVal);
   row.manual=true;
   calcTotaisOrc();
   _updateHospRowSub(id);
 }
 
 function _hospRowSub(row){
-  return(row.hospitalCost||0)+(row.materialCost||0)+(row.anesthesiaCost||0)+(row.extraCost||0);
+  return row.hospitalCost||0;
 }
 
 function _updateHospRowSub(id){
@@ -1852,29 +1846,17 @@ function renderHospRows(){
     const hasPriceResult=_hasPrice(row);
     const noPrice=hasPriceResult===false&&!row.manual;
     const borderC=noPrice?'#f39c12':row.manual?'#3498db':'var(--brd)';
-    const hSel=s=>`<option value="">Selecione...</option>${HOSP_KEYS.map(h=>`<option value="${h.key}"${row.hospKey===h.key?' selected':''}>${h.nome}</option>`).join('')}`;
+    const hSel=()=>`<option value="">Selecione...</option>${HOSP_KEYS.map(h=>`<option value="${h.key}"${row.hospKey===h.key?' selected':''}>${h.nome}</option>`).join('')}`;
     const pSel=`<option value="">Selecione...</option>${PROC_ORC.map(p=>`<option value="${p.nome}"${row.procName===p.nome?' selected':''}>${p.nome}</option>`).join('')}`;
     return `<tr>
       <td><select style="width:100%;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
           onchange="updateHospSelect(${row.id},'hospKey',this.value)">${hSel()}</select></td>
       <td><select style="width:100%;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
           onchange="updateHospSelect(${row.id},'procName',this.value)">${pSel}</select></td>
-      <td>${noPrice?`<div class="no-price-warn">⚠ sem preço</div>`:`<input type="text" class="moeda-input" value="${row.hospitalCost?fN(row.hospitalCost):''}"
-          style="width:90px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid ${borderC};border-radius:6px"
+      <td>${noPrice?`<div class="no-price-warn">⚠ sem preço — cadastre na aba Tabela</div>`:`<input type="text" class="moeda-input" value="${row.hospitalCost?fN(row.hospitalCost):''}"
+          style="width:110px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid ${borderC};border-radius:6px"
           placeholder="0,00" oninput="maskMoeda(this)"
           onblur="updateHospValor(${row.id},'hospitalCost',this.value);fmtMoeda(this)">`}</td>
-      <td><input type="text" class="moeda-input" value="${row.materialCost?fN(row.materialCost):''}"
-          style="width:78px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
-          placeholder="0,00" oninput="maskMoeda(this)"
-          onblur="updateHospValor(${row.id},'materialCost',this.value);fmtMoeda(this)"></td>
-      <td><input type="text" class="moeda-input" value="${row.anesthesiaCost?fN(row.anesthesiaCost):''}"
-          style="width:78px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
-          placeholder="0,00" oninput="maskMoeda(this)"
-          onblur="updateHospValor(${row.id},'anesthesiaCost',this.value);fmtMoeda(this)"></td>
-      <td><input type="text" class="moeda-input" value="${row.extraCost?fN(row.extraCost):''}"
-          style="width:65px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
-          placeholder="0,00" oninput="maskMoeda(this)"
-          onblur="updateHospValor(${row.id},'extraCost',this.value);fmtMoeda(this)"></td>
       <td class="sub" id="hsub_${row.id}">${sub>0?'R$ '+fN(sub):'—'}</td>
       <td><button onclick="removeHospRow(${row.id})"
           style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:1rem" title="Remover">✕</button></td>
@@ -1949,10 +1931,7 @@ function salvarOrcamento(){
     hospKey:r.hospKey,
     hospNome:(HOSP_KEYS.find(h=>h.key===r.hospKey)||{}).nome||r.hospKey,
     procName:r.procName,
-    hospitalCost:r.hospitalCost||0,
-    materialCost:r.materialCost||0,
-    anesthesiaCost:r.anesthesiaCost||0,
-    extraCost:r.extraCost||0,
+    hospital_cost:r.hospitalCost||0,
     subtotal:_hospRowSub(r),
     manual:r.manual||false
   }));
@@ -1985,8 +1964,8 @@ function gerarPDFOrcRapido(){
   const hospRows=orcHospRows.map(r=>({
     hospNome:(HOSP_KEYS.find(h=>h.key===r.hospKey)||{}).nome||r.hospKey,
     procName:r.procName,
-    hospitalCost:r.hospitalCost||0,materialCost:r.materialCost||0,
-    anesthesiaCost:r.anesthesiaCost||0,extraCost:r.extraCost||0,subtotal:_hospRowSub(r)
+    hospital_cost:r.hospitalCost||0,
+    subtotal:_hospRowSub(r)
   }));
   gerarPDFOrcamento({
     paciente:orcPat.nome,cpf:orcPat.cpf||'',rg:orcPat.rg||'',
@@ -2073,40 +2052,27 @@ function _renderThTable(){
     <table class="th-tbl">
       <thead>
         <tr>
-          <th>Procedimento</th>
-          <th style="text-align:right">H. Custo</th>
-          <th style="text-align:right">Material</th>
-          <th style="text-align:right">Anestesia</th>
-          <th style="text-align:right">Extras</th>
-          <th style="text-align:right">Total</th>
-          <th>Obs. interna</th>
-          <th style="text-align:center">Status</th>
-          <th></th>
+          <th style="min-width:160px">Procedimento</th>
+          <th style="text-align:right;min-width:130px">Custo Hospitalar</th>
+          <th style="min-width:140px">Obs. interna</th>
+          <th style="text-align:center;width:90px">Status</th>
+          <th style="width:60px"></th>
         </tr>
       </thead>
       <tbody>
         ${procs.map(p=>{
           const pr=prices[p.nome]||{};
-          const tot=(pr.hospitalCost||0)+(pr.materialCost||0)+(pr.anesthesiaCost||0)+(pr.extraCost||0);
+          // backward-compat: read hospital_cost (new) or hospitalCost (legacy)
+          const hcVal=pr.hospital_cost||pr.hospitalCost||0;
           const hasPr=!!prices[p.nome];
           const eid='thpr_'+_thHospSel+'_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
           return `<tr id="row_${eid}">
-            <td style="font-weight:600;font-size:.83rem;min-width:160px">${p.nome}</td>
+            <td style="font-weight:600;font-size:.83rem">${p.nome}</td>
             <td><input type="text" class="moeda-input th-inp" id="${eid}_hc"
-              value="${pr.hospitalCost?fN(pr.hospitalCost):''}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="_thUpdateTotal('${eid}');fmtMoeda(this)"></td>
-            <td><input type="text" class="moeda-input th-inp" id="${eid}_mc"
-              value="${pr.materialCost?fN(pr.materialCost):''}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="_thUpdateTotal('${eid}');fmtMoeda(this)"></td>
-            <td><input type="text" class="moeda-input th-inp" id="${eid}_ac"
-              value="${pr.anesthesiaCost?fN(pr.anesthesiaCost):''}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="_thUpdateTotal('${eid}');fmtMoeda(this)"></td>
-            <td><input type="text" class="moeda-input th-inp" id="${eid}_ec"
-              value="${pr.extraCost?fN(pr.extraCost):''}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="_thUpdateTotal('${eid}');fmtMoeda(this)"></td>
-            <td style="text-align:right;font-weight:700;color:var(--primary);font-size:.85rem;min-width:80px" id="${eid}_tot">
-              ${tot>0?'R$ '+fN(tot):'—'}</td>
-            <td><input type="text" id="${eid}_obs" value="${pr.notes||''}" placeholder="Obs..."
+              value="${hcVal?fN(hcVal):''}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)"
+              style="text-align:right"></td>
+            <td><input type="text" id="${eid}_obs" value="${pr.notes||''}" placeholder="Obs. interna..."
               style="width:100%;padding:5px 7px;font-size:.78rem;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit"></td>
             <td style="text-align:center">
               ${hasPr?'<span class="badge-ok">✓ cadastrado</span>':'<span class="badge-sem">⚠ sem preco</span>'}
@@ -2123,47 +2089,45 @@ function _renderThTable(){
 }
 
 function _thUpdateTotal(eid){
-  const g=id=>parseMoeda(document.getElementById(id)?.value||'0');
-  const tot=g(eid+'_hc')+g(eid+'_mc')+g(eid+'_ac')+g(eid+'_ec');
-  const el=document.getElementById(eid+'_tot');
-  if(el)el.textContent=tot>0?'R$ '+fN(tot):'—';
+  // kept for backward compat — no-op now (single field, no total to compute)
 }
 
 function salvarPrecoHosp(hospKey,procName,eid){
-  const g=id=>parseMoeda(document.getElementById(id)?.value||'0');
+  const hc=parseMoeda(document.getElementById(eid+'_hc')?.value||'0');
+  if(hc===0){showToast('Informe o custo hospitalar antes de salvar.','#e74c3c');return;}
   const price={
-    hospitalCost:g(eid+'_hc'),
-    materialCost:g(eid+'_mc'),
-    anesthesiaCost:g(eid+'_ac'),
-    extraCost:g(eid+'_ec'),
+    hospital_cost:hc,
     notes:document.getElementById(eid+'_obs')?.value.trim()||'',
     updatedAt:new Date().toISOString(),updatedBy:CU
   };
   const path='hospitalPrices/'+hospKey+'/'+procName;
   dbRef.child(path).set(price);
-  fbAddLog('TABELA HOSPITALAR',`Preco salvo: ${hospKey} + ${procName}`);
-  showToast('Preco salvo!','#27ae60');
+  // Update status badge immediately
+  const rowEl=document.getElementById('row_thpr_'+hospKey+'_'+procName.replace(/[^a-zA-Z0-9]/g,'_'));
+  if(rowEl){const badges=rowEl.querySelectorAll('.badge-sem');badges.forEach(b=>{b.className='badge-ok';b.textContent='✓ cadastrado';});}
+  fbAddLog('TABELA HOSPITALAR',`Custo hospitalar salvo: ${hospKey} + ${procName} = R$ ${fN(hc)}`);
+  showToast('✓ Custo salvo!','#27ae60');
 }
 
 function salvarTodosPrecos(){
   const procs=PROC_ORC;
+  let count=0;
   procs.forEach(p=>{
     const eid='thpr_'+_thHospSel+'_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
     const hcEl=document.getElementById(eid+'_hc');
     if(!hcEl)return;
-    const g=id=>parseMoeda(document.getElementById(id)?.value||'0');
-    const tot=g(eid+'_hc')+g(eid+'_mc')+g(eid+'_ac')+g(eid+'_ec');
-    if(tot===0)return; // skip empty rows
+    const hc=parseMoeda(hcEl.value||'0');
+    if(hc===0)return; // skip empty rows
     const price={
-      hospitalCost:g(eid+'_hc'),materialCost:g(eid+'_mc'),
-      anesthesiaCost:g(eid+'_ac'),extraCost:g(eid+'_ec'),
+      hospital_cost:hc,
       notes:document.getElementById(eid+'_obs')?.value.trim()||'',
       updatedAt:new Date().toISOString(),updatedBy:CU
     };
     dbRef.child('hospitalPrices/'+_thHospSel+'/'+p.nome).set(price);
+    count++;
   });
-  fbAddLog('TABELA HOSPITALAR',`Todos os precos salvos para ${_thHospSel}`);
-  showToast('Todos os precos salvos!','#27ae60');
+  fbAddLog('TABELA HOSPITALAR',`${count} precos salvos para ${_thHospSel}`);
+  showToast(`✓ ${count} preco(s) salvo(s)!`,'#27ae60');
 }
 
 // ==================== CUSTOS DE EQUIPE ====================
@@ -2597,44 +2561,36 @@ function gerarPDFOrcamento(id){
     doc.rect(ML,y-1,MR-ML,6,'F');
     _oPdfTxt(doc,'CUSTOS HOSPITALARES',ML+2,y+3.5,8,true,...NAVY);y+=9;
 
+    // Backward-compat: read hospital_cost (new) or fall back to hospitalCost (legacy)
     const hRows=hospRows.length?hospRows:[{
       hospNome:orc.hospNome,procName:'',
-      hospitalCost:orc.hospVal||0,materialCost:0,anesthesiaCost:0,extraCost:0,
-      subtotal:orc.hospVal||0
+      hospital_cost:orc.hospVal||0,subtotal:orc.hospVal||0
     }];
 
-    const hBody=hRows.map(r=>[
-      r.hospNome||'—',r.procName||'—',
-      r.hospitalCost>0?'R$ '+fN(r.hospitalCost):'—',
-      r.materialCost>0?'R$ '+fN(r.materialCost):'—',
-      r.anesthesiaCost>0?'R$ '+fN(r.anesthesiaCost):'—',
-      r.extraCost>0?'R$ '+fN(r.extraCost):'—',
-      'R$ '+fN(r.subtotal||((r.hospitalCost||0)+(r.materialCost||0)+(r.anesthesiaCost||0)+(r.extraCost||0)))
-    ]);
+    const hBody=hRows.map(r=>{
+      const hc=r.hospital_cost||r.hospitalCost||r.subtotal||0;
+      return[r.hospNome||'—',r.procName||'—','R$ '+fN(hc)];
+    });
 
     doc.autoTable({
       startY:y,
-      head:[['Hospital','Procedimento','H. Custo','Material','Anestesia','Extras','Subtotal']],
+      head:[['Hospital','Procedimento','Custo Hospitalar']],
       body:hBody,
-      styles:{fontSize:8,cellPadding:3.2,lineColor:[210,218,226],lineWidth:.2,textColor:[...STEEL]},
+      styles:{fontSize:8.5,cellPadding:3.5,lineColor:[210,218,226],lineWidth:.2,textColor:[...STEEL]},
       headStyles:{fillColor:[...LIGHT],textColor:[...STEEL],fontStyle:'bold',lineColor:[180,195,210],lineWidth:.25,fontSize:7.5},
       bodyStyles:{fillColor:[...WHITE]},
       alternateRowStyles:{fillColor:[248,251,253]},
       columnStyles:{
         0:{cellWidth:'auto',fontStyle:'bold'},
         1:{cellWidth:'auto'},
-        2:{cellWidth:24,halign:'right'},
-        3:{cellWidth:22,halign:'right'},
-        4:{cellWidth:22,halign:'right'},
-        5:{cellWidth:18,halign:'right'},
-        6:{cellWidth:26,halign:'right',fontStyle:'bold'},
+        2:{cellWidth:40,halign:'right',fontStyle:'bold'},
       },
       margin:{left:ML,right:ML},
       tableLineColor:[200,210,220],tableLineWidth:.2,
     });
     y=doc.lastAutoTable.finalY+3;
 
-    const hospTot=orc.hospTotal||orc.hospVal||hRows.reduce((s,r)=>s+(r.subtotal||0),0);
+    const hospTot=orc.hospTotal||orc.hospVal||hRows.reduce((s,r)=>s+(r.hospital_cost||r.hospitalCost||r.subtotal||0),0);
     _oPdfTxt(doc,'Total hospitalar: R$ '+fN(hospTot),MR,y,9,true,...ACCENT,'right');y+=8;
   }
 
