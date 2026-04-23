@@ -161,6 +161,15 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
 .pac-det{font-size:.72rem;color:var(--muted);margin-top:2px;}
 .pac-clr{margin-left:auto;background:none;border:none;color:#aaa;font-size:1.05rem;cursor:pointer;line-height:1;}
 .pac-clr:hover{color:var(--err);}
+/* Team preview card (lançamentos) */
+.team-prev{background:#f8faff;border:1.5px solid #c3d9ee;border-radius:10px;padding:12px 14px;margin-top:8px;font-size:.82rem;}
+.team-prev-hd{font-weight:700;color:var(--primary);margin-bottom:8px;font-size:.84rem;display:flex;align-items:center;gap:6px;}
+.team-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed #dce3ea;}
+.team-row:last-child{border-bottom:none;font-weight:700;color:var(--primary);padding-top:6px;}
+.team-row span:last-child{font-weight:600;color:var(--text);}
+.proc-hint{font-size:.72rem;color:var(--ok);margin-top:3px;display:none;}
+.proc-hint.show{display:block;}
+.linked-badge{display:inline-block;background:#e8f0fe;color:#1a4f7a;border-radius:12px;padding:1px 7px;font-size:.68rem;font-weight:700;margin-left:5px;vertical-align:middle;}
 /* Hospital cards */
 .hosp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:9px;margin-bottom:10px;}
 .hc{border:2px solid var(--brd);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s;position:relative;user-select:none;}
@@ -325,9 +334,43 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       </div>
       <div class="fg"><label>Categoria</label><select id="fCategoria"></select></div>
       <div id="camposPac">
-        <div class="fr">
-          <div><label>Nome do Paciente</label><input type="text" id="fPaciente" placeholder="Ex: João Silva"></div>
-          <div><label>Procedimento</label><input type="text" id="fProcedimento" placeholder="Ex: Rinoplastia"></div>
+        <!-- Paciente autocomplete -->
+        <div class="fg" style="margin-bottom:9px">
+          <label>Paciente</label>
+          <div id="lancPacWrap" class="ac-wrap">
+            <input type="text" id="lancPacInput" placeholder="Digite o nome do paciente..." autocomplete="off"
+              oninput="searchPacLanc(this.value)" onfocus="searchPacLanc(this.value)"
+              style="padding-right:36px">
+            <div id="lancPacResults" class="ac-results" style="display:none"></div>
+          </div>
+          <div id="lancPacBadge" class="pac-badge" style="display:none">
+            <div class="pac-av" id="lancPacAv"></div>
+            <div style="flex:1;min-width:0">
+              <div class="pac-nm" id="lancPacNome"></div>
+              <div class="pac-det" id="lancPacInfo"></div>
+            </div>
+            <button class="pac-clr" onclick="clearPacLanc()" title="Remover paciente">✕</button>
+          </div>
+        </div>
+        <!-- Procedimento select -->
+        <div class="fg">
+          <label>Procedimento</label>
+          <select id="fProcSel" onchange="onProcLancChange(this.value)">
+            <option value="">— Selecione o procedimento —</option>
+            <option value="Outros">Outros (sem sugestão de valor)</option>
+          </select>
+          <div class="proc-hint" id="procHint">✓ Valor sugerido preenchido automaticamente</div>
+        </div>
+        <!-- Team costs preview -->
+        <div id="teamPrevWrap" style="display:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <input type="checkbox" id="chkAutoDesp" onchange="_toggleTeamPreview()" style="width:auto;accent-color:var(--primary)">
+            <label for="chkAutoDesp" style="text-transform:none;font-size:.82rem;color:var(--text);margin:0;cursor:pointer;letter-spacing:0">Gerar despesas automáticas da equipe cirúrgica</label>
+          </div>
+          <div id="teamPrevCard" class="team-prev" style="display:none">
+            <div class="team-prev-hd">👥 Equipe a ser lançada como despesa</div>
+            <div id="teamPrevRows"></div>
+          </div>
         </div>
       </div>
       <div class="fg"><label>Forma de Pagamento</label>
@@ -642,6 +685,17 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       </div>
     </div>
   </div>
+
+  <!-- CUSTOS DE EQUIPE -->
+  <div class="sec" style="margin-top:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      <div>
+        <h3 style="margin:0">👥 Custos de Equipe Cirúrgica</h3>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:3px">Configure os valores pagos à equipe por procedimento. Esses valores são usados para gerar despesas automáticas nos lançamentos.</div>
+      </div>
+    </div>
+    <div id="teamCostList"></div>
+  </div>
 </div>
 
 <!-- AUDITORIA -->
@@ -770,7 +824,7 @@ const UCORS = ['#2d7bbf','#27ae60','#9b59b6','#e8a838','#e74c3c','#1abc9c'];
 
 // ==================== ESTADO ====================
 let CU = '', CUEmail = '', tipo = 'receita', period = '';
-let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{}, hospitalPrices:{} };
+let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{} };
 
 function nomeDoUsuario(email) {
   return USUARIOS[email] || email.split('@')[0];
@@ -855,10 +909,21 @@ function iniciarApp() {
     DATA.orcamentos = val.orcamentos || {};
     DATA.patients = val.patients || {};
     DATA.hospitalPrices = val.hospitalPrices || {};
+    DATA.procedureTeamCosts = val.procedureTeamCosts || {};
     renderAll();
   });
 
   fbAddLog('ACESSO', `"${CU}" (${CUEmail}) acessou o sistema.`);
+
+  // Close autocomplete dropdowns on outside click
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('#lancPacWrap')){
+      const r=document.getElementById('lancPacResults');if(r)r.style.display='none';
+    }
+    if(!e.target.closest('#pacOrcWrap')){
+      const r=document.getElementById('pacOrcResults');if(r)r.style.display='none';
+    }
+  });
 }
 
 function pararListeners() {
@@ -897,6 +962,17 @@ function setTipo(t) {
   document.getElementById('btnExp').className='tb'+(t==='despesa'?' ae':'');
   document.getElementById('camposPac').style.display=t==='receita'?'':'none';
   document.getElementById('fCategoria').innerHTML=(t==='receita'?CAT_R:CAT_E).map(c=>`<option>${c}</option>`).join('');
+  // Populate proc select on first show
+  if(t==='receita'){
+    const sel=document.getElementById('fProcSel');
+    if(sel&&sel.options.length<=2){
+      PROC_ORC.forEach(p=>{
+        const o=document.createElement('option');
+        o.value=p.nome;o.textContent=p.nome+(p.valor>0?' (R$ '+fN(p.valor)+')':'');
+        sel.insertBefore(o,sel.options[sel.options.length-1]);
+      });
+    }
+  }
 }
 
 // ==================== LANÇAMENTO ====================
@@ -906,18 +982,62 @@ function salvarLancamento() {
   const cat=document.getElementById('fCategoria').value;
   const pag=document.getElementById('fPag').value;
   const desc=document.getElementById('fDesc').value.trim();
-  const pac=document.getElementById('fPaciente')?.value.trim()||'';
-  const proc=document.getElementById('fProcedimento')?.value.trim()||'';
+  // Smart fields (receita)
+  const pac=tipo==='receita'?(_lancPat?_lancPat.nome:''):'';
+  const proc=tipo==='receita'?(document.getElementById('fProcSel')?.value||''):'';
   if(!data||isNaN(valor)||valor<=0){showToast('⚠️ Preencha data e valor.','#e74c3c');return;}
-  const item={id:Date.now(),data,valor,categoria:cat,pagamento:pag,descricao:desc,paciente:pac,procedimento:proc,tipo,usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR')};
+
+  const chkAuto=document.getElementById('chkAutoDesp');
+  const gerarEquipe=tipo==='receita'&&chkAuto&&chkAuto.checked&&proc;
+  const linked_group_id=gerarEquipe?('grp_'+Date.now()):undefined;
+
+  const item={id:Date.now(),data,valor,categoria:cat,pagamento:pag,descricao:desc,
+    paciente:pac,procedimento:proc,tipo,usuario:CU,email:CUEmail,
+    criadoEm:new Date().toLocaleString('pt-BR')};
+  if(linked_group_id)item.linked_group_id=linked_group_id;
   fbSalvarLanc(item);
   const resumo=tipo==='receita'&&pac?`${pac}${proc?' · '+proc:''}`:(desc||cat);
   fbAddLog('INCLUSÃO',`${tipo.toUpperCase()} · R$ ${fN(valor)} · ${cat} · ${resumo}`);
+
+  // Auto-generate team expense entries
+  if(gerarEquipe){
+    const tc=DATA.procedureTeamCosts[proc]||{};
+    const membros=[
+      {campo:'instrumenter',label:'Instrumentadora'},
+      {campo:'assistant',label:'Auxiliar de Cirurgia'},
+      {campo:'anesthetist',label:'Anestesista'},
+      {campo:'extraTeam',label:'Equipe Extra'},
+    ];
+    let desp_count=0;
+    membros.forEach(m=>{
+      const vStr=tc[m.campo];
+      const v=vStr?parseMoeda(String(vStr)):0;
+      if(v>0){
+        const d={id:Date.now()+desp_count++,data,valor:v,
+          categoria:'Pessoal e Pró-labore',pagamento:'Transferência',
+          descricao:`${m.label} — ${proc}${pac?' ('+pac+')':''}`,
+          paciente:pac,procedimento:proc,tipo:'despesa',
+          usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR'),
+          linked_group_id,auto_generated:true};
+        fbSalvarLanc(d);
+        fbAddLog('AUTO-DESPESA',`Equipe: ${m.label} · R$ ${fN(v)} · ${proc}`);
+      }
+    });
+    if(desp_count>0)showToast(`✓ Receita + ${desp_count} despesa(s) de equipe lançadas!`,'#27ae60');
+    else showToast('✓ Lançamento registrado! (sem custos de equipe cadastrados)','#27ae60');
+  } else {
+    showToast('✓ Lançamento registrado!','#27ae60');
+  }
+
+  // Reset form
   document.getElementById('fValor').value='';
   document.getElementById('fDesc').value='';
-  if(document.getElementById('fPaciente')){document.getElementById('fPaciente').value='';document.getElementById('fProcedimento').value='';}
+  if(document.getElementById('fProcSel')){document.getElementById('fProcSel').value='';}
+  const hint=document.getElementById('procHint');if(hint)hint.classList.remove('show');
+  const tw=document.getElementById('teamPrevWrap');if(tw)tw.style.display='none';
+  if(chkAuto)chkAuto.checked=false;
+  clearPacLanc();
   setDate();
-  showToast('✓ Lançamento registrado!','#27ae60');
 }
 
 // ==================== EXCLUSÃO ====================
@@ -1046,8 +1166,9 @@ function renderLancs(){
   if(em)em.style.display='none';
   const ucm={};getUsuarios().forEach((u,i)=>{ucm[u]=UCORS[i%UCORS.length];});
   tb.innerHTML=l.map(x=>{
-    const desc=x.tipo==='receita'&&x.paciente?`<div>${x.paciente}</div><span class="ptag">${x.procedimento||x.categoria}</span>`:(x.descricao?`<span title="${x.descricao}">${x.descricao.length>26?x.descricao.slice(0,26)+'…':x.descricao}</span>`:'—');
-    return`<tr><td>${fD(x.data)}</td><td>${desc}</td><td style="font-size:.74rem;color:var(--muted)">${x.categoria}</td><td><span style="font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${x.usuario||'—'}</span></td><td><span class="badge ${x.tipo==='receita'?'br':'be'}">${x.tipo==='receita'?'Receita':'Despesa'}</span></td><td style="text-align:right;font-weight:700;color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">${x.tipo==='receita'?'+':'-'} R$ ${fN(x.valor)}</td><td style="white-space:nowrap"><button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;margin-right:3px" onclick="editarLancamento(${x.id})">✏️</button><button class="btn btn-err btn-sm" onclick="excluir(${x.id})">🗑</button></td></tr>`;
+    const grpBadge=x.linked_group_id?`<span class="linked-badge" title="Grupo: ${x.linked_group_id}">${x.auto_generated?'🤖 auto':'🔗 grupo'}</span>`:'';
+    const desc=x.tipo==='receita'&&x.paciente?`<div>${x.paciente}${grpBadge}</div><span class="ptag">${x.procedimento||x.categoria}</span>`:(x.descricao?`<span title="${x.descricao}">${x.descricao.length>26?x.descricao.slice(0,26)+'…':x.descricao}</span>${grpBadge}`:'—');
+    return`<tr${x.auto_generated?' style="opacity:.85;background:#fffef8"':''}><td>${fD(x.data)}</td><td>${desc}</td><td style="font-size:.74rem;color:var(--muted)">${x.categoria}</td><td><span style="font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${x.usuario||'—'}</span></td><td><span class="badge ${x.tipo==='receita'?'br':'be'}">${x.tipo==='receita'?'Receita':'Despesa'}</span></td><td style="text-align:right;font-weight:700;color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">${x.tipo==='receita'?'+':'-'} R$ ${fN(x.valor)}</td><td style="white-space:nowrap"><button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;margin-right:3px" onclick="editarLancamento(${x.id})">✏️</button><button class="btn btn-err btn-sm" onclick="excluir(${x.id})">🗑</button></td></tr>`;
   }).join('');
 }
 
@@ -1331,6 +1452,9 @@ let orcItems=[];     // [{id,proc,qty,valorUnit,descPct}]
 let orcPat=null;     // {id,nome,cpf,rg,tel,email}
 let orcHospRows=[];  // [{id,hospKey,procName,hospitalCost,materialCost,anesthesiaCost,extraCost,manual}]
 let _pacDebTimer=null;
+// Lançamentos patient state
+let _lancPat=null;   // {id,nome,cpf,rg,tel,email}
+let _lancPacDebTimer=null;
 
 // ==================== UTIL ====================
 function setEl(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
@@ -1423,6 +1547,122 @@ function clearPaciente(){
   document.getElementById('pacOrcBadge').style.display='none';
   document.getElementById('pacOrcInput').value='';
   setEl('sumPatNome','—');
+}
+
+// ==================== LANÇAMENTOS — PACIENTE AUTOCOMPLETE ====================
+function searchPacLanc(q){
+  clearTimeout(_lancPacDebTimer);
+  _lancPacDebTimer=setTimeout(()=>_doSearchPacLanc(q),120);
+}
+
+function _doSearchPacLanc(q){
+  const res=document.getElementById('lancPacResults');if(!res)return;
+  const raw=(q||'').trim();
+  if(raw.length<1){res.style.display='none';return;}
+  const ql=raw.toLowerCase();
+  const list=buildAllPatients().filter(p=>{
+    if((p.nome||'').toLowerCase().includes(ql))return true;
+    if((p.cpf||'').replace(/\D/g,'').includes(raw.replace(/\D/g,'')))return true;
+    if((p.tel||'').replace(/\D/g,'').includes(raw.replace(/\D/g,'')))return true;
+    return false;
+  });
+  if(!list.length){
+    res.innerHTML='<div class="ac-empty">Paciente não encontrado.</div>';
+    res.style.display='block';return;
+  }
+  res.innerHTML=list.slice(0,10).map(p=>{
+    const enc=JSON.stringify(p).replace(/"/g,'&quot;');
+    const info=[];
+    if(p.cpf)info.push(p.cpf);
+    if(p.tel)info.push(p.tel);
+    return `<div class="ac-item" onclick="selectPacLanc('${enc}')">
+      <div style="font-weight:600;font-size:.88rem">${highlightAc(p.nome,raw)}</div>
+      ${info.length?`<div style="font-size:.72rem;color:var(--muted)">${info.join(' · ')}</div>`:''}
+    </div>`;
+  }).join('');
+  res.style.display='block';
+}
+
+function selectPacLanc(p){
+  if(typeof p==='string')try{p=JSON.parse(p.replace(/&quot;/g,'"'));}catch(e){return;}
+  _lancPat=p;
+  const res=document.getElementById('lancPacResults');if(res)res.style.display='none';
+  document.getElementById('lancPacWrap').style.display='none';
+  document.getElementById('lancPacBadge').style.display='flex';
+  const av=document.getElementById('lancPacAv');
+  if(av)av.textContent=(p.nome||'?').charAt(0).toUpperCase();
+  setEl('lancPacNome',p.nome);
+  const info=[];
+  if(p.cpf)info.push('CPF: '+p.cpf);
+  if(p.tel)info.push(p.tel);
+  setEl('lancPacInfo',info.join(' · ')||'Paciente cadastrado');
+}
+
+function clearPacLanc(){
+  _lancPat=null;
+  const w=document.getElementById('lancPacWrap'),b=document.getElementById('lancPacBadge');
+  if(w)w.style.display='block';
+  if(b)b.style.display='none';
+  const inp=document.getElementById('lancPacInput');if(inp)inp.value='';
+}
+
+// ==================== LANÇAMENTOS — PROCEDIMENTO / EQUIPE ====================
+function onProcLancChange(proc){
+  const hint=document.getElementById('procHint');
+  const tw=document.getElementById('teamPrevWrap');
+  if(!proc){
+    if(hint)hint.classList.remove('show');
+    if(tw)tw.style.display='none';
+    return;
+  }
+  // Auto-fill valor
+  const found=PROC_ORC.find(p=>p.nome===proc);
+  if(found&&found.valor>0){
+    const fv=document.getElementById('fValor');
+    if(fv){fv.value=fN(found.valor);fmtMoeda(fv);}
+    if(hint)hint.classList.add('show');
+  } else {
+    if(hint)hint.classList.remove('show');
+  }
+  // Show team section if team costs exist or always (for checkbox option)
+  if(tw)tw.style.display='';
+  // Reset checkbox
+  const chk=document.getElementById('chkAutoDesp');if(chk)chk.checked=false;
+  document.getElementById('teamPrevCard').style.display='none';
+}
+
+function _toggleTeamPreview(){
+  const chk=document.getElementById('chkAutoDesp');
+  const card=document.getElementById('teamPrevCard');
+  if(!chk||!card)return;
+  if(!chk.checked){card.style.display='none';return;}
+  const proc=document.getElementById('fProcSel')?.value;
+  if(!proc){card.style.display='none';return;}
+  _showTeamPreview(proc);
+  card.style.display='block';
+}
+
+function _showTeamPreview(proc){
+  const rows=document.getElementById('teamPrevRows');if(!rows)return;
+  const tc=DATA.procedureTeamCosts[proc]||{};
+  const membros=[
+    {campo:'instrumenter',label:'Instrumentadora'},
+    {campo:'assistant',label:'Auxiliar de Cirurgia'},
+    {campo:'anesthetist',label:'Anestesista'},
+    {campo:'extraTeam',label:'Equipe Extra'},
+  ];
+  let total=0;
+  const html=membros.map(m=>{
+    const v=tc[m.campo]?parseMoeda(String(tc[m.campo])):0;
+    if(!v&&!tc[m.campo])return '';
+    total+=v;
+    return `<div class="team-row"><span>${m.label}</span><span>R$ ${fN(v)}</span></div>`;
+  }).filter(Boolean).join('');
+  if(!html){
+    rows.innerHTML='<div style="color:var(--muted);font-size:.81rem;text-align:center;padding:8px 0">Nenhum custo de equipe cadastrado para este procedimento.<br><small>Configure na aba <b>Tabela</b> → Custos de Equipe.</small></div>';
+  } else {
+    rows.innerHTML=html+`<div class="team-row"><span>Total despesas</span><span>R$ ${fN(total)}</span></div>`;
+  }
 }
 
 // ---- Novo paciente modal ----
@@ -1796,6 +2036,7 @@ function renderOrcamentos(){
 let _thHospSel='';
 
 function renderTabelaHosp(){
+  renderTeamCosts();
   // Render hospital pills
   const pills=document.getElementById('thHospPills');
   if(pills){
@@ -1923,6 +2164,67 @@ function salvarTodosPrecos(){
   });
   fbAddLog('TABELA HOSPITALAR',`Todos os precos salvos para ${_thHospSel}`);
   showToast('Todos os precos salvos!','#27ae60');
+}
+
+// ==================== CUSTOS DE EQUIPE ====================
+function renderTeamCosts(){
+  const el=document.getElementById('teamCostList');if(!el)return;
+  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros'&&p.nome!=='Consulta');
+  el.innerHTML=`
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th style="width:22%">Procedimento</th>
+          <th style="width:16%;text-align:right">Instrumentadora</th>
+          <th style="width:16%;text-align:right">Auxiliar</th>
+          <th style="width:16%;text-align:right">Anestesista</th>
+          <th style="width:16%;text-align:right">Equipe Extra</th>
+          <th style="width:8%;text-align:center">Ação</th>
+        </tr></thead>
+        <tbody>
+        ${procs.map(p=>{
+          const tc=DATA.procedureTeamCosts[p.nome]||{};
+          const eid='tc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
+          const fv=v=>v?fN(parseMoeda(String(v))):'';
+          return `<tr>
+            <td style="font-weight:600;font-size:.83rem">${p.nome}</td>
+            <td><input type="text" class="moeda-input" id="${eid}_ins" value="${fv(tc.instrumenter)}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.8rem;padding:5px 7px"></td>
+            <td><input type="text" class="moeda-input" id="${eid}_aux" value="${fv(tc.assistant)}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.8rem;padding:5px 7px"></td>
+            <td><input type="text" class="moeda-input" id="${eid}_ane" value="${fv(tc.anesthetist)}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.8rem;padding:5px 7px"></td>
+            <td><input type="text" class="moeda-input" id="${eid}_ext" value="${fv(tc.extraTeam)}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.8rem;padding:5px 7px"></td>
+            <td style="text-align:center"><button class="btn btn-ok btn-sm" onclick="salvarTeamCost('${p.nome}')">💾</button></td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="text-align:right;margin-top:10px">
+      <button class="btn btn-ok" onclick="salvarTodosTeamCosts()" style="font-size:.83rem">💾 Salvar Todos os Custos</button>
+    </div>`;
+}
+
+function salvarTeamCost(procNome){
+  const eid='tc_'+procNome.replace(/[^a-zA-Z0-9]/g,'_');
+  const g=sfx=>parseMoeda(document.getElementById(eid+sfx)?.value||'0');
+  const tc={
+    instrumenter:g('_ins'),assistant:g('_aux'),
+    anesthetist:g('_ane'),extraTeam:g('_ext'),
+    updatedAt:new Date().toISOString(),updatedBy:CU
+  };
+  dbRef.child('procedureTeamCosts/'+procNome).set(tc);
+  fbAddLog('EQUIPE',`Custos de equipe salvos para ${procNome}`);
+  showToast(`✓ Custos de ${procNome} salvos!`,'#27ae60');
+}
+
+function salvarTodosTeamCosts(){
+  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros'&&p.nome!=='Consulta');
+  procs.forEach(p=>salvarTeamCost(p.nome));
+  fbAddLog('EQUIPE','Todos os custos de equipe salvos');
+  showToast('✓ Todos os custos de equipe salvos!','#27ae60');
 }
 
 // ==================== CFO ANALYSIS ====================
