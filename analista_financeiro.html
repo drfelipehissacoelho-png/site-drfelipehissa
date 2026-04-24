@@ -161,6 +161,14 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
 .pac-det{font-size:.72rem;color:var(--muted);margin-top:2px;}
 .pac-clr{margin-left:auto;background:none;border:none;color:#aaa;font-size:1.05rem;cursor:pointer;line-height:1;}
 .pac-clr:hover{color:var(--err);}
+/* Commission toggle */
+.comm-toggle{position:relative;display:inline-block;width:34px;height:18px;flex-shrink:0;}
+.comm-toggle input{opacity:0;width:0;height:0;}
+.comm-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:18px;transition:.3s;}
+.comm-slider:before{position:absolute;content:"";height:12px;width:12px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.comm-toggle input:checked+.comm-slider{background:var(--ok);}
+.comm-toggle input:checked+.comm-slider:before{transform:translateX(16px);}
+.comm-pct{width:62px;text-align:right;padding:5px 8px;font-size:.82rem;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit;}
 /* Team preview card (lançamentos) */
 .team-prev{background:#f8faff;border:1.5px solid #c3d9ee;border-radius:10px;padding:12px 14px;margin-top:8px;font-size:.82rem;}
 .team-prev-hd{font-weight:700;color:var(--primary);margin-bottom:8px;font-size:.84rem;display:flex;align-items:center;gap:6px;}
@@ -330,7 +338,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       </div>
       <div class="fr">
         <div><label>Data</label><input type="date" id="fData"></div>
-        <div><label>Valor (R$)</label><input type="text" id="fValor" placeholder="0,00" class="moeda-input" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+        <div><label>Valor (R$)</label><input type="text" id="fValor" placeholder="0,00" class="moeda-input" oninput="maskMoeda(this)" onblur="fmtMoeda(this);_onValorLancChange()"></div>
       </div>
       <div class="fg"><label>Categoria</label><select id="fCategoria"></select></div>
       <div id="camposPac">
@@ -365,10 +373,13 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
         <div id="teamPrevWrap" style="display:none">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
             <input type="checkbox" id="chkAutoDesp" onchange="_toggleTeamPreview()" style="width:auto;accent-color:var(--primary)">
-            <label for="chkAutoDesp" style="text-transform:none;font-size:.82rem;color:var(--text);margin:0;cursor:pointer;letter-spacing:0">Gerar despesas automáticas da equipe cirúrgica</label>
+            <label for="chkAutoDesp" style="text-transform:none;font-size:.82rem;color:var(--text);margin:0;cursor:pointer;letter-spacing:0">Gerar despesas automáticas (equipe + comissão)</label>
+          </div>
+          <div id="commissionHint" style="display:none;font-size:.74rem;margin-bottom:6px;padding:5px 10px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;color:#795548">
+            💼 <span id="commissionHintText"></span>
           </div>
           <div id="teamPrevCard" class="team-prev" style="display:none">
-            <div class="team-prev-hd">👥 Equipe a ser lançada como despesa</div>
+            <div class="team-prev-hd">📊 Despesas a serem lançadas automaticamente</div>
             <div id="teamPrevRows"></div>
           </div>
         </div>
@@ -693,6 +704,18 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
     </div>
     <div id="teamCostList"></div>
   </div>
+
+  <!-- COMISSÃO DA GERENTE -->
+  <div class="sec" style="margin-top:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      <div>
+        <h3 style="margin:0">💼 Comissão da Gerente <span style="font-size:.72rem;font-weight:400;color:var(--muted)">(interna — não aparece para o paciente)</span></h3>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:3px">Percentual ou valor fixo cobrado por procedimento. Gerado automaticamente como despesa vinculada ao lançamento de receita.</div>
+      </div>
+      <button class="btn btn-ok" onclick="salvarTodasCommissions()" style="font-size:.83rem">💾 Salvar Todas</button>
+    </div>
+    <div id="commissionRulesList"></div>
+  </div>
 </div>
 
 <!-- AUDITORIA -->
@@ -821,7 +844,7 @@ const UCORS = ['#2d7bbf','#27ae60','#9b59b6','#e8a838','#e74c3c','#1abc9c'];
 
 // ==================== ESTADO ====================
 let CU = '', CUEmail = '', tipo = 'receita', period = '';
-let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{} };
+let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{}, procedureCommissionRules:{} };
 
 function nomeDoUsuario(email) {
   return USUARIOS[email] || email.split('@')[0];
@@ -907,6 +930,7 @@ function iniciarApp() {
     DATA.patients = val.patients || {};
     DATA.hospitalPrices = val.hospitalPrices || {};
     DATA.procedureTeamCosts = val.procedureTeamCosts || {};
+    DATA.procedureCommissionRules = val.procedureCommissionRules || {};
     renderAll();
   });
 
@@ -985,8 +1009,12 @@ function salvarLancamento() {
   if(!data||isNaN(valor)||valor<=0){showToast('⚠️ Preencha data e valor.','#e74c3c');return;}
 
   const chkAuto=document.getElementById('chkAutoDesp');
-  const gerarEquipe=tipo==='receita'&&chkAuto&&chkAuto.checked&&proc;
-  const linked_group_id=gerarEquipe?('grp_'+Date.now()):undefined;
+  const gerarAuto=tipo==='receita'&&chkAuto&&chkAuto.checked&&proc;
+  // Always generate group id when auto expenses exist
+  const commRule=proc?DATA.procedureCommissionRules[proc]:null;
+  const commVal=gerarAuto&&commRule&&commRule.active?_calcCommission(commRule,valor):0;
+  const hasAuto=gerarAuto;
+  const linked_group_id=hasAuto?('grp_'+Date.now()):undefined;
 
   const item={id:Date.now(),data,valor,categoria:cat,pagamento:pag,descricao:desc,
     paciente:pac,procedimento:proc,tipo,usuario:CU,email:CUEmail,
@@ -996,8 +1024,8 @@ function salvarLancamento() {
   const resumo=tipo==='receita'&&pac?`${pac}${proc?' · '+proc:''}`:(desc||cat);
   fbAddLog('INCLUSÃO',`${tipo.toUpperCase()} · R$ ${fN(valor)} · ${cat} · ${resumo}`);
 
-  // Auto-generate team expense entries
-  if(gerarEquipe){
+  // Auto-generate team fixed expenses + manager commission
+  if(hasAuto){
     const tc=DATA.procedureTeamCosts[proc]||{};
     const membros=[
       {campo:'instrumenter',label:'Instrumentadora'},
@@ -1006,6 +1034,7 @@ function salvarLancamento() {
       {campo:'extraTeam',label:'Equipe Extra'},
     ];
     let desp_count=0;
+    // Fixed team costs
     membros.forEach(m=>{
       const vStr=tc[m.campo];
       const v=vStr?parseMoeda(String(vStr)):0;
@@ -1020,8 +1049,23 @@ function salvarLancamento() {
         fbAddLog('AUTO-DESPESA',`Equipe: ${m.label} · R$ ${fN(v)} · ${proc}`);
       }
     });
-    if(desp_count>0)showToast(`✓ Receita + ${desp_count} despesa(s) de equipe lançadas!`,'#27ae60');
-    else showToast('✓ Lançamento registrado! (sem custos de equipe cadastrados)','#27ae60');
+    // Manager commission
+    if(commVal>0){
+      const lbl=(commRule.label||'Comissão gerente');
+      const detail=commRule.type==='percent'?` ${commRule.value}% de R$ ${fN(valor)}`:'';
+      const dc={id:Date.now()+desp_count++,data,valor:commVal,
+        categoria:'Pessoal e Pró-labore',pagamento:'Transferência',
+        descricao:`${lbl} — ${proc}${pac?' ('+pac+')':''}${detail}`,
+        paciente:pac,procedimento:proc,tipo:'despesa',
+        commission:true,commission_type:commRule.type,commission_rate:commRule.value,
+        usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR'),
+        linked_group_id,auto_generated:true};
+      fbSalvarLanc(dc);
+      fbAddLog('COMISSÃO',`${lbl} · R$ ${fN(commVal)}${commRule.type==='percent'?` (${commRule.value}% de R$ ${fN(valor)})`:''}· ${proc}${pac?' · '+pac:''}`);
+      desp_count++;
+    }
+    if(desp_count>0)showToast(`✓ Receita + ${desp_count} despesa(s) automática(s) lançada(s)!`,'#27ae60');
+    else showToast('✓ Lançamento registrado! (sem despesas configuradas)','#27ae60');
   } else {
     showToast('✓ Lançamento registrado!','#27ae60');
   }
@@ -1032,6 +1076,7 @@ function salvarLancamento() {
   if(document.getElementById('fProcSel')){document.getElementById('fProcSel').value='';}
   const hint=document.getElementById('procHint');if(hint)hint.classList.remove('show');
   const tw=document.getElementById('teamPrevWrap');if(tw)tw.style.display='none';
+  const cHint=document.getElementById('commissionHint');if(cHint)cHint.style.display='none';
   if(chkAuto)chkAuto.checked=false;
   clearPacLanc();
   setDate();
@@ -1163,7 +1208,7 @@ function renderLancs(){
   if(em)em.style.display='none';
   const ucm={};getUsuarios().forEach((u,i)=>{ucm[u]=UCORS[i%UCORS.length];});
   tb.innerHTML=l.map(x=>{
-    const grpBadge=x.linked_group_id?`<span class="linked-badge" title="Grupo: ${x.linked_group_id}">${x.auto_generated?'🤖 auto':'🔗 grupo'}</span>`:'';
+    const grpBadge=x.linked_group_id?`<span class="linked-badge" title="Grupo: ${x.linked_group_id}">${x.commission?'💼 comissão':x.auto_generated?'🤖 auto':'🔗 grupo'}</span>`:'';
     const desc=x.tipo==='receita'&&x.paciente?`<div>${x.paciente}${grpBadge}</div><span class="ptag">${x.procedimento||x.categoria}</span>`:(x.descricao?`<span title="${x.descricao}">${x.descricao.length>26?x.descricao.slice(0,26)+'…':x.descricao}</span>${grpBadge}`:'—');
     return`<tr${x.auto_generated?' style="opacity:.85;background:#fffef8"':''}><td>${fD(x.data)}</td><td>${desc}</td><td style="font-size:.74rem;color:var(--muted)">${x.categoria}</td><td><span style="font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${x.usuario||'—'}</span></td><td><span class="badge ${x.tipo==='receita'?'br':'be'}">${x.tipo==='receita'?'Receita':'Despesa'}</span></td><td style="text-align:right;font-weight:700;color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">${x.tipo==='receita'?'+':'-'} R$ ${fN(x.valor)}</td><td style="white-space:nowrap"><button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;margin-right:3px" onclick="editarLancamento(${x.id})">✏️</button><button class="btn btn-err btn-sm" onclick="excluir(${x.id})">🗑</button></td></tr>`;
   }).join('');
@@ -1607,12 +1652,15 @@ function clearPacLanc(){
 function onProcLancChange(proc){
   const hint=document.getElementById('procHint');
   const tw=document.getElementById('teamPrevWrap');
+  const cHint=document.getElementById('commissionHint');
+  const cHintTxt=document.getElementById('commissionHintText');
   if(!proc){
     if(hint)hint.classList.remove('show');
     if(tw)tw.style.display='none';
+    if(cHint)cHint.style.display='none';
     return;
   }
-  // Auto-fill valor
+  // Auto-fill valor from PROC_ORC default
   const found=PROC_ORC.find(p=>p.nome===proc);
   if(found&&found.valor>0){
     const fv=document.getElementById('fValor');
@@ -1621,9 +1669,19 @@ function onProcLancChange(proc){
   } else {
     if(hint)hint.classList.remove('show');
   }
-  // Show team section if team costs exist or always (for checkbox option)
+  // Show commission hint if rule exists
+  const cr=DATA.procedureCommissionRules[proc];
+  if(cr&&cr.active&&cHint&&cHintTxt){
+    const pct=cr.type==='percent'?cr.value:null;
+    const lbl=cr.label||'Comissão gerente';
+    cHintTxt.textContent=pct!=null?`${lbl}: ${pct}% sobre o valor lançado`:`${lbl}: R$ ${fN(cr.value)} fixo`;
+    cHint.style.display='block';
+  } else if(cHint){
+    cHint.style.display='none';
+  }
+  // Show team/commission panel
   if(tw)tw.style.display='';
-  // Reset checkbox
+  // Reset checkbox and preview
   const chk=document.getElementById('chkAutoDesp');if(chk)chk.checked=false;
   document.getElementById('teamPrevCard').style.display='none';
 }
@@ -1639,27 +1697,63 @@ function _toggleTeamPreview(){
   card.style.display='block';
 }
 
+// Re-render preview when valor changes (commission is % of receipt value)
+function _onValorLancChange(){
+  const chk=document.getElementById('chkAutoDesp');
+  if(chk&&chk.checked){
+    const proc=document.getElementById('fProcSel')?.value;
+    if(proc)_showTeamPreview(proc);
+  }
+}
+
 function _showTeamPreview(proc){
   const rows=document.getElementById('teamPrevRows');if(!rows)return;
   const tc=DATA.procedureTeamCosts[proc]||{};
+  const cr=DATA.procedureCommissionRules[proc];
+  const valorAtual=parseMoeda(document.getElementById('fValor')?.value||'0');
   const membros=[
-    {campo:'instrumenter',label:'Instrumentadora'},
-    {campo:'assistant',label:'Auxiliar de Cirurgia'},
-    {campo:'anesthetist',label:'Anestesista'},
-    {campo:'extraTeam',label:'Equipe Extra'},
+    {campo:'instrumenter',label:'Instrumentadora',icon:'🔧'},
+    {campo:'assistant',label:'Auxiliar de Cirurgia',icon:'🩺'},
+    {campo:'anesthetist',label:'Anestesista',icon:'💉'},
+    {campo:'extraTeam',label:'Equipe Extra',icon:'👤'},
   ];
   let total=0;
-  const html=membros.map(m=>{
+  let html='';
+
+  // Team fixed costs
+  const teamHtml=membros.map(m=>{
     const v=tc[m.campo]?parseMoeda(String(tc[m.campo])):0;
-    if(!v&&!tc[m.campo])return '';
+    if(!v)return '';
     total+=v;
-    return `<div class="team-row"><span>${m.label}</span><span>R$ ${fN(v)}</span></div>`;
+    return `<div class="team-row"><span>${m.icon} ${m.label}</span><span>R$ ${fN(v)}</span></div>`;
   }).filter(Boolean).join('');
-  if(!html){
-    rows.innerHTML='<div style="color:var(--muted);font-size:.81rem;text-align:center;padding:8px 0">Nenhum custo de equipe cadastrado para este procedimento.<br><small>Configure na aba <b>Tabela</b> → Custos de Equipe.</small></div>';
-  } else {
-    rows.innerHTML=html+`<div class="team-row"><span>Total despesas</span><span>R$ ${fN(total)}</span></div>`;
+
+  // Manager commission
+  let commHtml='';
+  if(cr&&cr.active){
+    const commVal=_calcCommission(cr,valorAtual);
+    if(commVal>0){
+      const lbl=cr.label||'Comissão gerente';
+      const detail=cr.type==='percent'?` (${cr.value}% de R$ ${fN(valorAtual)})`:'';
+      commHtml=`<div class="team-row" style="color:#7b3f00"><span>💼 ${lbl}${detail}</span><span>R$ ${fN(commVal)}</span></div>`;
+      total+=commVal;
+    }
   }
+
+  html=teamHtml+commHtml;
+
+  if(!html){
+    rows.innerHTML='<div style="color:var(--muted);font-size:.81rem;text-align:center;padding:8px 0">Nenhum custo ou comissão configurado para este procedimento.<br><small>Configure na aba <b>Tabela</b>.</small></div>';
+  } else {
+    rows.innerHTML=html+`<div class="team-row" style="margin-top:4px"><span><b>Total a lançar como despesa</b></span><span style="color:var(--err)">- R$ ${fN(total)}</span></div>`;
+  }
+}
+
+function _calcCommission(rule,valorReceita){
+  if(!rule||!rule.active||!valorReceita)return 0;
+  if(rule.type==='percent')return valorReceita*(rule.value||0)/100;
+  if(rule.type==='fixed')return rule.value||0;
+  return 0;
 }
 
 // ---- Novo paciente modal ----
@@ -2016,6 +2110,7 @@ let _thHospSel='';
 
 function renderTabelaHosp(){
   renderTeamCosts();
+  renderCommissionRules();
   // Render hospital pills
   const pills=document.getElementById('thHospPills');
   if(pills){
@@ -2189,6 +2284,98 @@ function salvarTodosTeamCosts(){
   procs.forEach(p=>salvarTeamCost(p.nome));
   fbAddLog('EQUIPE','Todos os custos de equipe salvos');
   showToast('✓ Todos os custos de equipe salvos!','#27ae60');
+}
+
+// ==================== COMISSÃO DA GERENTE ====================
+function renderCommissionRules(){
+  const el=document.getElementById('commissionRulesList');if(!el)return;
+  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno');
+  el.innerHTML=`
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th style="width:26%">Procedimento</th>
+          <th style="width:16%;text-align:center">Tipo</th>
+          <th style="width:14%;text-align:right">Valor (%)</th>
+          <th style="width:22%">Label (ex: Comissão gerente)</th>
+          <th style="width:10%;text-align:center">Ativo</th>
+          <th style="width:12%;text-align:center">Ação</th>
+        </tr></thead>
+        <tbody>
+        ${procs.map(p=>{
+          const cr=DATA.procedureCommissionRules[p.nome]||{};
+          const eid='cr_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
+          const isActive=cr.active!==false&&cr.value>0;
+          const hasCr=!!cr.value;
+          return `<tr id="crrow_${eid}"${hasCr?' style="background:#fffef5"':''}>
+            <td style="font-weight:600;font-size:.83rem">${p.nome}
+              ${hasCr?'<span class="linked-badge" style="background:#fff3cd;color:#856404">%</span>':''}
+            </td>
+            <td style="text-align:center">
+              <select id="${eid}_type" style="font-size:.78rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit">
+                <option value="percent"${(cr.type||'percent')==='percent'?' selected':''}>Percentual (%)</option>
+                <option value="fixed"${cr.type==='fixed'?' selected':''}>Fixo (R$)</option>
+              </select>
+            </td>
+            <td>
+              <input type="number" id="${eid}_val" value="${cr.value||''}" min="0" step="0.1"
+                placeholder="0" class="comm-pct" style="width:100%">
+            </td>
+            <td>
+              <input type="text" id="${eid}_lbl" value="${cr.label||'Comissão gerente'}"
+                placeholder="Comissão gerente"
+                style="width:100%;padding:5px 7px;font-size:.78rem;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit">
+            </td>
+            <td style="text-align:center">
+              <label class="comm-toggle">
+                <input type="checkbox" id="${eid}_act" ${isActive?' checked':''}>
+                <span class="comm-slider"></span>
+              </label>
+            </td>
+            <td style="text-align:center">
+              <button class="th-save-btn" onclick="salvarCommissionRule('${p.nome.replace(/'/g,"\\'")}')">Salvar</button>
+            </td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="alert ai" style="margin-top:12px;font-size:.78rem">
+      💡 <b>Dica:</b> Cirurgias → 3% | Botox / Preenchimento → 10%. O valor é calculado sobre a receita real lançada, não sobre o preço padrão do procedimento.
+    </div>`;
+}
+
+function salvarCommissionRule(procNome){
+  const eid='cr_'+procNome.replace(/[^a-zA-Z0-9]/g,'_');
+  const type=document.getElementById(eid+'_type')?.value||'percent';
+  const val=parseFloat(document.getElementById(eid+'_val')?.value)||0;
+  const lbl=(document.getElementById(eid+'_lbl')?.value.trim())||'Comissão gerente';
+  const active=document.getElementById(eid+'_act')?.checked||false;
+  if(val<=0&&active){showToast('Informe o valor antes de ativar.','#e74c3c');return;}
+  const rule={type,value:val,label:lbl,active,updatedAt:new Date().toISOString(),updatedBy:CU};
+  dbRef.child('procedureCommissionRules/'+procNome).set(rule);
+  fbAddLog('COMISSÃO REGRA',`Regra salva: ${procNome} → ${type==='percent'?val+'%':'R$ '+fN(val)} (${active?'ativo':'inativo'})`);
+  showToast(`✓ Comissão de ${procNome} salva!`,'#27ae60');
+}
+
+function salvarTodasCommissions(){
+  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno');
+  let count=0;
+  procs.forEach(p=>{
+    const eid='cr_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
+    const valEl=document.getElementById(eid+'_val');
+    if(!valEl)return;
+    const val=parseFloat(valEl.value)||0;
+    if(val<=0)return; // skip empty
+    const type=document.getElementById(eid+'_type')?.value||'percent';
+    const lbl=(document.getElementById(eid+'_lbl')?.value.trim())||'Comissão gerente';
+    const active=document.getElementById(eid+'_act')?.checked||false;
+    const rule={type,value:val,label:lbl,active,updatedAt:new Date().toISOString(),updatedBy:CU};
+    dbRef.child('procedureCommissionRules/'+p.nome).set(rule);
+    count++;
+  });
+  fbAddLog('COMISSÃO REGRA',`${count} regras de comissão salvas em lote`);
+  showToast(`✓ ${count} regra(s) de comissão salva(s)!`,'#27ae60');
 }
 
 // ==================== CFO ANALYSIS ====================
