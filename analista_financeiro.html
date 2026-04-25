@@ -1720,10 +1720,10 @@ function _showTeamPreview(proc){
   let total=0;
   let html='';
 
-  // Team fixed costs
+  // Team fixed costs — Firebase stores numbers; use +tc[campo] to avoid parseMoeda dot-stripping
   const teamHtml=membros.map(m=>{
-    const v=tc[m.campo]?parseMoeda(String(tc[m.campo])):0;
-    if(!v)return '';
+    const v=+(tc[m.campo]||0); // Firebase number → JS number directly
+    if(v<=0)return '';
     total+=v;
     return `<div class="team-row"><span>${m.icon} ${m.label}</span><span>R$ ${fN(v)}</span></div>`;
   }).filter(Boolean).join('');
@@ -1743,7 +1743,11 @@ function _showTeamPreview(proc){
   html=teamHtml+commHtml;
 
   if(!html){
-    rows.innerHTML='<div style="color:var(--muted);font-size:.81rem;text-align:center;padding:8px 0">Nenhum custo ou comissão configurado para este procedimento.<br><small>Configure na aba <b>Tabela</b>.</small></div>';
+    const hasTc=Object.keys(tc).filter(k=>k!=='updatedAt'&&k!=='updatedBy'&&+(tc[k])>0).length>0;
+    rows.innerHTML=`<div style="color:var(--muted);font-size:.81rem;text-align:center;padding:8px 0">
+      ${hasTc?'⚠️ Custos salvos com valor zero — recadastre na aba <b>Tabela → Custos Internos</b>':'Nenhum custo ou comissão configurado para este procedimento.'}
+      <br><small>→ <a href="#" onclick="showPage('tabela-hosp',document.querySelector('[onclick*=tabela-hosp]'));renderTabelaHosp();return false" style="color:var(--pl)">Abrir aba Tabela</a></small>
+    </div>`;
   } else {
     rows.innerHTML=html+`<div class="team-row" style="margin-top:4px"><span><b>Total a lançar como despesa</b></span><span style="color:var(--err)">- R$ ${fN(total)}</span></div>`;
   }
@@ -2244,7 +2248,8 @@ function renderTeamCosts(){
         ${procs.map(p=>{
           const tc=DATA.procedureTeamCosts[p.nome]||{};
           const eid='tc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
-          const fv=v=>v?fN(parseMoeda(String(v))):'';
+          // Firebase stores numbers → use +v directly (avoid parseMoeda which treats dot as thousand sep)
+          const fv=v=>(+v)?fN(+v):'';
           return `<tr>
             <td style="font-weight:600;font-size:.83rem">${p.nome}</td>
             <td><input type="text" class="moeda-input" id="${eid}_ins" value="${fv(tc.instrumenter)}" placeholder="0,00"
@@ -2281,9 +2286,17 @@ function salvarTeamCost(procNome){
 
 function salvarTodosTeamCosts(){
   const procs=PROC_ORC.filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros'&&p.nome!=='Consulta');
-  procs.forEach(p=>salvarTeamCost(p.nome));
-  fbAddLog('EQUIPE','Todos os custos de equipe salvos');
-  showToast('✓ Todos os custos de equipe salvos!','#27ae60');
+  let count=0;
+  procs.forEach(p=>{
+    const eid='tc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
+    // Only save if at least one field is non-zero (never overwrite saved data with blank rows)
+    const g=sfx=>parseMoeda(document.getElementById(eid+sfx)?.value||'0');
+    if(g('_ins')+g('_aux')+g('_ane')+g('_ext')===0)return;
+    salvarTeamCost(p.nome);
+    count++;
+  });
+  fbAddLog('EQUIPE',`${count} custos de equipe salvos em lote`);
+  showToast(`✓ ${count} custo(s) salvo(s)!`,'#27ae60');
 }
 
 // ==================== COMISSÃO DA GERENTE ====================
