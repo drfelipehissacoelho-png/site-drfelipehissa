@@ -2351,7 +2351,7 @@ function renderProcedureConfig(){
         const eid='pc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
         const hasCfg=!!(DATA.procedureConfig[p.nome]||DATA.procedureTeamCosts[p.nome]||DATA.procedureCommissionRules[p.nome]);
         const isCustom=!!(DATA.procedures&&Object.values(DATA.procedures).find(d=>d.nome===p.nome));
-        return `<tr style="${hasCfg?'background:#f9fffe':''}${isCustom?' outline:2px solid #d1f5e0;outline-offset:-2px':''}">`
+        return `<tr style="${hasCfg?'background:#f9fffe':''}${isCustom?' outline:2px solid #d1f5e0;outline-offset:-2px':''}">
           <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">${p.nome}</td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_price" value="${fv(cfg.patientPrice)}" placeholder="0,00"
