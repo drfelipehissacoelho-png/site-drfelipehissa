@@ -801,6 +801,72 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   </div>
 </div>
 
+<!-- MODAL NOVO PROCEDIMENTO -->
+<div class="modal-overlay" id="novoProcModal" style="display:none" onclick="if(event.target===this)fecharNovoProc()">
+  <div class="modal-box" style="max-width:640px">
+    <h3 id="novoProcTitle">＋ Novo Procedimento</h3>
+    <div class="fr">
+      <div style="grid-column:1/-1">
+        <label>Nome do Procedimento <span style="color:var(--err)">*</span></label>
+        <input type="text" id="npNomeProc" placeholder="Ex: Lipoaspiração Tumescente..." autocomplete="off">
+        <div id="npNomeErr" style="color:var(--err);font-size:.74rem;margin-top:3px;display:none">⚠ Nome obrigatório e não pode ser duplicado.</div>
+      </div>
+    </div>
+    <div class="fr" style="margin-top:6px">
+      <div>
+        <label>Categoria</label>
+        <select id="npCategoria">
+          <option value="cirurgia">🔪 Cirurgia</option>
+          <option value="estetico">✨ Estético</option>
+          <option value="botox">💉 Botox</option>
+          <option value="preenchimento">💊 Preenchimento</option>
+          <option value="consulta">🩺 Consulta</option>
+          <option value="outros">📋 Outros</option>
+        </select>
+      </div>
+      <div>
+        <label>💰 Preço Paciente (R$)</label>
+        <input type="text" id="npPrice" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)">
+      </div>
+    </div>
+    <div style="background:#eaf3fb;border-radius:8px;padding:11px 13px;margin:12px 0 4px">
+      <div style="font-size:.74rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px">🔒 Custos Internos de Equipe (não visíveis ao paciente)</div>
+      <div class="fr">
+        <div><label>💉 Anestesista (R$)</label>
+          <input type="text" id="npAne" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+        <div><label>🔧 Instrumentadora (R$)</label>
+          <input type="text" id="npIns" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+      </div>
+      <div class="fr">
+        <div><label>🩺 Auxiliar (R$)</label>
+          <input type="text" id="npAux" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+        <div><label>📦 Material Extra (R$)</label>
+          <input type="text" id="npExt" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+      </div>
+    </div>
+    <div style="background:#fff8e1;border-radius:8px;padding:11px 13px;margin-bottom:12px">
+      <div style="font-size:.74rem;font-weight:700;color:#7b3f00;margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px">💼 Comissão da Gerente</div>
+      <div class="fr">
+        <div><label>Comissão (%)</label>
+          <input type="number" id="npPct" min="0" max="100" step="0.1" placeholder="0" style="font-family:inherit"></div>
+        <div><label>Label</label>
+          <input type="text" id="npLbl" value="Comissão gerente" placeholder="Comissão gerente"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:7px">
+        <label class="comm-toggle" style="margin:0">
+          <input type="checkbox" id="npAct">
+          <span class="comm-slider"></span>
+        </label>
+        <label for="npAct" style="text-transform:none;font-size:.82rem;color:var(--text);margin:0;cursor:pointer;letter-spacing:0">Comissão ativa</label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ok" style="flex:1" onclick="salvarNovoProc()">✓ Criar Procedimento</button>
+      <button class="btn" style="background:#eee;color:var(--text)" onclick="fecharNovoProc()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- /appScreen -->
 
 <script>
@@ -832,7 +898,7 @@ const UCORS = ['#2d7bbf','#27ae60','#9b59b6','#e8a838','#e74c3c','#1abc9c'];
 
 // ==================== ESTADO ====================
 let CU = '', CUEmail = '', tipo = 'receita', period = '';
-let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{}, procedureCommissionRules:{}, procedureConfig:{} };
+let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{}, procedureCommissionRules:{}, procedureConfig:{}, procedures:{} };
 
 function nomeDoUsuario(email) {
   return USUARIOS[email] || email.split('@')[0];
@@ -920,6 +986,7 @@ function iniciarApp() {
     DATA.procedureTeamCosts = val.procedureTeamCosts || {};
     DATA.procedureCommissionRules = val.procedureCommissionRules || {};
     DATA.procedureConfig = val.procedureConfig || {};
+    DATA.procedures = val.procedures || {};
     renderAll();
   });
 
@@ -972,17 +1039,8 @@ function setTipo(t) {
   document.getElementById('btnExp').className='tb'+(t==='despesa'?' ae':'');
   document.getElementById('camposPac').style.display=t==='receita'?'':'none';
   document.getElementById('fCategoria').innerHTML=(t==='receita'?CAT_R:CAT_E).map(c=>`<option>${c}</option>`).join('');
-  // Populate proc select on first show
-  if(t==='receita'){
-    const sel=document.getElementById('fProcSel');
-    if(sel&&sel.options.length<=2){
-      PROC_ORC.forEach(p=>{
-        const o=document.createElement('option');
-        o.value=p.nome;o.textContent=p.nome+(p.valor>0?' (R$ '+fN(p.valor)+')':'');
-        sel.insertBefore(o,sel.options[sel.options.length-1]);
-      });
-    }
-  }
+  // Rebuild proc select (includes dynamically created procedures)
+  if(t==='receita') populateProcSel();
 }
 
 // ==================== LANÇAMENTO ====================
@@ -1138,6 +1196,7 @@ function renderAll(){
   updateFilters();renderKPIs();renderUserPanel();renderMetas();
   renderLancs();renderPacientes();renderDRE();renderRelatorio();renderLog();renderOrcamentos();renderCFO();
   rChRec();rChExp();rChEvol();rChDRE();rChComp();
+  populateProcSel(); // rebuild proc select whenever data changes (includes new procedures)
   // Update tabela if currently visible
   if(document.getElementById('page-tabela-hosp')?.classList.contains('active'))renderTabelaHosp();
 }
@@ -1465,6 +1524,41 @@ const PROC_ORC=[
   {nome:'Outros',valor:0},
 ];
 
+// ==================== LISTA DINÂMICA DE PROCEDIMENTOS ====================
+// Retorna seed (PROC_ORC) + procedimentos criados no Firebase, sem duplicatas, ordenados A-Z
+// Retorno e Outros sempre ficam no final
+function getAllProcs(){
+  const special=['Retorno','Outros'];
+  const map={};
+  // 1. Seed: PROC_ORC como base
+  PROC_ORC.forEach(p=>{ map[p.nome]={nome:p.nome,valor:p.valor,categoria:p.categoria||'outros',_seed:true}; });
+  // 2. Override/extend com procedimentos do Firebase
+  Object.values(DATA.procedures||{}).forEach(p=>{
+    if(!p||!p.nome)return;
+    if(p.active===false)return; // respeitar desativados
+    map[p.nome]={nome:p.nome,valor:p.valor||0,categoria:p.categoria||'outros',_custom:true,_fbKey:p._fbKey};
+  });
+  const normal=Object.values(map).filter(p=>!special.includes(p.nome)).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const tail=special.map(s=>map[s]).filter(Boolean);
+  return [...normal,...tail];
+}
+
+// Reconstrói o <select> de procedimentos no form de lançamentos com a lista atual
+function populateProcSel(){
+  const sel=document.getElementById('fProcSel');if(!sel)return;
+  const current=sel.value;
+  // Limpa tudo mantendo só placeholder e Outros
+  while(sel.options.length>0)sel.remove(0);
+  const placeholder=new Option('— Selecione o procedimento —','');
+  sel.appendChild(placeholder);
+  getAllProcs().filter(p=>p.nome!=='Outros').forEach(p=>{
+    const price=getProcConfig(p.nome).patientPrice;
+    sel.appendChild(new Option(p.nome+(price>0?' (R$ '+fN(price)+')':''),p.nome));
+  });
+  sel.appendChild(new Option('Outros (sem sugestão de valor)','Outros'));
+  if(current)sel.value=current;
+}
+
 // Hospital master list (no prices — prices come from DATA.hospitalPrices)
 const HOSP_KEYS=[
   {key:'sao_marcos',nome:'Hospital São Marcos',cor:'#2d7bbf'},
@@ -1638,7 +1732,7 @@ function getProcConfig(procNome){
   const cfg=DATA.procedureConfig[procNome]||{};
   const tc=DATA.procedureTeamCosts[procNome]||{};
   const cr=DATA.procedureCommissionRules[procNome]||{};
-  const procDefault=PROC_ORC.find(p=>p.nome===procNome);
+  const procDefault=getAllProcs().find(p=>p.nome===procNome);
   return {
     patientPrice: cfg.patientPrice!=null ? +cfg.patientPrice : (procDefault?.valor||0),
     instrumenterCost: cfg.instrumenterCost!=null ? +cfg.instrumenterCost : +(tc.instrumenter||0),
@@ -1797,9 +1891,9 @@ function updateItemField(id,field,val){
   const item=orcItems.find(x=>x.id===id);if(!item)return;
   item[field]=val;
   if(field==='proc'){
-    const p=PROC_ORC.find(x=>x.nome===val);
-    // Always auto-fill when procedure changes (overwrite allows manual correction)
-    if(p&&p.valor>0)item.valorUnit=p.valor;
+    // Use configured patient price (falls back to PROC_ORC seed if not yet configured)
+    const price=getProcConfig(val).patientPrice;
+    if(price>0)item.valorUnit=price;
   }
   renderItemsOrc();
 }
@@ -1840,7 +1934,7 @@ function renderItemsOrc(){
         <select class="itbl" onchange="updateItemField(${s.id},'proc',this.value)"
           style="width:100%;padding:5px 6px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px">
           <option value="">Selecione...</option>
-          ${PROC_ORC.map(p=>`<option value="${p.nome}"${s.proc===p.nome?' selected':''}>${p.nome}</option>`).join('')}
+          ${getAllProcs().map(p=>`<option value="${p.nome}"${s.proc===p.nome?' selected':''}>${p.nome}</option>`).join('')}
         </select>
       </td>
       <td style="text-align:center">
@@ -1940,7 +2034,7 @@ function renderHospRows(){
     const noPrice=hasPriceResult===false&&!row.manual;
     const borderC=noPrice?'#f39c12':row.manual?'#3498db':'var(--brd)';
     const hSel=()=>`<option value="">Selecione...</option>${HOSP_KEYS.map(h=>`<option value="${h.key}"${row.hospKey===h.key?' selected':''}>${h.nome}</option>`).join('')}`;
-    const pSel=`<option value="">Selecione...</option>${PROC_ORC.map(p=>`<option value="${p.nome}"${row.procName===p.nome?' selected':''}>${p.nome}</option>`).join('')}`;
+    const pSel=`<option value="">Selecione...</option>${getAllProcs().map(p=>`<option value="${p.nome}"${row.procName===p.nome?' selected':''}>${p.nome}</option>`).join('')}`;
     return `<tr>
       <td><select style="width:100%;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
           onchange="updateHospSelect(${row.id},'hospKey',this.value)">${hSel()}</select></td>
@@ -2137,7 +2231,7 @@ function _renderThTable(){
   setEl('thCardSub','Precos por procedimento — clique em Salvar em cada linha');
   const sb=document.getElementById('thSaveAllBtn');if(sb)sb.style.display='block';
 
-  const procs=PROC_ORC.filter(p=>!search||p.nome.toLowerCase().includes(search));
+  const procs=getAllProcs().filter(p=>!search||p.nome.toLowerCase().includes(search));
   const prices=DATA.hospitalPrices?.[_thHospSel]||{};
 
   document.getElementById('thTableWrap').innerHTML=`
@@ -2203,7 +2297,7 @@ function salvarPrecoHosp(hospKey,procName,eid){
 }
 
 function salvarTodosPrecos(){
-  const procs=PROC_ORC;
+  const procs=getAllProcs();
   let count=0;
   procs.forEach(p=>{
     const eid='thpr_'+_thHospSel+'_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
@@ -2226,9 +2320,14 @@ function salvarTodosPrecos(){
 // ==================== CONFIG DE PROCEDIMENTOS (TABELA UNIFICADA) ====================
 function renderProcedureConfig(){
   const el=document.getElementById('procedureConfigList');if(!el)return;
-  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
+  const procs=getAllProcs().filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
   const fv=v=>(+v)?fN(+v):'';
   el.innerHTML=`
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn btn-ok" onclick="abrirNovoProc()" style="font-size:.84rem;padding:7px 16px">
+        ＋ Novo Procedimento
+      </button>
+    </div>
     <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;font-size:.8rem">
       <thead>
@@ -2243,6 +2342,7 @@ function renderProcedureConfig(){
           <th style="text-align:left;padding:7px 8px;min-width:120px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">Label comissão</th>
           <th style="text-align:center;padding:7px 8px;min-width:60px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">Ativo</th>
           <th style="padding:7px 8px;width:60px;border-bottom:2px solid var(--brd)"></th>
+          <th style="padding:7px 8px;width:60px;border-bottom:2px solid var(--brd)"></th>
         </tr>
       </thead>
       <tbody>
@@ -2250,7 +2350,8 @@ function renderProcedureConfig(){
         const cfg=getProcConfig(p.nome);
         const eid='pc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
         const hasCfg=!!(DATA.procedureConfig[p.nome]||DATA.procedureTeamCosts[p.nome]||DATA.procedureCommissionRules[p.nome]);
-        return `<tr style="${hasCfg?'background:#f9fffe':''}">
+        const isCustom=!!(DATA.procedures&&Object.values(DATA.procedures).find(d=>d.nome===p.nome));
+        return `<tr style="${hasCfg?'background:#f9fffe':''}${isCustom?' outline:2px solid #d1f5e0;outline-offset:-2px':''}">`
           <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">${p.nome}</td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_price" value="${fv(cfg.patientPrice)}" placeholder="0,00"
@@ -2290,6 +2391,10 @@ function renderProcedureConfig(){
           <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
             <button class="th-save-btn" onclick="salvarProcConfig('${p.nome.replace(/'/g,"\\'")}')">💾</button>
           </td>
+          <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <button title="Duplicar procedimento" onclick="duplicarProc('${p.nome.replace(/'/g,"\\'")}','${eid}')"
+              style="background:none;border:1px solid var(--brd);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem" title="Duplicar">📋</button>
+          </td>
         </tr>`;
       }).join('')}
       </tbody>
@@ -2325,8 +2430,91 @@ function salvarProcConfig(procNome){
   showToast(`✓ Config de ${procNome} salva!`,'#27ae60');
 }
 
+// ==================== CRIAR / DUPLICAR PROCEDIMENTO ====================
+function abrirNovoProc(prefill){
+  // prefill = {nome, categoria, price, ane, ins, aux, ext, pct, lbl, act} or undefined
+  document.getElementById('novoProcTitle').textContent='＋ Novo Procedimento';
+  document.getElementById('npNomeProc').value=prefill?.nome||'';
+  document.getElementById('npCategoria').value=prefill?.categoria||'cirurgia';
+  document.getElementById('npPrice').value=prefill?.price>0?fN(prefill.price):'';
+  document.getElementById('npAne').value=prefill?.ane>0?fN(prefill.ane):'';
+  document.getElementById('npIns').value=prefill?.ins>0?fN(prefill.ins):'';
+  document.getElementById('npAux').value=prefill?.aux>0?fN(prefill.aux):'';
+  document.getElementById('npExt').value=prefill?.ext>0?fN(prefill.ext):'';
+  document.getElementById('npPct').value=prefill?.pct||'';
+  document.getElementById('npLbl').value=prefill?.lbl||'Comissão gerente';
+  document.getElementById('npAct').checked=prefill?.act||false;
+  document.getElementById('npNomeErr').style.display='none';
+  document.getElementById('novoProcModal').style.display='flex';
+  setTimeout(()=>document.getElementById('npNomeProc').focus(),80);
+}
+
+function fecharNovoProc(){
+  document.getElementById('novoProcModal').style.display='none';
+}
+
+function salvarNovoProc(){
+  const nome=document.getElementById('npNomeProc').value.trim();
+  const errEl=document.getElementById('npNomeErr');
+  // Validate: name required + no duplicates
+  const existentes=getAllProcs().map(p=>p.nome.toLowerCase());
+  if(!nome||existentes.includes(nome.toLowerCase())){
+    errEl.style.display='block';
+    document.getElementById('npNomeProc').focus();
+    return;
+  }
+  errEl.style.display='none';
+  const categoria=document.getElementById('npCategoria').value;
+  const price=parseMoeda(document.getElementById('npPrice').value||'0');
+  const ane=parseMoeda(document.getElementById('npAne').value||'0');
+  const ins=parseMoeda(document.getElementById('npIns').value||'0');
+  const aux=parseMoeda(document.getElementById('npAux').value||'0');
+  const ext=parseMoeda(document.getElementById('npExt').value||'0');
+  const pct=parseFloat(document.getElementById('npPct').value)||0;
+  const lbl=document.getElementById('npLbl').value.trim()||'Comissão gerente';
+  const act=document.getElementById('npAct').checked;
+  const ts=new Date().toISOString();
+  const fbKey=nome.replace(/[^a-zA-Z0-9]/g,'_').replace(/_+/g,'_');
+
+  // 1. Save to procedures node (makes it appear in getAllProcs)
+  dbRef.child('procedures/'+fbKey).set({
+    nome,categoria,valor:price,custom:true,active:true,
+    createdAt:ts,createdBy:CU
+  });
+
+  // 2. Save full config to procedureConfig node
+  dbRef.child('procedureConfig/'+nome).set({
+    patientPrice:price,anesthetistCost:ane,instrumenterCost:ins,
+    assistantCost:aux,extraMaterialCost:ext,
+    managerCommissionPct:pct,managerCommissionLabel:lbl,commissionActive:act,
+    updatedAt:ts,updatedBy:CU
+  });
+
+  fbAddLog('NOVO PROC',`Criado: "${nome}" | cat=${categoria} | preço=R$ ${fN(price)} | comissão=${pct}%`);
+  showToast(`✓ Procedimento "${nome}" criado com sucesso!`,'#27ae60');
+  fecharNovoProc();
+  // Firebase listener will trigger renderAll() automatically — proc will appear everywhere
+}
+
+function duplicarProc(procNome,eid){
+  const cfg=getProcConfig(procNome);
+  const proc=getAllProcs().find(p=>p.nome===procNome);
+  abrirNovoProc({
+    nome:procNome+' (cópia)',
+    categoria:proc?.categoria||'outros',
+    price:cfg.patientPrice,
+    ane:cfg.anesthetistCost,
+    ins:cfg.instrumenterCost,
+    aux:cfg.assistantCost,
+    ext:cfg.extraMaterialCost,
+    pct:cfg.managerCommissionPct,
+    lbl:cfg.managerCommissionLabel,
+    act:cfg.commissionActive,
+  });
+}
+
 function salvarTodosProcConfig(){
-  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
+  const procs=getAllProcs().filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
   let count=0;
   procs.forEach(p=>{
     const eid='pc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
@@ -2792,4 +2980,4 @@ function gerarPDFOrcamento(id){
 }
 </script>
 </body>
-</html>
+</htm
