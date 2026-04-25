@@ -694,27 +694,15 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
     </div>
   </div>
 
-  <!-- CUSTOS DE EQUIPE -->
+  <!-- CONFIGURAÇÃO UNIFICADA DE PROCEDIMENTOS -->
   <div class="sec" style="margin-top:18px">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-      <div>
-        <h3 style="margin:0">🔒 Custos Internos de Equipe <span style="font-size:.72rem;font-weight:400;color:var(--muted)">(não aparecem para o paciente)</span></h3>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:3px">Valores pagos à equipe cirúrgica por procedimento. Ficam escondidos do paciente — usados apenas para gerar despesas automáticas nos lançamentos financeiros e calcular margem.</div>
+    <div style="margin-bottom:14px">
+      <h3 style="margin:0">⚙️ Configuração de Procedimentos <span style="font-size:.72rem;font-weight:400;color:var(--muted)">(interno — não aparece para o paciente)</span></h3>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:3px">
+        Preço do paciente (preenchido automaticamente no lançamento) · Custos de equipe (geram despesas em <b>Equipe Cirúrgica</b>) · Comissão da gerente (gera despesa em <b>Comissões</b>).
       </div>
     </div>
-    <div id="teamCostList"></div>
-  </div>
-
-  <!-- COMISSÃO DA GERENTE -->
-  <div class="sec" style="margin-top:18px">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-      <div>
-        <h3 style="margin:0">💼 Comissão da Gerente <span style="font-size:.72rem;font-weight:400;color:var(--muted)">(interna — não aparece para o paciente)</span></h3>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:3px">Percentual ou valor fixo cobrado por procedimento. Gerado automaticamente como despesa vinculada ao lançamento de receita.</div>
-      </div>
-      <button class="btn btn-ok" onclick="salvarTodasCommissions()" style="font-size:.83rem">💾 Salvar Todas</button>
-    </div>
-    <div id="commissionRulesList"></div>
+    <div id="procedureConfigList"></div>
   </div>
 </div>
 
@@ -839,12 +827,12 @@ const USUARIOS = {
 // ==================== CONSTANTES ====================
 const META = 50000;
 const CAT_R = ['Cirurgias Particulares','Consultas e Retornos','Procedimentos Estéticos (Botox/Preenchimento)','Outros'];
-const CAT_E = ['Pessoal e Pró-labore','Materiais e Insumos Cirúrgicos','Impostos e Taxas (Simples/CRM)','Aluguel e Infraestrutura','Marketing e Captação','Outros'];
+const CAT_E = ['Equipe Cirúrgica','Comissões','Pessoal e Pró-labore','Materiais e Insumos Cirúrgicos','Impostos e Taxas (Simples/CRM)','Aluguel e Infraestrutura','Marketing e Captação','Outros'];
 const UCORS = ['#2d7bbf','#27ae60','#9b59b6','#e8a838','#e74c3c','#1abc9c'];
 
 // ==================== ESTADO ====================
 let CU = '', CUEmail = '', tipo = 'receita', period = '';
-let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{}, procedureCommissionRules:{} };
+let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{}, procedureCommissionRules:{}, procedureConfig:{} };
 
 function nomeDoUsuario(email) {
   return USUARIOS[email] || email.split('@')[0];
@@ -931,6 +919,7 @@ function iniciarApp() {
     DATA.hospitalPrices = val.hospitalPrices || {};
     DATA.procedureTeamCosts = val.procedureTeamCosts || {};
     DATA.procedureCommissionRules = val.procedureCommissionRules || {};
+    DATA.procedureConfig = val.procedureConfig || {};
     renderAll();
   });
 
@@ -1010,9 +999,8 @@ function salvarLancamento() {
 
   const chkAuto=document.getElementById('chkAutoDesp');
   const gerarAuto=tipo==='receita'&&chkAuto&&chkAuto.checked&&proc;
-  // Always generate group id when auto expenses exist
-  const commRule=proc?DATA.procedureCommissionRules[proc]:null;
-  const commVal=gerarAuto&&commRule&&commRule.active?_calcCommission(commRule,valor):0;
+  const procCfg=proc?getProcConfig(proc):null;
+  const commVal=gerarAuto&&procCfg?_calcCommission(procCfg,valor):0;
   const hasAuto=gerarAuto;
   const linked_group_id=hasAuto?('grp_'+Date.now()):undefined;
 
@@ -1025,23 +1013,21 @@ function salvarLancamento() {
   fbAddLog('INCLUSÃO',`${tipo.toUpperCase()} · R$ ${fN(valor)} · ${cat} · ${resumo}`);
 
   // Auto-generate team fixed expenses + manager commission
-  if(hasAuto){
-    const tc=DATA.procedureTeamCosts[proc]||{};
+  if(hasAuto&&procCfg){
     const membros=[
-      {campo:'instrumenter',label:'Instrumentadora'},
-      {campo:'assistant',label:'Auxiliar de Cirurgia'},
-      {campo:'anesthetist',label:'Anestesista'},
-      {campo:'extraTeam',label:'Equipe Extra'},
+      {campo:'anesthetistCost',label:'Anestesista'},
+      {campo:'instrumenterCost',label:'Instrumentadora'},
+      {campo:'assistantCost',label:'Auxiliar'},
+      {campo:'extraMaterialCost',label:'Material Extra'},
     ];
     let desp_count=0;
-    // Fixed team costs
+    // Fixed team costs → categoria "Equipe Cirúrgica"
     membros.forEach(m=>{
-      const vStr=tc[m.campo];
-      const v=vStr?parseMoeda(String(vStr)):0;
+      const v=procCfg[m.campo]||0;
       if(v>0){
         const d={id:Date.now()+desp_count++,data,valor:v,
-          categoria:'Pessoal e Pró-labore',pagamento:'Transferência',
-          descricao:`${m.label} — ${proc}${pac?' ('+pac+')':''}`,
+          categoria:'Equipe Cirúrgica',pagamento:'Transferência',
+          descricao:`${m.label} — ${proc}`,
           paciente:pac,procedimento:proc,tipo:'despesa',
           usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR'),
           linked_group_id,auto_generated:true};
@@ -1049,20 +1035,18 @@ function salvarLancamento() {
         fbAddLog('AUTO-DESPESA',`Equipe: ${m.label} · R$ ${fN(v)} · ${proc}`);
       }
     });
-    // Manager commission
+    // Manager commission → categoria "Comissões"
     if(commVal>0){
-      const lbl=(commRule.label||'Comissão gerente');
-      const detail=commRule.type==='percent'?` ${commRule.value}% de R$ ${fN(valor)}`:'';
+      const lbl=procCfg.managerCommissionLabel||'Comissão gerente';
       const dc={id:Date.now()+desp_count++,data,valor:commVal,
-        categoria:'Pessoal e Pró-labore',pagamento:'Transferência',
-        descricao:`${lbl} — ${proc}${pac?' ('+pac+')':''}${detail}`,
+        categoria:'Comissões',pagamento:'Transferência',
+        descricao:`Comissão gerente — ${proc}`,
         paciente:pac,procedimento:proc,tipo:'despesa',
-        commission:true,commission_type:commRule.type,commission_rate:commRule.value,
+        commission:true,commission_rate:procCfg.managerCommissionPct,
         usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR'),
         linked_group_id,auto_generated:true};
       fbSalvarLanc(dc);
-      fbAddLog('COMISSÃO',`${lbl} · R$ ${fN(commVal)}${commRule.type==='percent'?` (${commRule.value}% de R$ ${fN(valor)})`:''}· ${proc}${pac?' · '+pac:''}`);
-      desp_count++;
+      fbAddLog('COMISSÃO',`${lbl} · R$ ${fN(commVal)} (${procCfg.managerCommissionPct}% de R$ ${fN(valor)}) · ${proc}${pac?' · '+pac:''}`);
     }
     if(desp_count>0)showToast(`✓ Receita + ${desp_count} despesa(s) automática(s) lançada(s)!`,'#27ae60');
     else showToast('✓ Lançamento registrado! (sem despesas configuradas)','#27ae60');
@@ -1342,8 +1326,8 @@ function renderDRE(){
   const et=document.getElementById('dreTitle');if(et)et.textContent=lbl;
   const l=getLP(),de=document.getElementById('dreContent');if(!de)return;
   const rC=soma(l,'receita','Cirurgias Particulares'),rCo=soma(l,'receita','Consultas e Retornos'),rE=soma(l,'receita','Procedimentos Estéticos (Botox/Preenchimento)'),rO=soma(l,'receita','Outros'),tR=rC+rCo+rE+rO;
-  const dP=soma(l,'despesa','Pessoal e Pró-labore'),dM=soma(l,'despesa','Materiais e Insumos Cirúrgicos'),dI=soma(l,'despesa','Impostos e Taxas (Simples/CRM)'),dA=soma(l,'despesa','Aluguel e Infraestrutura'),dMk=soma(l,'despesa','Marketing e Captação'),dO=soma(l,'despesa','Outros'),tE=dP+dM+dI+dA+dMk+dO,rs=tR-tE,mg=tR>0?rs/tR*100:0;
-  de.innerHTML=`<div class="ds"><div class="dh">+ Receitas Operacionais</div>${dRow('Cirurgias Particulares',rC)}${dRow('Consultas e Retornos',rCo)}${dRow('Proc. Estéticos',rE)}${rO?dRow('Outros',rO):''}<div class="dr tot"><span>TOTAL RECEITAS</span><span class="ap">R$ ${fN(tR)}</span></div></div><div class="ds"><div class="dh">- Despesas Operacionais</div>${dRow('Pessoal e Pró-labore',dP,1)}${dRow('Materiais e Insumos',dM,1)}${dRow('Impostos e Taxas',dI,1)}${dA?dRow('Aluguel',dA,1):''}${dMk?dRow('Marketing',dMk,1):''}${dO?dRow('Outros',dO,1):''}<div class="dr tot"><span>TOTAL DESPESAS</span><span class="an">- R$ ${fN(tE)}</span></div></div><div class="dr dest"><span>RESULTADO LÍQUIDO</span><span>R$ ${fN(rs)}</span></div><div style="margin-top:7px;font-size:.74rem;color:var(--muted);text-align:right">Margem: ${mg.toFixed(1)}%</div>`;
+  const dEq=soma(l,'despesa','Equipe Cirúrgica'),dCom=soma(l,'despesa','Comissões'),dP=soma(l,'despesa','Pessoal e Pró-labore'),dM=soma(l,'despesa','Materiais e Insumos Cirúrgicos'),dI=soma(l,'despesa','Impostos e Taxas (Simples/CRM)'),dA=soma(l,'despesa','Aluguel e Infraestrutura'),dMk=soma(l,'despesa','Marketing e Captação'),dO=soma(l,'despesa','Outros'),tE=dEq+dCom+dP+dM+dI+dA+dMk+dO,rs=tR-tE,mg=tR>0?rs/tR*100:0;
+  de.innerHTML=`<div class="ds"><div class="dh">+ Receitas Operacionais</div>${dRow('Cirurgias Particulares',rC)}${dRow('Consultas e Retornos',rCo)}${dRow('Proc. Estéticos',rE)}${rO?dRow('Outros',rO):''}<div class="dr tot"><span>TOTAL RECEITAS</span><span class="ap">R$ ${fN(tR)}</span></div></div><div class="ds"><div class="dh">- Despesas Operacionais</div>${dEq?dRow('Equipe Cirúrgica',dEq,1):''}${dCom?dRow('Comissões',dCom,1):''}${dRow('Pessoal e Pró-labore',dP,1)}${dRow('Materiais e Insumos',dM,1)}${dRow('Impostos e Taxas',dI,1)}${dA?dRow('Aluguel',dA,1):''}${dMk?dRow('Marketing',dMk,1):''}${dO?dRow('Outros',dO,1):''}<div class="dr tot"><span>TOTAL DESPESAS</span><span class="an">- R$ ${fN(tE)}</span></div></div><div class="dr dest"><span>RESULTADO LÍQUIDO</span><span>R$ ${fN(rs)}</span></div><div style="margin-top:7px;font-size:.74rem;color:var(--muted);text-align:right">Margem: ${mg.toFixed(1)}%</div>`;
   const ie=document.getElementById('indEl');if(!ie)return;
   ie.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><div style="background:#f7f9fb;border-radius:7px;padding:10px;text-align:center"><div style="font-size:.69rem;color:var(--muted);text-transform:uppercase">Margem Líquida</div><div style="font-size:1.35rem;font-weight:700;color:${mg>=20?'var(--ok)':mg>=10?'var(--acc)':'var(--err)'}">${mg.toFixed(1)}%</div></div><div style="background:#f7f9fb;border-radius:7px;padding:10px;text-align:center"><div style="font-size:.69rem;color:var(--muted);text-transform:uppercase">Desp/Rec</div><div style="font-size:1.35rem;font-weight:700;color:var(--primary)">${tR>0?(tE/tR*100).toFixed(1):0}%</div></div></div>`;
 }
@@ -1427,7 +1411,7 @@ function importarJSON(inp){
 function dc(id){if(CI[id]){CI[id].destroy();delete CI[id];}}
 function getMeses(n){const now=new Date(),r=[];for(let i=n-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);r.push({v:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,l:d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'})});}return r;}
 function rChRec(){dc('chRec');const e=document.getElementById('chRec');if(!e)return;const l=getLP();CI['chRec']=new Chart(e,{type:'doughnut',data:{labels:CAT_R,datasets:[{data:CAT_R.map(c=>soma(l,'receita',c)),backgroundColor:['#27ae60','#2d7bbf','#9b59b6','#95a5a6'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});}
-function rChExp(){dc('chExp');const e=document.getElementById('chExp');if(!e)return;const l=getLP();CI['chExp']=new Chart(e,{type:'doughnut',data:{labels:CAT_E,datasets:[{data:CAT_E.map(c=>soma(l,'despesa',c)),backgroundColor:['#e74c3c','#e67e22','#f1c40f','#c0392b','#8e44ad','#95a5a6'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});}
+function rChExp(){dc('chExp');const e=document.getElementById('chExp');if(!e)return;const l=getLP();CI['chExp']=new Chart(e,{type:'doughnut',data:{labels:CAT_E,datasets:[{data:CAT_E.map(c=>soma(l,'despesa',c)),backgroundColor:['#16a085','#7b3f00','#e74c3c','#e67e22','#f1c40f','#c0392b','#8e44ad','#95a5a6'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});}
 function rChEvol(){dc('chEvol');const e=document.getElementById('chEvol');if(!e)return;const al=getLancs(),m=getMeses(6);CI['chEvol']=new Chart(e,{type:'bar',data:{labels:m.map(x=>x.l),datasets:[{label:'Receita',data:m.map(x=>soma(al.filter(l=>l.data&&l.data.startsWith(x.v)),'receita')),backgroundColor:'rgba(39,174,96,.8)',borderRadius:5},{label:'Despesa',data:m.map(x=>soma(al.filter(l=>l.data&&l.data.startsWith(x.v)),'despesa')),backgroundColor:'rgba(231,76,60,.75)',borderRadius:5},{label:'Meta',data:Array(6).fill(META),type:'line',borderColor:'#e8a838',borderDash:[5,5],pointRadius:0,fill:false,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$'+fN(v)}}},plugins:{legend:{position:'bottom'}}}});}
 function rChDRE(){dc('chDRE');const e=document.getElementById('chDRE');if(!e)return;const l=getLP(),r=soma(l,'receita'),x=soma(l,'despesa');CI['chDRE']=new Chart(e,{type:'bar',data:{labels:['Receita','Despesas','Resultado'],datasets:[{data:[r,x,Math.max(r-x,0)],backgroundColor:['rgba(39,174,96,.85)','rgba(231,76,60,.8)','rgba(45,123,191,.85)'],borderRadius:7,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$'+fN(v)}}}}});}
 function rChComp(){dc('chComp');const e=document.getElementById('chComp');if(!e)return;const al=getLancs(),m=getMeses(12);const rc=m.map(x=>soma(al.filter(l=>l.data&&l.data.startsWith(x.v)),'receita'));const ex=m.map(x=>soma(al.filter(l=>l.data&&l.data.startsWith(x.v)),'despesa'));CI['chComp']=new Chart(e,{type:'line',data:{labels:m.map(x=>x.l),datasets:[{label:'Receita',data:rc,borderColor:'#27ae60',backgroundColor:'rgba(39,174,96,.08)',tension:.4,fill:true,pointRadius:3},{label:'Despesa',data:ex,borderColor:'#e74c3c',backgroundColor:'rgba(231,76,60,.06)',tension:.4,fill:true,pointRadius:3},{label:'Resultado',data:rc.map((r,i)=>r-ex[i]),borderColor:'#2d7bbf',tension:.4,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>'R$'+fN(v)}}},plugins:{legend:{position:'bottom'}}}});}
@@ -1648,6 +1632,25 @@ function clearPacLanc(){
   const inp=document.getElementById('lancPacInput');if(inp)inp.value='';
 }
 
+// ==================== PROCEDURECONFIG — UNIFIED HELPER ====================
+// Reads from new procedureConfig node, falls back to old nodes + PROC_ORC for backward compat
+function getProcConfig(procNome){
+  const cfg=DATA.procedureConfig[procNome]||{};
+  const tc=DATA.procedureTeamCosts[procNome]||{};
+  const cr=DATA.procedureCommissionRules[procNome]||{};
+  const procDefault=PROC_ORC.find(p=>p.nome===procNome);
+  return {
+    patientPrice: cfg.patientPrice!=null ? +cfg.patientPrice : (procDefault?.valor||0),
+    instrumenterCost: cfg.instrumenterCost!=null ? +cfg.instrumenterCost : +(tc.instrumenter||0),
+    assistantCost: cfg.assistantCost!=null ? +cfg.assistantCost : +(tc.assistant||0),
+    anesthetistCost: cfg.anesthetistCost!=null ? +cfg.anesthetistCost : +(tc.anesthetist||0),
+    extraMaterialCost: cfg.extraMaterialCost!=null ? +cfg.extraMaterialCost : +(tc.extraTeam||0),
+    managerCommissionPct: cfg.managerCommissionPct!=null ? +cfg.managerCommissionPct : (cr.type==='percent'?+(cr.value||0):0),
+    managerCommissionLabel: cfg.managerCommissionLabel||cr.label||'Comissão gerente',
+    commissionActive: cfg.commissionActive!=null ? !!cfg.commissionActive : !!(cr.active&&+(cr.value||0)>0),
+  };
+}
+
 // ==================== LANÇAMENTOS — PROCEDIMENTO / EQUIPE ====================
 function onProcLancChange(proc){
   const hint=document.getElementById('procHint');
@@ -1660,21 +1663,18 @@ function onProcLancChange(proc){
     if(cHint)cHint.style.display='none';
     return;
   }
-  // Auto-fill valor from PROC_ORC default
-  const found=PROC_ORC.find(p=>p.nome===proc);
-  if(found&&found.valor>0){
+  // Auto-fill valor from procedureConfig.patientPrice (falls back to PROC_ORC)
+  const cfg=getProcConfig(proc);
+  if(cfg.patientPrice>0){
     const fv=document.getElementById('fValor');
-    if(fv){fv.value=fN(found.valor);fmtMoeda(fv);}
+    if(fv){fv.value=fN(cfg.patientPrice);fmtMoeda(fv);}
     if(hint)hint.classList.add('show');
   } else {
     if(hint)hint.classList.remove('show');
   }
-  // Show commission hint if rule exists
-  const cr=DATA.procedureCommissionRules[proc];
-  if(cr&&cr.active&&cHint&&cHintTxt){
-    const pct=cr.type==='percent'?cr.value:null;
-    const lbl=cr.label||'Comissão gerente';
-    cHintTxt.textContent=pct!=null?`${lbl}: ${pct}% sobre o valor lançado`:`${lbl}: R$ ${fN(cr.value)} fixo`;
+  // Show commission hint if active
+  if(cfg.commissionActive&&cfg.managerCommissionPct>0&&cHint&&cHintTxt){
+    cHintTxt.textContent=`${cfg.managerCommissionLabel}: ${cfg.managerCommissionPct}% sobre o valor lançado`;
     cHint.style.display='block';
   } else if(cHint){
     cHint.style.display='none';
@@ -1708,21 +1708,20 @@ function _onValorLancChange(){
 
 function _showTeamPreview(proc){
   const rows=document.getElementById('teamPrevRows');if(!rows)return;
-  const tc=DATA.procedureTeamCosts[proc]||{};
-  const cr=DATA.procedureCommissionRules[proc];
+  const cfg=getProcConfig(proc);
   const valorAtual=parseMoeda(document.getElementById('fValor')?.value||'0');
   const membros=[
-    {campo:'instrumenter',label:'Instrumentadora',icon:'🔧'},
-    {campo:'assistant',label:'Auxiliar de Cirurgia',icon:'🩺'},
-    {campo:'anesthetist',label:'Anestesista',icon:'💉'},
-    {campo:'extraTeam',label:'Equipe Extra',icon:'👤'},
+    {campo:'anesthetistCost',label:'Anestesista',icon:'💉'},
+    {campo:'instrumenterCost',label:'Instrumentadora',icon:'🔧'},
+    {campo:'assistantCost',label:'Auxiliar',icon:'🩺'},
+    {campo:'extraMaterialCost',label:'Material Extra',icon:'📦'},
   ];
   let total=0;
   let html='';
 
-  // Team fixed costs — Firebase stores numbers; use +tc[campo] to avoid parseMoeda dot-stripping
+  // Team fixed costs — read from unified config (already coerced to numbers by getProcConfig)
   const teamHtml=membros.map(m=>{
-    const v=+(tc[m.campo]||0); // Firebase number → JS number directly
+    const v=cfg[m.campo]||0;
     if(v<=0)return '';
     total+=v;
     return `<div class="team-row"><span>${m.icon} ${m.label}</span><span>R$ ${fN(v)}</span></div>`;
@@ -1730,12 +1729,10 @@ function _showTeamPreview(proc){
 
   // Manager commission
   let commHtml='';
-  if(cr&&cr.active){
-    const commVal=_calcCommission(cr,valorAtual);
+  if(cfg.commissionActive&&cfg.managerCommissionPct>0){
+    const commVal=valorAtual*cfg.managerCommissionPct/100;
     if(commVal>0){
-      const lbl=cr.label||'Comissão gerente';
-      const detail=cr.type==='percent'?` (${cr.value}% de R$ ${fN(valorAtual)})`:'';
-      commHtml=`<div class="team-row" style="color:#7b3f00"><span>💼 ${lbl}${detail}</span><span>R$ ${fN(commVal)}</span></div>`;
+      commHtml=`<div class="team-row" style="color:#7b3f00"><span>💼 ${cfg.managerCommissionLabel} (${cfg.managerCommissionPct}% de R$ ${fN(valorAtual)})</span><span>R$ ${fN(commVal)}</span></div>`;
       total+=commVal;
     }
   }
@@ -1743,9 +1740,8 @@ function _showTeamPreview(proc){
   html=teamHtml+commHtml;
 
   if(!html){
-    const hasTc=Object.keys(tc).filter(k=>k!=='updatedAt'&&k!=='updatedBy'&&+(tc[k])>0).length>0;
     rows.innerHTML=`<div style="color:var(--muted);font-size:.81rem;text-align:center;padding:8px 0">
-      ${hasTc?'⚠️ Custos salvos com valor zero — recadastre na aba <b>Tabela → Custos Internos</b>':'Nenhum custo ou comissão configurado para este procedimento.'}
+      Nenhum custo ou comissão configurado para este procedimento.
       <br><small>→ <a href="#" onclick="showPage('tabela-hosp',document.querySelector('[onclick*=tabela-hosp]'));renderTabelaHosp();return false" style="color:var(--pl)">Abrir aba Tabela</a></small>
     </div>`;
   } else {
@@ -1753,11 +1749,10 @@ function _showTeamPreview(proc){
   }
 }
 
-function _calcCommission(rule,valorReceita){
-  if(!rule||!rule.active||!valorReceita)return 0;
-  if(rule.type==='percent')return valorReceita*(rule.value||0)/100;
-  if(rule.type==='fixed')return rule.value||0;
-  return 0;
+function _calcCommission(cfg,valorReceita){
+  // cfg = result of getProcConfig(proc)
+  if(!cfg||!cfg.commissionActive||!valorReceita||!cfg.managerCommissionPct)return 0;
+  return valorReceita*cfg.managerCommissionPct/100;
 }
 
 // ---- Novo paciente modal ----
@@ -2113,8 +2108,7 @@ function renderOrcamentos(){
 let _thHospSel='';
 
 function renderTabelaHosp(){
-  renderTeamCosts();
-  renderCommissionRules();
+  renderProcedureConfig();
   // Render hospital pills
   const pills=document.getElementById('thHospPills');
   if(pills){
@@ -2229,166 +2223,122 @@ function salvarTodosPrecos(){
   showToast(`✓ ${count} preco(s) salvo(s)!`,'#27ae60');
 }
 
-// ==================== CUSTOS DE EQUIPE ====================
-function renderTeamCosts(){
-  const el=document.getElementById('teamCostList');if(!el)return;
-  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros'&&p.nome!=='Consulta');
+// ==================== CONFIG DE PROCEDIMENTOS (TABELA UNIFICADA) ====================
+function renderProcedureConfig(){
+  const el=document.getElementById('procedureConfigList');if(!el)return;
+  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
+  const fv=v=>(+v)?fN(+v):'';
   el.innerHTML=`
-    <div class="tw">
-      <table>
-        <thead><tr>
-          <th style="width:22%">Procedimento</th>
-          <th style="width:16%;text-align:right">Instrumentadora</th>
-          <th style="width:16%;text-align:right">Auxiliar</th>
-          <th style="width:16%;text-align:right">Anestesista</th>
-          <th style="width:16%;text-align:right">Equipe Extra</th>
-          <th style="width:8%;text-align:center">Ação</th>
-        </tr></thead>
-        <tbody>
-        ${procs.map(p=>{
-          const tc=DATA.procedureTeamCosts[p.nome]||{};
-          const eid='tc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
-          // Firebase stores numbers → use +v directly (avoid parseMoeda which treats dot as thousand sep)
-          const fv=v=>(+v)?fN(+v):'';
-          return `<tr>
-            <td style="font-weight:600;font-size:.83rem">${p.nome}</td>
-            <td><input type="text" class="moeda-input" id="${eid}_ins" value="${fv(tc.instrumenter)}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.8rem;padding:5px 7px"></td>
-            <td><input type="text" class="moeda-input" id="${eid}_aux" value="${fv(tc.assistant)}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.8rem;padding:5px 7px"></td>
-            <td><input type="text" class="moeda-input" id="${eid}_ane" value="${fv(tc.anesthetist)}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.8rem;padding:5px 7px"></td>
-            <td><input type="text" class="moeda-input" id="${eid}_ext" value="${fv(tc.extraTeam)}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.8rem;padding:5px 7px"></td>
-            <td style="text-align:center"><button class="btn btn-ok btn-sm" onclick="salvarTeamCost('${p.nome}')">💾</button></td>
-          </tr>`;
-        }).join('')}
-        </tbody>
-      </table>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+      <thead>
+        <tr style="background:#f0f4f8">
+          <th style="text-align:left;padding:7px 8px;min-width:140px;font-size:.76rem;color:var(--muted);font-weight:700;border-bottom:2px solid var(--brd)">Procedimento</th>
+          <th style="text-align:right;padding:7px 8px;min-width:110px;font-size:.76rem;color:var(--ok);font-weight:700;border-bottom:2px solid var(--brd)" title="Preço cobrado do paciente">💰 Preço Paciente</th>
+          <th style="text-align:right;padding:7px 8px;min-width:105px;font-size:.76rem;color:#2980b9;font-weight:700;border-bottom:2px solid var(--brd)">💉 Anestesista</th>
+          <th style="text-align:right;padding:7px 8px;min-width:105px;font-size:.76rem;color:#2980b9;font-weight:700;border-bottom:2px solid var(--brd)">🔧 Instrumentadora</th>
+          <th style="text-align:right;padding:7px 8px;min-width:105px;font-size:.76rem;color:#2980b9;font-weight:700;border-bottom:2px solid var(--brd)">🩺 Auxiliar</th>
+          <th style="text-align:right;padding:7px 8px;min-width:105px;font-size:.76rem;color:#2980b9;font-weight:700;border-bottom:2px solid var(--brd)">📦 Mat. Extra</th>
+          <th style="text-align:right;padding:7px 8px;min-width:80px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">💼 Comissão %</th>
+          <th style="text-align:left;padding:7px 8px;min-width:120px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">Label comissão</th>
+          <th style="text-align:center;padding:7px 8px;min-width:60px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">Ativo</th>
+          <th style="padding:7px 8px;width:60px;border-bottom:2px solid var(--brd)"></th>
+        </tr>
+      </thead>
+      <tbody>
+      ${procs.map(p=>{
+        const cfg=getProcConfig(p.nome);
+        const eid='pc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
+        const hasCfg=!!(DATA.procedureConfig[p.nome]||DATA.procedureTeamCosts[p.nome]||DATA.procedureCommissionRules[p.nome]);
+        return `<tr style="${hasCfg?'background:#f9fffe':''}">
+          <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">${p.nome}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <input type="text" class="moeda-input" id="${eid}_price" value="${fv(cfg.patientPrice)}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+          </td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <input type="text" class="moeda-input" id="${eid}_ane" value="${fv(cfg.anesthetistCost)}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+          </td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <input type="text" class="moeda-input" id="${eid}_ins" value="${fv(cfg.instrumenterCost)}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+          </td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <input type="text" class="moeda-input" id="${eid}_aux" value="${fv(cfg.assistantCost)}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+          </td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <input type="text" class="moeda-input" id="${eid}_ext" value="${fv(cfg.extraMaterialCost)}" placeholder="0,00"
+              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+          </td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <input type="number" id="${eid}_pct" value="${cfg.managerCommissionPct||''}" min="0" max="100" step="0.1"
+              placeholder="0" style="width:100%;text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;font-family:inherit">
+          </td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <input type="text" id="${eid}_lbl" value="${cfg.managerCommissionLabel}"
+              placeholder="Comissão gerente"
+              style="width:100%;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;font-family:inherit">
+          </td>
+          <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <label class="comm-toggle">
+              <input type="checkbox" id="${eid}_act" ${cfg.commissionActive?' checked':''}>
+              <span class="comm-slider"></span>
+            </label>
+          </td>
+          <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
+            <button class="th-save-btn" onclick="salvarProcConfig('${p.nome.replace(/'/g,"\\'")}')">💾</button>
+          </td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>
     </div>
-    <div style="text-align:right;margin-top:10px">
-      <button class="btn btn-ok" onclick="salvarTodosTeamCosts()" style="font-size:.83rem">💾 Salvar Todos os Custos</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px">
+      <div class="alert ai" style="margin:0;font-size:.77rem;flex:1">
+        💡 <b>Dica:</b> Cirurgias → 3% | Botox / Preenchimento → 10%. Comissão calculada sobre o valor real lançado. <b>Preço Paciente</b> é preenchido automaticamente no lançamento de receita.
+      </div>
+      <button class="btn btn-ok" onclick="salvarTodosProcConfig()" style="font-size:.82rem;flex-shrink:0">💾 Salvar Todos</button>
     </div>`;
 }
 
-function salvarTeamCost(procNome){
-  const eid='tc_'+procNome.replace(/[^a-zA-Z0-9]/g,'_');
+function salvarProcConfig(procNome){
+  const eid='pc_'+procNome.replace(/[^a-zA-Z0-9]/g,'_');
   const g=sfx=>parseMoeda(document.getElementById(eid+sfx)?.value||'0');
-  const tc={
-    instrumenter:g('_ins'),assistant:g('_aux'),
-    anesthetist:g('_ane'),extraTeam:g('_ext'),
-    updatedAt:new Date().toISOString(),updatedBy:CU
-  };
-  dbRef.child('procedureTeamCosts/'+procNome).set(tc);
-  fbAddLog('EQUIPE',`Custos de equipe salvos para ${procNome}`);
-  showToast(`✓ Custos de ${procNome} salvos!`,'#27ae60');
-}
-
-function salvarTodosTeamCosts(){
-  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros'&&p.nome!=='Consulta');
-  let count=0;
-  procs.forEach(p=>{
-    const eid='tc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
-    // Only save if at least one field is non-zero (never overwrite saved data with blank rows)
-    const g=sfx=>parseMoeda(document.getElementById(eid+sfx)?.value||'0');
-    if(g('_ins')+g('_aux')+g('_ane')+g('_ext')===0)return;
-    salvarTeamCost(p.nome);
-    count++;
-  });
-  fbAddLog('EQUIPE',`${count} custos de equipe salvos em lote`);
-  showToast(`✓ ${count} custo(s) salvo(s)!`,'#27ae60');
-}
-
-// ==================== COMISSÃO DA GERENTE ====================
-function renderCommissionRules(){
-  const el=document.getElementById('commissionRulesList');if(!el)return;
-  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno');
-  el.innerHTML=`
-    <div class="tw">
-      <table>
-        <thead><tr>
-          <th style="width:26%">Procedimento</th>
-          <th style="width:16%;text-align:center">Tipo</th>
-          <th style="width:14%;text-align:right">Valor (%)</th>
-          <th style="width:22%">Label (ex: Comissão gerente)</th>
-          <th style="width:10%;text-align:center">Ativo</th>
-          <th style="width:12%;text-align:center">Ação</th>
-        </tr></thead>
-        <tbody>
-        ${procs.map(p=>{
-          const cr=DATA.procedureCommissionRules[p.nome]||{};
-          const eid='cr_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
-          const isActive=cr.active!==false&&cr.value>0;
-          const hasCr=!!cr.value;
-          return `<tr id="crrow_${eid}"${hasCr?' style="background:#fffef5"':''}>
-            <td style="font-weight:600;font-size:.83rem">${p.nome}
-              ${hasCr?'<span class="linked-badge" style="background:#fff3cd;color:#856404">%</span>':''}
-            </td>
-            <td style="text-align:center">
-              <select id="${eid}_type" style="font-size:.78rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit">
-                <option value="percent"${(cr.type||'percent')==='percent'?' selected':''}>Percentual (%)</option>
-                <option value="fixed"${cr.type==='fixed'?' selected':''}>Fixo (R$)</option>
-              </select>
-            </td>
-            <td>
-              <input type="number" id="${eid}_val" value="${cr.value||''}" min="0" step="0.1"
-                placeholder="0" class="comm-pct" style="width:100%">
-            </td>
-            <td>
-              <input type="text" id="${eid}_lbl" value="${cr.label||'Comissão gerente'}"
-                placeholder="Comissão gerente"
-                style="width:100%;padding:5px 7px;font-size:.78rem;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit">
-            </td>
-            <td style="text-align:center">
-              <label class="comm-toggle">
-                <input type="checkbox" id="${eid}_act" ${isActive?' checked':''}>
-                <span class="comm-slider"></span>
-              </label>
-            </td>
-            <td style="text-align:center">
-              <button class="th-save-btn" onclick="salvarCommissionRule('${p.nome.replace(/'/g,"\\'")}')">Salvar</button>
-            </td>
-          </tr>`;
-        }).join('')}
-        </tbody>
-      </table>
-    </div>
-    <div class="alert ai" style="margin-top:12px;font-size:.78rem">
-      💡 <b>Dica:</b> Cirurgias → 3% | Botox / Preenchimento → 10%. O valor é calculado sobre a receita real lançada, não sobre o preço padrão do procedimento.
-    </div>`;
-}
-
-function salvarCommissionRule(procNome){
-  const eid='cr_'+procNome.replace(/[^a-zA-Z0-9]/g,'_');
-  const type=document.getElementById(eid+'_type')?.value||'percent';
-  const val=parseFloat(document.getElementById(eid+'_val')?.value)||0;
+  const pct=parseFloat(document.getElementById(eid+'_pct')?.value)||0;
   const lbl=(document.getElementById(eid+'_lbl')?.value.trim())||'Comissão gerente';
   const active=document.getElementById(eid+'_act')?.checked||false;
-  if(val<=0&&active){showToast('Informe o valor antes de ativar.','#e74c3c');return;}
-  const rule={type,value:val,label:lbl,active,updatedAt:new Date().toISOString(),updatedBy:CU};
-  dbRef.child('procedureCommissionRules/'+procNome).set(rule);
-  fbAddLog('COMISSÃO REGRA',`Regra salva: ${procNome} → ${type==='percent'?val+'%':'R$ '+fN(val)} (${active?'ativo':'inativo'})`);
-  showToast(`✓ Comissão de ${procNome} salva!`,'#27ae60');
+  const cfg={
+    patientPrice:g('_price'),
+    anesthetistCost:g('_ane'),
+    instrumenterCost:g('_ins'),
+    assistantCost:g('_aux'),
+    extraMaterialCost:g('_ext'),
+    managerCommissionPct:pct,
+    managerCommissionLabel:lbl,
+    commissionActive:active,
+    updatedAt:new Date().toISOString(),updatedBy:CU
+  };
+  dbRef.child('procedureConfig/'+procNome).set(cfg);
+  fbAddLog('CONFIG PROC',`Config salva: ${procNome} | preço=${fN(cfg.patientPrice)} | ane=${fN(cfg.anesthetistCost)} | ins=${fN(cfg.instrumenterCost)} | aux=${fN(cfg.assistantCost)} | comissão=${pct}% (${active?'ativo':'inativo'})`);
+  showToast(`✓ Config de ${procNome} salva!`,'#27ae60');
 }
 
-function salvarTodasCommissions(){
-  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno');
+function salvarTodosProcConfig(){
+  const procs=PROC_ORC.filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
   let count=0;
   procs.forEach(p=>{
-    const eid='cr_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
-    const valEl=document.getElementById(eid+'_val');
-    if(!valEl)return;
-    const val=parseFloat(valEl.value)||0;
-    if(val<=0)return; // skip empty
-    const type=document.getElementById(eid+'_type')?.value||'percent';
-    const lbl=(document.getElementById(eid+'_lbl')?.value.trim())||'Comissão gerente';
-    const active=document.getElementById(eid+'_act')?.checked||false;
-    const rule={type,value:val,label:lbl,active,updatedAt:new Date().toISOString(),updatedBy:CU};
-    dbRef.child('procedureCommissionRules/'+p.nome).set(rule);
+    const eid='pc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
+    const g=sfx=>parseMoeda(document.getElementById(eid+sfx)?.value||'0');
+    const pct=parseFloat(document.getElementById(eid+'_pct')?.value)||0;
+    // Only save if at least one value is set (avoid overwriting with all-zeros)
+    if(g('_price')+g('_ane')+g('_ins')+g('_aux')+g('_ext')+pct===0)return;
+    salvarProcConfig(p.nome);
     count++;
   });
-  fbAddLog('COMISSÃO REGRA',`${count} regras de comissão salvas em lote`);
-  showToast(`✓ ${count} regra(s) de comissão salva(s)!`,'#27ae60');
+  fbAddLog('CONFIG PROC',`${count} configurações de procedimento salvas em lote`);
+  showToast(`✓ ${count} configuração(ões) salva(s)!`,'#27ae60');
 }
 
 // ==================== CFO ANALYSIS ====================
