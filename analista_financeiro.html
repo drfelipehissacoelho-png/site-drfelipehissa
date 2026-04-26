@@ -338,7 +338,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       </div>
       <div class="fr">
         <div><label>Data</label><input type="date" id="fData"></div>
-        <div><label>Valor (R$)</label><input type="text" id="fValor" placeholder="0,00" class="moeda-input" oninput="maskMoeda(this)" onblur="fmtMoeda(this);_onValorLancChange()"></div>
+        <div><label>Valor (R$)</label><input type="text" id="fValor" placeholder="0,00" class="moeda-input" oninput="maskMoeda(this,event)" onblur="fmtMoeda(this);_onValorLancChange()"></div>
       </div>
       <div class="fg"><label>Categoria</label><select id="fCategoria"></select></div>
       <div id="camposPac">
@@ -782,7 +782,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
     <input type="hidden" id="eTipo">
     <div class="fr">
       <div><label>Data</label><input type="date" id="eData"></div>
-      <div><label>Valor (R$)</label><input type="text" id="eValor" class="moeda-input" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+      <div><label>Valor (R$)</label><input type="text" id="eValor" class="moeda-input" oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)"></div>
     </div>
     <div class="fg"><label>Categoria</label><select id="eCategoria"></select></div>
     <div id="eCamposPac">
@@ -831,22 +831,22 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       </div>
       <div>
         <label>💰 Preço Paciente (R$)</label>
-        <input type="text" id="npPrice" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)">
+        <input type="text" id="npPrice" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)">
       </div>
     </div>
     <div style="background:#eaf3fb;border-radius:8px;padding:11px 13px;margin:12px 0 4px">
       <div style="font-size:.74rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px">🔒 Custos Internos de Equipe (não visíveis ao paciente)</div>
       <div class="fr">
         <div><label>💉 Anestesista (R$)</label>
-          <input type="text" id="npAne" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+          <input type="text" id="npAne" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)"></div>
         <div><label>🔧 Instrumentadora (R$)</label>
-          <input type="text" id="npIns" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+          <input type="text" id="npIns" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)"></div>
       </div>
       <div class="fr">
         <div><label>🩺 Auxiliar (R$)</label>
-          <input type="text" id="npAux" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+          <input type="text" id="npAux" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)"></div>
         <div><label>📦 Material Extra (R$)</label>
-          <input type="text" id="npExt" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this)" onblur="fmtMoeda(this)"></div>
+          <input type="text" id="npExt" class="moeda-input" placeholder="0,00" oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)"></div>
       </div>
     </div>
     <div style="background:#fff8e1;border-radius:8px;padding:11px 13px;margin-bottom:12px">
@@ -1369,10 +1369,16 @@ function renderAll(){
 
 function updateFilters(){
   const us=getUsuarios();
+  // Esconde o dropdown de filtro por usuario quando ha apenas 1 (ou zero) usuario
+  // — sem opcao de filtrar nada que faca sentido.
+  const showUserFilter = us.length > 1;
   ['ftUser','ftLogUser'].forEach(id=>{
     const s=document.getElementById(id);if(!s)return;
     const cur=s.value;
     s.innerHTML='<option value="">Todos usuários</option>'+us.map(u=>`<option${u===cur?' selected':''}>${u}</option>`).join('');
+    s.style.display = showUserFilter ? '' : 'none';
+    // Limpa selecao se filtro ficou escondido (evita estado oculto filtrando dados)
+    if(!showUserFilter && cur) s.value = '';
   });
 }
 
@@ -1487,8 +1493,17 @@ function _sortLancs(items){
   });
 }
 
+// Retorna as colunas que devem aparecer AGORA. Se so existe 1 usuario
+// nos dados, omite a coluna Usuario (todas as linhas mostrariam o mesmo
+// nome — virou ruido). Reaparece automaticamente quando 2o usuario lancar.
+function _activeLancCols(){
+  const showUser = getUsuarios().length > 1;
+  return LANC_COLS.filter(c => c.key !== 'usuario' || showUser);
+}
+
 function _renderLancHead(){
-  const cells = LANC_COLS.map(c => {
+  const cols = _activeLancCols();
+  const cells = cols.map(c => {
     const isActive = _lancSort.col === c.key;
     const arrow = isActive ? (_lancSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
     const align = c.alignRight ? 'text-align:right;' : '';
@@ -1516,6 +1531,8 @@ function renderLancs(){
   if(!l.length){tb.innerHTML='';if(em)em.style.display='block';return;}
   if(em)em.style.display='none';
   const ucm={};getUsuarios().forEach((u,i)=>{ucm[u]=UCORS[i%UCORS.length];});
+  // Sincroniza visibilidade da coluna Usuario entre header e body
+  const showUser = getUsuarios().length > 1;
   tb.innerHTML=l.map(x=>{
     const grpBadge=x.linked_group_id?`<span class="linked-badge" title="Grupo: ${x.linked_group_id}">${x.commission?'💼 comissão':x.auto_generated?'🤖 auto':'🔗 grupo'}</span>`:'';
     // Coluna Paciente/Desc:
@@ -1533,11 +1550,14 @@ function renderLancs(){
       desc = '<span style="color:var(--muted);font-style:italic;font-size:.85em">— sem descrição —</span>';
     }
     // Cor verde/vermelho do valor + sinal +/- ja diferenciam tipo intuitivamente
+    const userCell = showUser
+      ? `<td><span style="font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${x.usuario||'—'}</span></td>`
+      : '';
     return`<tr${x.auto_generated?' style="opacity:.85;background:#fffef8"':''}>`
       +`<td>${fD(x.data)}</td>`
       +`<td>${desc}</td>`
       +`<td>${_catChip(x.categoria)}</td>`
-      +`<td><span style="font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${x.usuario||'—'}</span></td>`
+      +userCell
       +`<td style="text-align:right;font-weight:700;color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">${x.tipo==='receita'?'+':'-'} R$ ${fN(x.valor)}</td>`
       +`<td style="white-space:nowrap"><button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;margin-right:3px" onclick="editarLancamento(${x.id})">✏️</button><button class="btn btn-err btn-sm" onclick="excluir(${x.id})">🗑</button></td>`
       +`</tr>`;
@@ -1834,22 +1854,83 @@ function pct(v,t){if(!t)return'0%';return(v/t*100).toFixed(0)+'%';}
 function showToast(msg,color='#2c3e50'){const t=document.getElementById('toast');t.textContent=msg;t.style.background=color;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
 
 // ==================== MOEDA ====================
+// parseMoeda: converte string em numero. Robusto contra ambiguidade BR/US.
+//
+// Casos cobertos (todos passam mentalmente; se mudar, conferir!):
+//   "1.234,56"     -> 1234.56  (BR padrao)
+//   "1.234.567,89" -> 1234567.89
+//   "5,50"         -> 5.50
+//   "5.50"         -> 5.50  (US decimal — 1 ponto, 2 digitos depois)
+//   "5.5"          -> 5.5
+//   "1.234"        -> 1234   (BR milhar — 1 ponto, 3 digitos depois)  *** BUG FIX ***
+//   "1.234.567"    -> 1234567 (BR milhar — multiplos pontos)
+//   "12.345"       -> 12345  (BR milhar — 1 ponto, 3 digitos depois)
+//   "1234.56"      -> 1234.56 (US decimal — nao tem 3 digitos depois do ponto)
+//   "R$ 1.234,56"  -> 1234.56 (remove R$, espacos)
+//   "" / null      -> 0
+//   negativo / >100M -> 0 (sanity)
 function parseMoeda(v){
-  if(!v)return 0;
-  let s=v.toString().trim().replace(/[R$\s]/g,'');
-  // Formato brasileiro: 1.234,56 → remover pontos, trocar vírgula por ponto
-  if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.');}
-  return parseFloat(s)||0;
+  if(v == null || v === '') return 0;
+  let s = String(v).trim().replace(/[R$\s]/g, '');
+  if(!s) return 0;
+  // Sinal: campos de moeda sao positivos por convencao; rejeita negativo no fim
+  const neg = s.startsWith('-');
+  if(neg || s.startsWith('+')) s = s.slice(1).trim();
+
+  const hasComma = s.includes(',');
+  const dotCount = (s.match(/\./g) || []).length;
+
+  if(hasComma){
+    // Padrao BR claro: virgula = decimal, pontos = milhar
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if(dotCount > 1){
+    // Multiplos pontos so fazem sentido como separadores de milhar BR (US nao tem)
+    s = s.replace(/\./g, '');
+  } else if(dotCount === 1){
+    // Heuristica: parte apos o ponto com EXATAMENTE 3 digitos -> milhar BR
+    // Ex: "1.234" -> 1234 (era o bug — JS parseFloat dava 1.234)
+    // Senao -> decimal padrao (1.5, 1234.56, 0.99 ficam como sao)
+    const parts = s.split('.');
+    const decPart = parts[1] || '';
+    if(decPart.length === 3 && /^\d+$/.test(decPart) && /^\d+$/.test(parts[0])){
+      s = s.replace('.', '');
+    }
+  }
+
+  const n = parseFloat(s);
+  if(!isFinite(n) || isNaN(n)) return 0;
+  if(n < 0 || neg) return 0;            // moeda negativa nao faz sentido
+  if(n > 100000000) return 0;           // sanity: >R$100M numa transacao = erro
+  return n;
 }
-function maskMoeda(el){
-  let v=el.value.replace(/\D/g,'');
-  if(!v){el.value='';return;}
-  const num=parseInt(v,10)/100;
-  el.value=num.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+// maskMoeda: roda no oninput. Se o input veio de COLAR e ja parece numero
+// formatado, parsea como BR. Caso contrario (digitacao normal), trata como
+// centavos (cada digito vai para a casa decimal).
+function maskMoeda(el, ev){
+  // Detecta paste via inputType (so disponivel se chamada passou event).
+  // Inputs que ainda usam maskMoeda(this) sem event funcionam normal — so
+  // perdem a inteligencia de paste.
+  const isPaste = ev && ev.inputType === 'insertFromPaste';
+  if(isPaste && /[.,]/.test(el.value)){
+    const parsed = parseMoeda(el.value);
+    if(parsed > 0){
+      el.value = parsed.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+      return;
+    }
+  }
+  // Caso padrao: trata todos os digitos como centavos (UX classica de form de moeda)
+  let v = el.value.replace(/\D/g, '');
+  if(!v){ el.value = ''; return; }
+  const num = parseInt(v, 10) / 100;
+  el.value = num.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
+
+// fmtMoeda: roda no onblur. Usa parseMoeda (que agora eh robusto)
+// para normalizar qualquer formato BR ou US para R$ X.XXX,XX.
 function fmtMoeda(el){
-  const v=parseMoeda(el.value);
-  el.value=v>0?fN(v):'';
+  const v = parseMoeda(el.value);
+  el.value = v > 0 ? fN(v) : '';
 }
 
 // ==================== ORÇAMENTO ====================
@@ -2366,7 +2447,7 @@ function renderItemsOrc(){
         <input type="text" class="moeda-input" value="${s.valorUnit?fN(s.valorUnit):''}"
           style="width:105px;text-align:right;padding:5px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px"
           placeholder="0,00"
-          oninput="maskMoeda(this)"
+          oninput="maskMoeda(this,event)"
           onblur="updateItemValor(${s.id},this.value);fmtMoeda(this)">
       </td>
       <td style="text-align:center">
@@ -2462,7 +2543,7 @@ function renderHospRows(){
           onchange="updateHospSelect(${row.id},'procName',this.value)">${pSel}</select></td>
       <td>${noPrice?`<div class="no-price-warn">⚠ sem preço — cadastre na aba Tabela</div>`:`<input type="text" class="moeda-input" value="${row.hospitalCost?fN(row.hospitalCost):''}"
           style="width:110px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid ${borderC};border-radius:6px"
-          placeholder="0,00" oninput="maskMoeda(this)"
+          placeholder="0,00" oninput="maskMoeda(this,event)"
           onblur="updateHospValor(${row.id},'hospitalCost',this.value);fmtMoeda(this)">`}</td>
       <td class="sub" id="hsub_${row.id}">${sub>0?'R$ '+fN(sub):'—'}</td>
       <td><button onclick="removeHospRow(${row.id})"
@@ -2677,7 +2758,7 @@ function _renderThTable(){
             <td style="font-weight:600;font-size:.83rem">${p.nome}</td>
             <td><input type="text" class="moeda-input th-inp" id="${eid}_hc"
               value="${hcVal?fN(hcVal):''}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)"
+              oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)"
               style="text-align:right"></td>
             <td><input type="text" id="${eid}_obs" value="${pr.notes||''}" placeholder="Obs. interna..."
               style="width:100%;padding:5px 7px;font-size:.78rem;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit"></td>
@@ -2775,23 +2856,23 @@ function renderProcedureConfig(){
           <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">${p.nome}</td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_price" value="${fv(cfg.patientPrice)}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+              oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
           </td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_ane" value="${fv(cfg.anesthetistCost)}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+              oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
           </td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_ins" value="${fv(cfg.instrumenterCost)}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+              oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
           </td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_aux" value="${fv(cfg.assistantCost)}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+              oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
           </td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_ext" value="${fv(cfg.extraMaterialCost)}" placeholder="0,00"
-              oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
+              oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
           </td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="number" id="${eid}_pct" value="${cfg.managerCommissionPct||''}" min="0" max="100" step="0.1"
