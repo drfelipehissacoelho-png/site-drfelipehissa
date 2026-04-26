@@ -309,6 +309,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div class="tab" onclick="showPage('orcamento',this);initOrcamento()">💰 Orçamentos</div>
   <div class="tab" onclick="showPage('tabela-hosp',this);renderTabelaHosp()">🏥 Tabela</div>
   <div class="tab" onclick="showPage('auditoria',this)">🔒 Auditoria</div>
+  <div class="tab" onclick="showPage('lixeira',this)" id="tabLixeira">🗑️ Lixeira <span id="lixeiraBadge" style="display:none;background:var(--err);color:#fff;border-radius:10px;padding:1px 7px;font-size:.7rem;font-weight:700;margin-left:3px"></span></div>
 </nav>
 
 <div class="content">
@@ -725,6 +726,21 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       <select id="ftLogUser" onchange="renderLog()" style="width:130px"><option value="">Todos usuários</option></select>
     </div>
     <div id="logEl"></div>
+  </div>
+</div>
+
+<!-- LIXEIRA -->
+<div id="page-lixeira" class="page">
+  <div class="alert ai" style="margin-bottom:14px">
+    🗑️ <strong>Lixeira</strong> — Itens excluidos ficam aqui em vez de sumir do banco. Voce pode <b>Restaurar</b> a qualquer momento (volta para listas e DRE) ou <b>Apagar Permanentemente</b> (sem volta, requer confirmacao). Tudo registrado no log de auditoria.
+  </div>
+  <div class="sec">
+    <h3>📝 Lançamentos na Lixeira</h3>
+    <div id="lixLancList"></div>
+  </div>
+  <div class="sec">
+    <h3>💰 Orçamentos na Lixeira</h3>
+    <div id="lixOrcList"></div>
   </div>
 </div>
 
@@ -1186,10 +1202,11 @@ function _itensDoGrupo(item){
 function excluir(id) {
   const item = DATA.lancamentos[id];
   if(!item){ showToast('Lancamento nao encontrado.', '#e74c3c'); return; }
+  if(item.deletedAt){ showToast('Esse lancamento ja esta na lixeira.', '#e74c3c'); return; }
 
-  // Se faz parte de grupo, apaga TODO o grupo (antes apagava so o item
-  // clicado, deixando comissao/equipe orfas e bagunchando a DRE).
-  const grupo = _itensDoGrupo(item);
+  // Se faz parte de grupo, soft-delete TODO o grupo (antes apagava so o
+  // item clicado, deixando comissao/equipe orfas e bagunchando a DRE).
+  const grupo = _itensDoGrupo(item).filter(g => !g.deletedAt);
   const isGrupo = grupo.length > 1;
   const totalRec = grupo.filter(g => g.tipo === 'receita').reduce((s,g) => s + (g.valor||0), 0);
   const totalDesp = grupo.filter(g => g.tipo === 'despesa').reduce((s,g) => s + (g.valor||0), 0);
@@ -1198,41 +1215,97 @@ function excluir(id) {
   let msg;
   if(isGrupo){
     const detItens = grupo.map(g => `  • ${g.tipo==='receita'?'+':'-'} R$ ${fN(g.valor)}  ${g.categoria}${g.descricao?' ('+g.descricao+')':''}`).join('\n');
-    msg = `EXCLUSAO EM GRUPO\n\n`
+    msg = `MOVER GRUPO PARA LIXEIRA\n\n`
       + `Este lancamento faz parte de um grupo vinculado (receita + despesas auto-geradas).\n`
-      + `Excluir somente um item deixaria a DRE inconsistente, entao TODOS os ${grupo.length} itens serao apagados juntos:\n\n`
+      + `TODOS os ${grupo.length} itens serao movidos para a Lixeira juntos:\n\n`
       + `${detItens}\n\n`
       + `Receita: R$ ${fN(totalRec)}  |  Despesas vinculadas: R$ ${fN(totalDesp)}\n\n`
-      + `Tudo sera registrado no log de auditoria. Confirmar exclusao do grupo?`;
+      + `Voce pode restaurar a qualquer momento na aba Lixeira.\n`
+      + `Confirmar?`;
   } else {
-    msg = `Confirma EXCLUSAO?\n${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${resumo}\n\nRegistrado no log de auditoria.`;
+    msg = `Mover para a Lixeira?\n${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${resumo}\n\n`
+      + `Voce pode restaurar a qualquer momento na aba Lixeira.\n`
+      + `Tudo sera registrado no log de auditoria.`;
   }
   if(!confirm(msg)) return;
 
-  // CRITICO (regra do projeto): log ANTES da exclusao. Se o log falhar,
-  // nada e apagado. Isso garante "nunca exclusao sem registro".
+  // CRITICO (regra do projeto): log ANTES da operacao. Se o log falhar,
+  // nada e modificado. Garante "nunca exclusao sem registro".
   const detalhes = grupo.map(g =>
     `${g.tipo}:${g.categoria}:R$${fN(g.valor)}${g.paciente?'/'+g.paciente:''}${g.commission?' [COMISSAO '+g.commission_rate+'%]':''}${g.auto_generated?' [AUTO]':''}`
   ).join(' | ');
-  const acao = isGrupo ? 'EXCLUSAO GRUPO' : 'EXCLUSAO';
+  const acao = isGrupo ? 'SOFT-DELETE GRUPO' : 'SOFT-DELETE';
   const cabecalho = isGrupo
     ? `Grupo ${item.linked_group_id} (${grupo.length} itens) | rec R$ ${fN(totalRec)} | desp R$ ${fN(totalDesp)}`
     : `${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${item.categoria} · "${resumo}"`;
 
   fbAddLog(acao, `${cabecalho} | ${detalhes}`);
 
-  // Exclusao atomica via update() com null em cada caminho — Firebase
-  // remove todos no mesmo commit; se um falhar, nenhum e removido.
+  // SOFT-DELETE atomico: marca deletedAt + deletedBy em todos os itens
+  // do grupo via update() — se falhar, nenhum e modificado. Itens ficam
+  // no Firebase mas sao filtrados de getLancs() (so aparecem na Lixeira).
+  const ts = new Date().toISOString();
+  const updates = {};
+  grupo.forEach(g => {
+    updates['lancamentos/'+g.id+'/deletedAt'] = ts;
+    updates['lancamentos/'+g.id+'/deletedBy'] = CU;
+  });
+  dbRef.update(updates).then(()=>{
+    showToast(isGrupo
+      ? `🗑️ Grupo (${grupo.length} itens) movido para Lixeira.`
+      : '🗑️ Movido para Lixeira.', '#e67e22');
+  }).catch(err=>{
+    fbAddLog('SOFT-DELETE ERRO', `Falha em ${item.id}: ${err.message||err}`);
+    showToast('Erro ao mover: '+(err.message||err), '#e74c3c');
+  });
+}
+
+// ==================== RESTAURAR / PURGA ====================
+// Restaura grupo inteiro da Lixeira (limpa deletedAt/deletedBy)
+function restaurarLancamento(id){
+  const item = DATA.lancamentos[id];
+  if(!item){ showToast('Lancamento nao encontrado.', '#e74c3c'); return; }
+  if(!item.deletedAt){ showToast('Esse item nao esta na lixeira.', '#e74c3c'); return; }
+  const grupo = _itensDoGrupo(item).filter(g => g.deletedAt);
+  const isGrupo = grupo.length > 1;
+  if(!confirm(`Restaurar ${isGrupo?'grupo de '+grupo.length+' itens':'esse lancamento'} da Lixeira?\nVoltara a aparecer normalmente nas listas e DRE.`)) return;
+
+  fbAddLog('RESTAURAR', `${isGrupo?'Grupo '+item.linked_group_id+' ('+grupo.length+' itens)':item.tipo+' R$ '+fN(item.valor)+' '+item.categoria} restaurado da Lixeira`);
+
+  const updates = {};
+  grupo.forEach(g => {
+    updates['lancamentos/'+g.id+'/deletedAt'] = null;
+    updates['lancamentos/'+g.id+'/deletedBy'] = null;
+  });
+  dbRef.update(updates).then(()=>{
+    showToast(`✓ ${isGrupo?grupo.length+' itens':'Item'} restaurado(s)!`, '#27ae60');
+  }).catch(err=>showToast('Erro ao restaurar: '+(err.message||err),'#e74c3c'));
+}
+
+// Purga (apaga PERMANENTEMENTE) item da Lixeira. Sem volta. Double-confirm.
+function purgarLancamento(id){
+  const item = DATA.lancamentos[id];
+  if(!item){ showToast('Lancamento nao encontrado.', '#e74c3c'); return; }
+  if(!item.deletedAt){ showToast('Item precisa estar na Lixeira para purgar.', '#e74c3c'); return; }
+  const grupo = _itensDoGrupo(item);
+  const isGrupo = grupo.length > 1;
+  const conf = prompt(
+    `APAGAR PERMANENTEMENTE${isGrupo?' GRUPO ('+grupo.length+' itens)':''}\n\n`
+    + `${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${item.paciente||item.descricao||item.categoria}\n\n`
+    + `Isso remove o item DEFINITIVAMENTE do banco. NAO ha como recuperar.\n`
+    + `(Restaurar para a tela normal eh sempre uma opcao mais segura.)\n\n`
+    + `Para confirmar, digite a palavra: APAGAR\n(em maiusculas)`
+  );
+  if(conf !== 'APAGAR'){ showToast('Cancelado.', '#7f8c8d'); return; }
+
+  fbAddLog('PURGA',
+    `${isGrupo?'Grupo '+item.linked_group_id+' ('+grupo.length+' itens)':item.tipo+' R$ '+fN(item.valor)+' '+item.categoria} APAGADO PERMANENTEMENTE da Lixeira`
+  );
   const updates = {};
   grupo.forEach(g => { updates['lancamentos/'+g.id] = null; });
   dbRef.update(updates).then(()=>{
-    showToast(isGrupo
-      ? `🗑️ Grupo (${grupo.length} itens) excluido.`
-      : '🗑️ Excluido e registrado.', '#e67e22');
-  }).catch(err=>{
-    fbAddLog('EXCLUSAO ERRO', `Falha ao excluir ${item.id}: ${err.message||err}`);
-    showToast('Erro ao excluir: '+(err.message||err), '#e74c3c');
-  });
+    showToast(`💀 ${isGrupo?grupo.length+' itens':'Item'} apagado(s) permanentemente.`, '#7b241c');
+  }).catch(err=>showToast('Erro ao purgar: '+(err.message||err),'#e74c3c'));
 }
 
 // ==================== EDIÇÃO ====================
@@ -1352,7 +1425,14 @@ function showPage(p,tab) {
 }
 
 // ==================== RENDER ====================
-function getLancs(){return Object.values(DATA.lancamentos||{});}
+// SOFT-DELETE: getLancs/getOrcamentos retornam apenas itens NAO deletados
+// (deletedAt ausente). Itens com deletedAt aparecem so na aba Lixeira via
+// getLancsDeleted/getOrcamentosDeleted. Isso garante que TODAS as agregacoes
+// (KPI, DRE, charts, CFO, PDF, relatorios) automaticamente excluam o lixo.
+function getLancs(){return Object.values(DATA.lancamentos||{}).filter(l=>l && !l.deletedAt);}
+function getLancsDeleted(){return Object.values(DATA.lancamentos||{}).filter(l=>l && l.deletedAt);}
+function getOrcamentos(){return Object.values(DATA.orcamentos||{}).filter(o=>o && !o.deletedAt);}
+function getOrcamentosDeleted(){return Object.values(DATA.orcamentos||{}).filter(o=>o && o.deletedAt);}
 function getLog(){return Object.values(DATA.log||{}).sort((a,b)=>b.id-a.id);}
 function getLP(){return getLancs().filter(l=>l.data&&l.data.startsWith(period));}
 function soma(items,tp,cat){return items.filter(l=>l.tipo===tp&&(!cat||l.categoria===cat)).reduce((s,l)=>s+l.valor,0);}
@@ -1361,10 +1441,102 @@ function getUsuarios(){return[...new Set(getLancs().map(l=>l.usuario).filter(Boo
 function renderAll(){
   updateFilters();renderKPIs();renderUserPanel();renderMetas();
   renderLancs();renderPacientes();renderDRE();renderRelatorio();renderLog();renderOrcamentos();renderCFO();
+  renderLixeira(); // Atualiza lista da Lixeira + badge na nav
   rChRec();rChExp();rChEvol();rChDRE();rChComp();
   populateProcSel(); // rebuild proc select whenever data changes (includes new procedures)
   // Update tabela if currently visible
   if(document.getElementById('page-tabela-hosp')?.classList.contains('active'))renderTabelaHosp();
+}
+
+// ==================== LIXEIRA ====================
+function renderLixeira(){
+  const lancs = getLancsDeleted();
+  const orcs  = getOrcamentosDeleted();
+  const total = lancs.length + orcs.length;
+
+  // Badge na nav (mostra quantidade total quando > 0)
+  const badge = document.getElementById('lixeiraBadge');
+  if(badge){
+    if(total > 0){ badge.textContent = total; badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+  }
+
+  // Lista de lancamentos deletados, agrupados por linked_group_id
+  const lEl = document.getElementById('lixLancList');
+  if(lEl){
+    if(!lancs.length){
+      lEl.innerHTML = '<div class="empty" style="padding:18px"><div class="ico">✨</div>Nenhum lancamento na Lixeira.</div>';
+    } else {
+      // Agrupa por linked_group_id (itens soltos viram grupos de 1)
+      const grupos = {};
+      lancs.forEach(l => {
+        const k = l.linked_group_id || ('solo_'+l.id);
+        if(!grupos[k]) grupos[k] = [];
+        grupos[k].push(l);
+      });
+      // Ordena por deletedAt mais recente
+      const arr = Object.entries(grupos).sort((a,b) => {
+        const da = Math.max(...a[1].map(x => x.deletedAt || ''));
+        const db = Math.max(...b[1].map(x => x.deletedAt || ''));
+        return db.localeCompare(da);
+      });
+      lEl.innerHTML = arr.map(([gid, items]) => {
+        const isGrupo = items.length > 1;
+        const totalRec = items.filter(i => i.tipo==='receita').reduce((s,i)=>s+(i.valor||0), 0);
+        const totalDesp = items.filter(i => i.tipo==='despesa').reduce((s,i)=>s+(i.valor||0), 0);
+        const first = items[0];
+        const dt = first.deletedAt ? new Date(first.deletedAt).toLocaleString('pt-BR') : '?';
+        const by = first.deletedBy || '?';
+        const titulo = isGrupo
+          ? `Grupo de ${items.length} itens · ${first.paciente||first.descricao||first.categoria}`
+          : `${first.tipo==='receita'?'Receita':'Despesa'} · ${first.paciente||first.descricao||first.categoria}`;
+        const detalhe = items.map(i => `${i.tipo==='receita'?'+':'-'} R$ ${fN(i.valor)} ${_catChip(i.categoria)}`).join(' · ');
+        return `<div style="border:1.5px solid var(--brd);border-radius:9px;padding:13px;margin-bottom:10px;background:#fafbfc">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div style="font-weight:700;font-size:.92rem;color:var(--text)">${titulo}</div>
+              <div style="font-size:.74rem;color:var(--muted);margin-top:3px">📅 Lancamento original: ${fD(first.data)}</div>
+              <div style="font-size:.74rem;color:var(--err);margin-top:1px">🗑️ Excluido em ${dt} por ${by}</div>
+              <div style="font-size:.78rem;margin-top:8px;line-height:1.8">${detalhe}</div>
+              ${isGrupo?`<div style="font-size:.74rem;margin-top:5px;color:var(--muted)">Receita: R$ ${fN(totalRec)} | Despesas: R$ ${fN(totalDesp)}</div>`:''}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+              <button class="btn btn-ok btn-sm" onclick="restaurarLancamento(${first.id})" style="white-space:nowrap">↩️ Restaurar</button>
+              <button class="btn btn-err btn-sm" onclick="purgarLancamento(${first.id})" style="white-space:nowrap;background:#7b241c">💀 Apagar</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Lista de orcamentos deletados
+  const oEl = document.getElementById('lixOrcList');
+  if(oEl){
+    if(!orcs.length){
+      oEl.innerHTML = '<div class="empty" style="padding:18px"><div class="ico">✨</div>Nenhum orcamento na Lixeira.</div>';
+    } else {
+      const arr = orcs.sort((a,b) => (b.deletedAt||'').localeCompare(a.deletedAt||''));
+      oEl.innerHTML = arr.map(o => {
+        const dt = o.deletedAt ? new Date(o.deletedAt).toLocaleString('pt-BR') : '?';
+        const by = o.deletedBy || '?';
+        return `<div style="border:1.5px solid var(--brd);border-radius:9px;padding:13px;margin-bottom:10px;background:#fafbfc">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div style="font-weight:700;font-size:.92rem;color:var(--text)">${o.paciente}</div>
+              <div style="font-size:.78rem;color:var(--primary);margin-top:2px">Total: R$ ${fN(o.total)}</div>
+              <div style="font-size:.74rem;color:var(--muted);margin-top:3px">📅 Orcamento original: ${fD(o.data)}</div>
+              <div style="font-size:.74rem;color:var(--err);margin-top:1px">🗑️ Excluido em ${dt} por ${by}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+              <button class="btn btn-ok btn-sm" onclick="restaurarOrcamento(${o.id})" style="white-space:nowrap">↩️ Restaurar</button>
+              <button class="btn btn-err btn-sm" onclick="purgarOrcamento(${o.id})" style="white-space:nowrap;background:#7b241c">💀 Apagar</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
 }
 
 function updateFilters(){
@@ -1633,8 +1805,8 @@ function renderPacientes(){
     if(l.usuario&&!map[k].usuarios.includes(l.usuario))map[k].usuarios.push(l.usuario);
   });
 
-  // 3. Pacientes de orçamentos
-  Object.values(DATA.orcamentos||{}).forEach(o=>{
+  // 3. Pacientes de orçamentos (somente nao-deletados via getOrcamentos)
+  getOrcamentos().forEach(o=>{
     if(!o.paciente)return;
     const k=o.paciente.trim().toUpperCase();
     if(s&&!k.toLowerCase().includes(s))return;
@@ -2018,7 +2190,7 @@ function buildAllPatients(){
     const k=l.paciente.trim().toLowerCase();
     if(!map[k])map[k]={id:'lanc_'+k,nome:l.paciente.trim(),cpf:'',rg:'',tel:'',email:''};
   });
-  Object.values(DATA.orcamentos||{}).forEach(o=>{
+  getOrcamentos().forEach(o=>{
     if(!o.paciente)return;
     const k=o.paciente.trim().toLowerCase();
     if(!map[k])map[k]={id:'orc_'+k,nome:o.paciente.trim(),cpf:o.cpf||'',rg:o.rg||'',tel:'',email:''};
@@ -2664,17 +2836,53 @@ function gerarPDFOrcRapido(){
 }
 
 function excluirOrcamento(id){
-  const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
-  if(!confirm(`Excluir orcamento de ${orc.paciente}?\nTotal: R$ ${fN(orc.total)}\n\nRegistrado no log de auditoria.`))return;
-  dbRef.child('orcamentos/'+id).remove();
-  fbAddLog('EXCLUSAO ORCAMENTO',`Orcamento de ${orc.paciente} R$ ${fN(orc.total)} excluido`);
-  showToast('Orcamento excluido.','#e67e22');
+  const orc = DATA.orcamentos && DATA.orcamentos[id];
+  if(!orc){ showToast('Orcamento nao encontrado.', '#e74c3c'); return; }
+  if(orc.deletedAt){ showToast('Orcamento ja esta na Lixeira.', '#e74c3c'); return; }
+  if(!confirm(`Mover para a Lixeira o orcamento de ${orc.paciente}?\nTotal: R$ ${fN(orc.total)}\n\nVoce pode restaurar a qualquer momento.`)) return;
+
+  fbAddLog('SOFT-DELETE ORCAMENTO', `${orc.paciente} R$ ${fN(orc.total)} movido para Lixeira`);
+  dbRef.child('orcamentos/'+id).update({
+    deletedAt: new Date().toISOString(),
+    deletedBy: CU
+  }).then(()=>{
+    showToast('🗑️ Movido para Lixeira.', '#e67e22');
+  }).catch(err=>showToast('Erro: '+(err.message||err),'#e74c3c'));
+}
+
+function restaurarOrcamento(id){
+  const orc = DATA.orcamentos && DATA.orcamentos[id];
+  if(!orc || !orc.deletedAt){ showToast('Item nao esta na Lixeira.', '#e74c3c'); return; }
+  if(!confirm(`Restaurar orcamento de ${orc.paciente} (R$ ${fN(orc.total)}) da Lixeira?`)) return;
+  fbAddLog('RESTAURAR ORCAMENTO', `${orc.paciente} R$ ${fN(orc.total)} restaurado`);
+  dbRef.child('orcamentos/'+id).update({
+    deletedAt: null, deletedBy: null
+  }).then(()=>{
+    showToast('✓ Orcamento restaurado!', '#27ae60');
+  }).catch(err=>showToast('Erro: '+(err.message||err),'#e74c3c'));
+}
+
+function purgarOrcamento(id){
+  const orc = DATA.orcamentos && DATA.orcamentos[id];
+  if(!orc){ showToast('Orcamento nao encontrado.', '#e74c3c'); return; }
+  if(!orc.deletedAt){ showToast('Orcamento precisa estar na Lixeira para purgar.', '#e74c3c'); return; }
+  const conf = prompt(
+    `APAGAR PERMANENTEMENTE\n\n`
+    + `Orcamento de ${orc.paciente} - R$ ${fN(orc.total)}\n\n`
+    + `Isso remove o orcamento DEFINITIVAMENTE do banco. NAO ha como recuperar.\n\n`
+    + `Para confirmar, digite a palavra: APAGAR\n(em maiusculas)`
+  );
+  if(conf !== 'APAGAR'){ showToast('Cancelado.', '#7f8c8d'); return; }
+  fbAddLog('PURGA ORCAMENTO', `${orc.paciente} R$ ${fN(orc.total)} APAGADO PERMANENTEMENTE`);
+  dbRef.child('orcamentos/'+id).remove().then(()=>{
+    showToast('💀 Orcamento apagado permanentemente.', '#7b241c');
+  }).catch(err=>showToast('Erro: '+(err.message||err),'#e74c3c'));
 }
 
 function renderOrcamentos(){
   const el=document.getElementById('orcList');if(!el)return;
   const s=(document.getElementById('searchOrc')?.value||'').toLowerCase();
-  let orcs=Object.values(DATA.orcamentos||{}).sort((a,b)=>b.id-a.id);
+  let orcs=getOrcamentos().sort((a,b)=>b.id-a.id);
   if(s)orcs=orcs.filter(o=>(o.paciente||'').toLowerCase().includes(s)||
     (o.cpf||'').includes(s)||(o.tel||'').includes(s));
   if(!orcs.length){el.innerHTML='<div class="empty" style="padding:18px 0"><div class="ico" style="font-size:1.5rem">📋</div>Nenhum orcamento</div>';return;}
