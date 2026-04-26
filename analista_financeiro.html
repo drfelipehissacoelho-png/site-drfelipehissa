@@ -1410,14 +1410,56 @@ function renderMetas(){
 // no primeiro clique (ex: data e valor comecam decrescente — mais recente
 // e maior primeiro, mais util na pratica). getValue = como extrair o valor
 // para comparacao (lowercase para nomes, numero para valores).
+// NOTA: coluna 'Tipo' foi removida — a cor do valor (verde/vermelho)
+// ja diferencia receita de despesa intuitivamente.
 const LANC_COLS = [
   { key:'data',      label:'Data',           defDir:'desc', type:'string', getValue: l => l.data || '' },
   { key:'paciente',  label:'Paciente/Desc.', defDir:'asc',  type:'string', getValue: l => (l.paciente || l.descricao || '').toLowerCase() },
   { key:'categoria', label:'Categoria',      defDir:'asc',  type:'string', getValue: l => (l.categoria || '').toLowerCase() },
   { key:'usuario',   label:'Usuário',        defDir:'asc',  type:'string', getValue: l => (l.usuario || '').toLowerCase() },
-  { key:'tipo',      label:'Tipo',           defDir:'asc',  type:'string', getValue: l => l.tipo || '' },
   { key:'valor',     label:'Valor',          defDir:'desc', type:'number', getValue: l => l.valor || 0, alignRight: true },
 ];
+
+// ==================== CATEGORIAS: NOME CURTO + COR ====================
+// Mapeamento das categorias longas (que continuam no banco) para um nome
+// curto + paleta de cores usado APENAS na exibicao da tabela. Mudar aqui
+// nao afeta o banco/relatorios — so como aparece visualmente.
+const CAT_SHORT = {
+  // Receitas
+  'Cirurgias Particulares':                          'Cirurgia',
+  'Consultas e Retornos':                            'Consulta',
+  'Procedimentos Estéticos (Botox/Preenchimento)':   'Estético',
+  // Despesas
+  'Equipe Cirúrgica':                                'Equipe',
+  'Comissões':                                       'Comissão',
+  'Pessoal e Pró-labore':                            'Pessoal',
+  'Materiais e Insumos Cirúrgicos':                  'Insumos',
+  'Impostos e Taxas (Simples/CRM)':                  'Impostos',
+  'Aluguel e Infraestrutura':                        'Aluguel',
+  'Marketing e Captação':                            'Marketing',
+  'Outros':                                          'Outros',
+};
+
+const CAT_COLOR = {
+  'Cirurgias Particulares':                          { bg:'#e8f5e9', fg:'#1b5e20' }, // verde escuro
+  'Consultas e Retornos':                            { bg:'#e3f2fd', fg:'#0d47a1' }, // azul
+  'Procedimentos Estéticos (Botox/Preenchimento)':   { bg:'#f3e5f5', fg:'#4a148c' }, // roxo
+  'Equipe Cirúrgica':                                { bg:'#e0f7fa', fg:'#006064' }, // ciano
+  'Comissões':                                       { bg:'#fff3e0', fg:'#e65100' }, // laranja
+  'Pessoal e Pró-labore':                            { bg:'#fce4ec', fg:'#880e4f' }, // rosa
+  'Materiais e Insumos Cirúrgicos':                  { bg:'#fff8e1', fg:'#7c5500' }, // amarelo
+  'Impostos e Taxas (Simples/CRM)':                  { bg:'#ffebee', fg:'#b71c1c' }, // vermelho
+  'Aluguel e Infraestrutura':                        { bg:'#efebe9', fg:'#3e2723' }, // marrom
+  'Marketing e Captação':                            { bg:'#ede7f6', fg:'#311b92' }, // indigo
+  'Outros':                                          { bg:'#f5f5f5', fg:'#616161' }, // cinza
+};
+
+function _catChip(cat){
+  const short = CAT_SHORT[cat] || cat || 'Outros';
+  const color = CAT_COLOR[cat] || CAT_COLOR['Outros'];
+  // title mostra o nome completo no hover, util pra quando o curto eh ambiguo
+  return `<span title="${cat||''}" style="display:inline-block;padding:2px 9px;border-radius:11px;font-size:.7rem;font-weight:700;background:${color.bg};color:${color.fg};white-space:nowrap;letter-spacing:.2px">${short}</span>`;
+}
 let _lancSort = { col:'data', dir:'desc' };
 
 function setLancSort(col){
@@ -1476,8 +1518,29 @@ function renderLancs(){
   const ucm={};getUsuarios().forEach((u,i)=>{ucm[u]=UCORS[i%UCORS.length];});
   tb.innerHTML=l.map(x=>{
     const grpBadge=x.linked_group_id?`<span class="linked-badge" title="Grupo: ${x.linked_group_id}">${x.commission?'💼 comissão':x.auto_generated?'🤖 auto':'🔗 grupo'}</span>`:'';
-    const desc=x.tipo==='receita'&&x.paciente?`<div>${x.paciente}${grpBadge}</div><span class="ptag">${x.procedimento||x.categoria}</span>`:(x.descricao?`<span title="${x.descricao}">${x.descricao.length>26?x.descricao.slice(0,26)+'…':x.descricao}</span>${grpBadge}`:'—');
-    return`<tr${x.auto_generated?' style="opacity:.85;background:#fffef8"':''}><td>${fD(x.data)}</td><td>${desc}</td><td style="font-size:.74rem;color:var(--muted)">${x.categoria}</td><td><span style="font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${x.usuario||'—'}</span></td><td><span class="badge ${x.tipo==='receita'?'br':'be'}">${x.tipo==='receita'?'Receita':'Despesa'}</span></td><td style="text-align:right;font-weight:700;color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">${x.tipo==='receita'?'+':'-'} R$ ${fN(x.valor)}</td><td style="white-space:nowrap"><button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;margin-right:3px" onclick="editarLancamento(${x.id})">✏️</button><button class="btn btn-err btn-sm" onclick="excluir(${x.id})">🗑</button></td></tr>`;
+    // Coluna Paciente/Desc:
+    //   - Receita com paciente -> NOME (bold) + tag azul do procedimento  (formato "pessoa")
+    //   - Resto (despesa, ou receita sem paciente) -> descricao em italico+cinza
+    //     com prefixo " · " sutil. Isso impede que descricoes tipo "BOTOX"
+    //     ou "Botox + 4 bio" sejam confundidas com nome de paciente real.
+    let desc;
+    if(x.tipo==='receita' && x.paciente){
+      desc = `<div>${x.paciente}${grpBadge}</div><span class="ptag">${x.procedimento||x.categoria}</span>`;
+    } else if(x.descricao){
+      const txt = x.descricao.length>30 ? x.descricao.slice(0,30)+'…' : x.descricao;
+      desc = `<span style="font-style:italic;color:var(--muted);font-size:.85em" title="${x.descricao}">${txt}</span>${grpBadge}`;
+    } else {
+      desc = '<span style="color:var(--muted);font-style:italic;font-size:.85em">— sem descrição —</span>';
+    }
+    // Cor verde/vermelho do valor + sinal +/- ja diferenciam tipo intuitivamente
+    return`<tr${x.auto_generated?' style="opacity:.85;background:#fffef8"':''}>`
+      +`<td>${fD(x.data)}</td>`
+      +`<td>${desc}</td>`
+      +`<td>${_catChip(x.categoria)}</td>`
+      +`<td><span style="font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${x.usuario||'—'}</span></td>`
+      +`<td style="text-align:right;font-weight:700;color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">${x.tipo==='receita'?'+':'-'} R$ ${fN(x.valor)}</td>`
+      +`<td style="white-space:nowrap"><button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;margin-right:3px" onclick="editarLancamento(${x.id})">✏️</button><button class="btn btn-err btn-sm" onclick="excluir(${x.id})">🗑</button></td>`
+      +`</tr>`;
   }).join('');
 }
 
