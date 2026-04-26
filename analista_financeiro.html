@@ -344,7 +344,12 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       <div id="camposPac">
         <!-- Paciente autocomplete -->
         <div class="fg" style="margin-bottom:9px">
-          <label>Paciente</label>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <label style="margin:0">Paciente</label>
+            <button type="button" class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;font-size:.72rem;padding:2px 8px"
+              onclick="abrirNovoPatPara('lanc', document.getElementById('lancPacInput')?.value||'')"
+              title="Cadastrar novo paciente">+ Novo Paciente</button>
+          </div>
           <div id="lancPacWrap" class="ac-wrap">
             <input type="text" id="lancPacInput" placeholder="Digite o nome do paciente..." autocomplete="off"
               oninput="searchPacLanc(this.value)" onfocus="searchPacLanc(this.value)"
@@ -904,6 +909,19 @@ function nomeDoUsuario(email) {
   return USUARIOS[email] || email.split('@')[0];
 }
 
+// ==================== ID GENERATOR (collision-resistant) ====================
+// Substitui Date.now() para evitar colisao silenciosa quando dois lancamentos
+// sao salvos no mesmo milissegundo (ex: secretaria + medico simultaneos, ou
+// laco de auto-despesas). Mantem tipo numerico para preservar ordenacao
+// cronologica e nao quebrar onclick handlers existentes.
+let _idCounter = 0;
+function genId(){
+  _idCounter = (_idCounter + 1) % 1000;
+  // Date.now() em ms x 100000 + contador local x 100 + random 0-99
+  // -> mesmo se dois cliques cairem no mesmo ms, contador + random divergem
+  return Date.now() * 100000 + _idCounter * 100 + Math.floor(Math.random() * 100);
+}
+
 // ==================== AUTH ====================
 auth.onAuthStateChanged(user => {
   if (user) {
@@ -1011,7 +1029,7 @@ function pararListeners() {
 function fbSalvarLanc(item) { dbRef.child('lancamentos/'+item.id).set(item); }
 function fbExcluirLanc(id)  { dbRef.child('lancamentos/'+id).remove(); }
 function fbAddLog(acao, detalhe) {
-  const e = { id: Date.now(), data: new Date().toLocaleString('pt-BR'), usuario: CU, email: CUEmail, acao, detalhe };
+  const e = { id: genId(), data: new Date().toLocaleString('pt-BR'), usuario: CU, email: CUEmail, acao, detalhe };
   dbRef.child('log/'+e.id).set(e);
 }
 
@@ -1051,18 +1069,46 @@ function salvarLancamento() {
   const pag=document.getElementById('fPag').value;
   const desc=document.getElementById('fDesc').value.trim();
   // Smart fields (receita)
-  const pac=tipo==='receita'?(_lancPat?_lancPat.nome:''):'';
+  let pac=tipo==='receita'?(_lancPat?_lancPat.nome:''):'';
   const proc=tipo==='receita'?(document.getElementById('fProcSel')?.value||''):'';
   if(!data||isNaN(valor)||valor<=0){showToast('⚠️ Preencha data e valor.','#e74c3c');return;}
+
+  // BUG FIX: se for receita, usuario digitou nome mas NAO selecionou do
+  // dropdown nem clicou em + Cadastrar — antes a receita era salva sem
+  // paciente (silenciosamente). Agora bloqueia e oferece caminho claro.
+  if(tipo==='receita' && !_lancPat){
+    const digitado = (document.getElementById('lancPacInput')?.value||'').trim();
+    if(digitado){
+      const op = confirm(
+        `Voce digitou "${digitado}" mas nao selecionou do dropdown nem cadastrou esse paciente.\n\n`
+        + `OK    -> abrir cadastro de novo paciente com esse nome\n`
+        + `Cancelar -> registrar a receita SEM paciente vinculado (texto livre)\n\n`
+        + `Recomendado: OK para cadastrar (mantem historico do paciente correto).`
+      );
+      if(op){
+        // abre o modal de cadastro pre-preenchido — usuario continua o fluxo
+        abrirNovoPatPara('lanc', digitado);
+        return;
+      } else {
+        // ad-hoc: usa o texto digitado (preserva o que o usuario escreveu)
+        pac = digitado;
+        showToast('⚠ Receita salva como texto livre. Considere cadastrar o paciente.', '#e8a838');
+      }
+    } else {
+      showToast('⚠️ Selecione ou cadastre um paciente para registrar a receita.', '#e74c3c');
+      document.getElementById('lancPacInput')?.focus();
+      return;
+    }
+  }
 
   const chkAuto=document.getElementById('chkAutoDesp');
   const gerarAuto=tipo==='receita'&&chkAuto&&chkAuto.checked&&proc;
   const procCfg=proc?getProcConfig(proc):null;
   const commVal=gerarAuto&&procCfg?_calcCommission(procCfg,valor):0;
   const hasAuto=gerarAuto;
-  const linked_group_id=hasAuto?('grp_'+Date.now()):undefined;
+  const linked_group_id=hasAuto?('grp_'+genId()):undefined;
 
-  const item={id:Date.now(),data,valor,categoria:cat,pagamento:pag,descricao:desc,
+  const item={id:genId(),data,valor,categoria:cat,pagamento:pag,descricao:desc,
     paciente:pac,procedimento:proc,tipo,usuario:CU,email:CUEmail,
     criadoEm:new Date().toLocaleString('pt-BR')};
   if(linked_group_id)item.linked_group_id=linked_group_id;
@@ -1083,7 +1129,7 @@ function salvarLancamento() {
     membros.forEach(m=>{
       const v=procCfg[m.campo]||0;
       if(v>0){
-        const d={id:Date.now()+desp_count++,data,valor:v,
+        const d={id:genId(),data,valor:v,
           categoria:'Equipe Cirúrgica',pagamento:'Transferência',
           descricao:`${m.label} — ${proc}`,
           paciente:pac,procedimento:proc,tipo:'despesa',
@@ -1091,12 +1137,13 @@ function salvarLancamento() {
           linked_group_id,auto_generated:true};
         fbSalvarLanc(d);
         fbAddLog('AUTO-DESPESA',`Equipe: ${m.label} · R$ ${fN(v)} · ${proc}`);
+        desp_count++;
       }
     });
     // Manager commission → categoria "Comissões"
     if(commVal>0){
       const lbl=procCfg.managerCommissionLabel||'Comissão gerente';
-      const dc={id:Date.now()+desp_count++,data,valor:commVal,
+      const dc={id:genId(),data,valor:commVal,
         categoria:'Comissões',pagamento:'Transferência',
         descricao:`Comissão gerente — ${proc}`,
         paciente:pac,procedimento:proc,tipo:'despesa',
@@ -1105,6 +1152,7 @@ function salvarLancamento() {
         linked_group_id,auto_generated:true};
       fbSalvarLanc(dc);
       fbAddLog('COMISSÃO',`${lbl} · R$ ${fN(commVal)} (${procCfg.managerCommissionPct}% de R$ ${fN(valor)}) · ${proc}${pac?' · '+pac:''}`);
+      desp_count++;
     }
     if(desp_count>0)showToast(`✓ Receita + ${desp_count} despesa(s) automática(s) lançada(s)!`,'#27ae60');
     else showToast('✓ Lançamento registrado! (sem despesas configuradas)','#27ae60');
@@ -1125,13 +1173,66 @@ function salvarLancamento() {
 }
 
 // ==================== EXCLUSÃO ====================
+// Helper: retorna TODOS os lancamentos do mesmo grupo vinculado
+// (receita + despesas auto-geradas: anestesista, instrumentadora, etc + comissao).
+// Se item nao tem linked_group_id, retorna apenas ele mesmo.
+function _itensDoGrupo(item){
+  if(!item) return [];
+  if(!item.linked_group_id) return [item];
+  return Object.values(DATA.lancamentos||{})
+    .filter(l => l && l.linked_group_id === item.linked_group_id);
+}
+
 function excluir(id) {
-  const item=DATA.lancamentos[id]; if(!item) return;
-  const resumo=item.paciente||item.descricao||item.categoria;
-  if(!confirm(`Confirma EXCLUSÃO?\n${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${resumo}\n\nRegistrado no log de auditoria.`)) return;
-  fbExcluirLanc(id);
-  fbAddLog('EXCLUSÃO',`${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${item.categoria} · "${resumo}"`);
-  showToast('🗑️ Excluído e registrado.','#e67e22');
+  const item = DATA.lancamentos[id];
+  if(!item){ showToast('Lancamento nao encontrado.', '#e74c3c'); return; }
+
+  // Se faz parte de grupo, apaga TODO o grupo (antes apagava so o item
+  // clicado, deixando comissao/equipe orfas e bagunchando a DRE).
+  const grupo = _itensDoGrupo(item);
+  const isGrupo = grupo.length > 1;
+  const totalRec = grupo.filter(g => g.tipo === 'receita').reduce((s,g) => s + (g.valor||0), 0);
+  const totalDesp = grupo.filter(g => g.tipo === 'despesa').reduce((s,g) => s + (g.valor||0), 0);
+  const resumo = item.paciente || item.descricao || item.categoria;
+
+  let msg;
+  if(isGrupo){
+    const detItens = grupo.map(g => `  • ${g.tipo==='receita'?'+':'-'} R$ ${fN(g.valor)}  ${g.categoria}${g.descricao?' ('+g.descricao+')':''}`).join('\n');
+    msg = `EXCLUSAO EM GRUPO\n\n`
+      + `Este lancamento faz parte de um grupo vinculado (receita + despesas auto-geradas).\n`
+      + `Excluir somente um item deixaria a DRE inconsistente, entao TODOS os ${grupo.length} itens serao apagados juntos:\n\n`
+      + `${detItens}\n\n`
+      + `Receita: R$ ${fN(totalRec)}  |  Despesas vinculadas: R$ ${fN(totalDesp)}\n\n`
+      + `Tudo sera registrado no log de auditoria. Confirmar exclusao do grupo?`;
+  } else {
+    msg = `Confirma EXCLUSAO?\n${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${resumo}\n\nRegistrado no log de auditoria.`;
+  }
+  if(!confirm(msg)) return;
+
+  // CRITICO (regra do projeto): log ANTES da exclusao. Se o log falhar,
+  // nada e apagado. Isso garante "nunca exclusao sem registro".
+  const detalhes = grupo.map(g =>
+    `${g.tipo}:${g.categoria}:R$${fN(g.valor)}${g.paciente?'/'+g.paciente:''}${g.commission?' [COMISSAO '+g.commission_rate+'%]':''}${g.auto_generated?' [AUTO]':''}`
+  ).join(' | ');
+  const acao = isGrupo ? 'EXCLUSAO GRUPO' : 'EXCLUSAO';
+  const cabecalho = isGrupo
+    ? `Grupo ${item.linked_group_id} (${grupo.length} itens) | rec R$ ${fN(totalRec)} | desp R$ ${fN(totalDesp)}`
+    : `${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${item.categoria} · "${resumo}"`;
+
+  fbAddLog(acao, `${cabecalho} | ${detalhes}`);
+
+  // Exclusao atomica via update() com null em cada caminho — Firebase
+  // remove todos no mesmo commit; se um falhar, nenhum e removido.
+  const updates = {};
+  grupo.forEach(g => { updates['lancamentos/'+g.id] = null; });
+  dbRef.update(updates).then(()=>{
+    showToast(isGrupo
+      ? `🗑️ Grupo (${grupo.length} itens) excluido.`
+      : '🗑️ Excluido e registrado.', '#e67e22');
+  }).catch(err=>{
+    fbAddLog('EXCLUSAO ERRO', `Falha ao excluir ${item.id}: ${err.message||err}`);
+    showToast('Erro ao excluir: '+(err.message||err), '#e74c3c');
+  });
 }
 
 // ==================== EDIÇÃO ====================
@@ -1155,26 +1256,91 @@ function editarLancamento(id){
 }
 function fecharEdicao(){document.getElementById('editModal').style.display='none';}
 function salvarEdicao(){
-  const id=+document.getElementById('eId').value;
-  const original=DATA.lancamentos[id];if(!original)return;
-  const novoValor=parseMoeda(document.getElementById('eValor').value);
-  if(!document.getElementById('eData').value||isNaN(novoValor)||novoValor<=0){showToast('⚠️ Data e valor são obrigatórios.','#e74c3c');return;}
-  const atualizado={
+  const id = +document.getElementById('eId').value;
+  const original = DATA.lancamentos[id];
+  if(!original){ showToast('Lancamento nao encontrado.', '#e74c3c'); return; }
+  const novoValor = parseMoeda(document.getElementById('eValor').value);
+  if(!document.getElementById('eData').value || isNaN(novoValor) || novoValor <= 0){
+    showToast('⚠️ Data e valor sao obrigatorios.', '#e74c3c'); return;
+  }
+  const novaData = document.getElementById('eData').value;
+  const atualizado = {
     ...original,
-    data:document.getElementById('eData').value,
-    valor:novoValor,
-    categoria:document.getElementById('eCategoria').value,
-    pagamento:document.getElementById('ePag').value,
-    descricao:document.getElementById('eDesc').value.trim(),
-    paciente:document.getElementById('ePaciente')?.value.trim()||original.paciente||'',
-    procedimento:document.getElementById('eProcedimento')?.value.trim()||original.procedimento||'',
-    editadoEm:new Date().toLocaleString('pt-BR'),
-    editadoPor:CU,
+    data: novaData,
+    valor: novoValor,
+    categoria: document.getElementById('eCategoria').value,
+    pagamento: document.getElementById('ePag').value,
+    descricao: document.getElementById('eDesc').value.trim(),
+    paciente: document.getElementById('ePaciente')?.value.trim() || original.paciente || '',
+    procedimento: document.getElementById('eProcedimento')?.value.trim() || original.procedimento || '',
+    editadoEm: new Date().toLocaleString('pt-BR'),
+    editadoPor: CU,
   };
-  fbSalvarLanc(atualizado);
-  fbAddLog('EDIÇÃO',`${atualizado.tipo.toUpperCase()} · R$ ${fN(original.valor)} → R$ ${fN(novoValor)} · ${atualizado.categoria}${atualizado.paciente?' · '+atualizado.paciente:''}`);
-  fecharEdicao();
-  showToast('✓ Lançamento editado!','#2d7bbf');
+
+  // updates atomicos: o item editado + recalculo do grupo se aplicavel
+  const updates = { ['lancamentos/'+id]: atualizado };
+  const recalculos = []; // strings descritivas para o log
+
+  // Se a receita foi editada e faz parte de um grupo, recalcula:
+  //  • a comissao (% sobre o NOVO valor, usando commission_rate ja salva)
+  //  • a data de TODAS as despesas vinculadas (espelha a data nova)
+  // Custos fixos de equipe (anestesista, instrumentadora, etc) NAO sao
+  // recalculados por valor — sao montantes fixos por procedimento.
+  // Se o usuario quiser mudar isso, deve excluir e refazer o lancamento.
+  if(original.tipo === 'receita' && original.linked_group_id){
+    const grupo = _itensDoGrupo(original).filter(g => g.id !== id);
+    grupo.forEach(g => {
+      const patch = { ...g };
+      let mudou = false;
+
+      // Recalcula comissao se essa despesa eh a comissao da receita editada
+      if(g.commission === true && g.commission_rate != null && novoValor !== original.valor){
+        const novaComissao = +(novoValor * g.commission_rate / 100).toFixed(2);
+        if(novaComissao !== g.valor){
+          recalculos.push(`Comissao (${g.commission_rate}%): R$ ${fN(g.valor)} → R$ ${fN(novaComissao)}`);
+          patch.valor = novaComissao;
+          patch.descricao = (g.descricao||'').replace(/—.*$/,'').trim() + ` — ${atualizado.procedimento||original.procedimento||''}`;
+          mudou = true;
+        }
+      }
+
+      // Mantem data alinhada com a receita
+      if(g.data !== novaData){
+        patch.data = novaData;
+        mudou = true;
+      }
+
+      // Mantem nome do paciente alinhado
+      if(atualizado.paciente && g.paciente !== atualizado.paciente){
+        patch.paciente = atualizado.paciente;
+        mudou = true;
+      }
+
+      if(mudou){
+        patch.editadoEm = new Date().toLocaleString('pt-BR');
+        patch.editadoPor = CU;
+        patch.observacaoEdicao = 'Recalculado automaticamente apos edicao da receita ' + id;
+        updates['lancamentos/'+g.id] = patch;
+      }
+    });
+  }
+
+  // Log ANTES do commit — se o log falhar, nada e gravado
+  const detalheRecalc = recalculos.length ? ' | RECALCULOS: ' + recalculos.join(' ; ') : '';
+  fbAddLog('EDICAO',
+    `${atualizado.tipo.toUpperCase()} · R$ ${fN(original.valor)} → R$ ${fN(novoValor)} · ${atualizado.categoria}`
+    + `${atualizado.paciente?' · '+atualizado.paciente:''}${detalheRecalc}`
+  );
+
+  dbRef.update(updates).then(()=>{
+    fecharEdicao();
+    showToast(recalculos.length
+      ? `✓ Editado · ${recalculos.length} item(s) vinculado(s) recalculado(s).`
+      : '✓ Lancamento editado!', '#2d7bbf');
+  }).catch(err=>{
+    fbAddLog('EDICAO ERRO', `Falha ao editar ${id}: ${err.message||err}`);
+    showToast('Erro ao editar: '+(err.message||err), '#e74c3c');
+  });
 }
 
 // ==================== NAVEGAÇÃO ====================
@@ -1454,16 +1620,80 @@ function gerarPDF(){
 }
 
 // ==================== EXPORT/IMPORT ====================
+// Lista de TODOS os nos persistidos no Firebase. Mantenha sincronizada com
+// a estrutura DATA. Ao adicionar novo no, inclua aqui para o backup pegar.
+const BACKUP_NODES = [
+  'lancamentos','log','orcamentos','patients',
+  'hospitalPrices','procedureConfig','procedures',
+  'procedureTeamCosts','procedureCommissionRules'
+];
+
 function exportarJSON(){
-  const blob=new Blob([JSON.stringify({lancamentos:DATA.lancamentos,log:DATA.log,exportado:new Date().toISOString(),por:CU},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`backup_${new Date().toISOString().slice(0,10)}.json`;a.click();
-  fbAddLog('BACKUP',`Backup exportado`);showToast('⬇ Backup baixado!','#1a4f7a');
+  // Inclui TODOS os nos (antes so salvava lancamentos+log e a restauracao
+  // apagava o resto). Versao 2 do backup.
+  const payload = { exportado: new Date().toISOString(), por: CU, versao: 2 };
+  BACKUP_NODES.forEach(k => { payload[k] = DATA[k] || {}; });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  // Resumo do que foi exportado, para auditoria
+  const resumo = BACKUP_NODES.map(k => `${k}:${Object.keys(payload[k]||{}).length}`).join(' | ');
+  fbAddLog('BACKUP', `Backup completo exportado (v2) | ${resumo}`);
+  showToast('⬇ Backup completo baixado!', '#1a4f7a');
 }
+
 function importarJSON(inp){
-  const f=inp.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=e=>{try{const p=JSON.parse(e.target.result);if(!p.lancamentos){showToast('Arquivo inválido.','#e74c3c');return;}const lancs=Array.isArray(p.lancamentos)?p.lancamentos:Object.values(p.lancamentos);if(!confirm(`Restaurar ${lancs.length} lançamentos no Firebase?`))return;const nl={},nlog={};lancs.forEach(x=>{nl[x.id]=x;});(Array.isArray(p.log)?p.log:Object.values(p.log||{})).forEach(x=>{nlog[x.id]=x;});dbRef.set({lancamentos:nl,log:nlog}).then(()=>{fbAddLog('RESTAURAÇÃO',`Backup restaurado — ${lancs.length} lançamentos`);showToast('✅ Restaurado!','#27ae60');});} catch{showToast('Erro ao ler arquivo.','#e74c3c');}};
-  r.readAsText(f);inp.value='';
+  const f = inp.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    let p;
+    try { p = JSON.parse(e.target.result); }
+    catch { showToast('Arquivo invalido (JSON malformado).', '#e74c3c'); inp.value=''; return; }
+    if(!p || typeof p !== 'object' || (!p.lancamentos && !p.patients && !p.orcamentos)){
+      showToast('Arquivo nao parece ser um backup valido.', '#e74c3c'); inp.value=''; return;
+    }
+    // Normaliza arrays -> objetos (backups antigos podem vir como array)
+    const norm = obj => {
+      if(!obj) return {};
+      if(Array.isArray(obj)){ const o={}; obj.forEach(x=>{ if(x&&x.id!=null) o[x.id]=x; }); return o; }
+      return obj;
+    };
+    const nodes = {};
+    let totals = [];
+    BACKUP_NODES.forEach(k => {
+      if(p[k] !== undefined){
+        nodes[k] = norm(p[k]);
+        totals.push(`${k}: ${Object.keys(nodes[k]).length}`);
+      }
+    });
+    const versao = p.versao || 1;
+    const aviso = versao < 2
+      ? '\n\n⚠ ATENCAO: backup ANTIGO (v1) — contem apenas lancamentos+log.\nPacientes, orcamentos, tabela hospitalar e config de procedimentos NAO serao alterados (ficam como estao).'
+      : '';
+    const msg = `RESTAURAR BACKUP — confirmacao final\n\n`
+      + `Conteudo do arquivo:\n${totals.map(t=>'  • '+t).join('\n')}${aviso}\n\n`
+      + `Os dados ATUAIS dos nos acima serao SOBRESCRITOS pelo conteudo do backup.\n`
+      + `Esta acao NAO pode ser desfeita facilmente.\n\n`
+      + `Para confirmar, digite a palavra:  RESTAURAR\n(em maiusculas, sem aspas)`;
+    const conf = prompt(msg);
+    if(conf !== 'RESTAURAR'){
+      showToast('Restauracao cancelada.', '#7f8c8d');
+      inp.value=''; return;
+    }
+    // CRITICO: usar update() em vez de set() na raiz, para nao apagar
+    // nos que NAO estao no backup (ex: backup v1 sem patients).
+    dbRef.update(nodes).then(()=>{
+      fbAddLog('RESTAURACAO', `Backup v${versao} restaurado | ${totals.join(' | ')}`);
+      showToast('✅ Backup restaurado com sucesso!', '#27ae60');
+    }).catch(err=>{
+      fbAddLog('RESTAURACAO ERRO', `Falha ao restaurar: ${err.message||err}`);
+      showToast('Erro ao restaurar: '+(err.message||err), '#e74c3c');
+    });
+    inp.value='';
+  };
+  r.readAsText(f);
 }
 
 // ==================== CHARTS ====================
@@ -1614,14 +1844,24 @@ function _doSearchPac(q){
   const raw=(q||'').trim();
   if(raw.length<1){res.style.display='none';return;}
   const ql=raw.toLowerCase();
+  // BUG FIX: so filtra por CPF/tel se a query tiver digitos.
+  // Antes: "".includes("") === true -> TODOS os pacientes batiam quando
+  // o usuario digitava so letras. Mostrava lista errada.
+  const rawDigits=raw.replace(/\D/g,'');
   const list=buildAllPatients().filter(p=>{
     if((p.nome||'').toLowerCase().includes(ql))return true;
-    if((p.cpf||'').replace(/\D/g,'').includes(raw.replace(/\D/g,'')))return true;
-    if((p.tel||'').replace(/\D/g,'').includes(raw.replace(/\D/g,'')))return true;
+    if(rawDigits&&(p.cpf||'').replace(/\D/g,'').includes(rawDigits))return true;
+    if(rawDigits&&(p.tel||'').replace(/\D/g,'').includes(rawDigits))return true;
     return false;
   });
   if(!list.length){
-    res.innerHTML='<div class="ac-empty">Paciente não encontrado. Use "+ Novo paciente".</div>';
+    // Oferece criar novo paciente direto pelo dropdown (pre-preenche nome)
+    const safeName=raw.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    res.innerHTML=`<div class="ac-empty">Paciente nao encontrado.</div>
+      <div class="ac-item" style="background:#eafaf1;border-top:1px solid #c8e6c9;font-weight:600;color:var(--ok)"
+        onclick="abrirNovoPatPara('orc','${safeName}')">
+        + Cadastrar &quot;${raw}&quot; como novo paciente
+      </div>`;
     res.style.display='block';return;
   }
   res.innerHTML=list.slice(0,10).map(p=>{
@@ -1680,14 +1920,24 @@ function _doSearchPacLanc(q){
   const raw=(q||'').trim();
   if(raw.length<1){res.style.display='none';return;}
   const ql=raw.toLowerCase();
+  // BUG FIX: igual ao _doSearchPac — so filtra por CPF/tel se a query
+  // tiver digitos. Antes o filtro batia em todos os pacientes ao digitar
+  // so letras (".includes('')" sempre true).
+  const rawDigits=raw.replace(/\D/g,'');
   const list=buildAllPatients().filter(p=>{
     if((p.nome||'').toLowerCase().includes(ql))return true;
-    if((p.cpf||'').replace(/\D/g,'').includes(raw.replace(/\D/g,'')))return true;
-    if((p.tel||'').replace(/\D/g,'').includes(raw.replace(/\D/g,'')))return true;
+    if(rawDigits&&(p.cpf||'').replace(/\D/g,'').includes(rawDigits))return true;
+    if(rawDigits&&(p.tel||'').replace(/\D/g,'').includes(rawDigits))return true;
     return false;
   });
   if(!list.length){
-    res.innerHTML='<div class="ac-empty">Paciente não encontrado.</div>';
+    // Oferece criar novo paciente direto pelo dropdown (pre-preenche nome)
+    const safeName=raw.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    res.innerHTML=`<div class="ac-empty">Paciente nao encontrado.</div>
+      <div class="ac-item" style="background:#eafaf1;border-top:1px solid #c8e6c9;font-weight:600;color:var(--ok)"
+        onclick="abrirNovoPatPara('lanc','${safeName}')">
+        + Cadastrar &quot;${raw}&quot; como novo paciente
+      </div>`;
     res.style.display='block';return;
   }
   res.innerHTML=list.slice(0,10).map(p=>{
@@ -1850,18 +2100,58 @@ function _calcCommission(cfg,valorReceita){
 }
 
 // ---- Novo paciente modal ----
+// Contexto onde o modal foi aberto (orc | lanc) — define para qual aba
+// o paciente recem-criado sera auto-selecionado apos salvar.
+let _newPatContext = 'orc';
+
 function abrirNovoPatOrc(){
-  document.getElementById('newPatModal').style.display='flex';
-  setTimeout(()=>document.getElementById('npNome').focus(),100);
+  // Mantida para compatibilidade — abre sem pre-fill, contexto orcamento
+  abrirNovoPatPara('orc', '');
 }
+
+// Nova funcao unificada: abre o modal de novo paciente sabendo de onde veio.
+//   contexto: 'orc' (selecionar em orcamento) ou 'lanc' (selecionar em lancamentos)
+//   prefilledName: nome ja digitado no autocomplete (vem com aspas escapadas)
+function abrirNovoPatPara(contexto, prefilledName){
+  _newPatContext = (contexto === 'lanc') ? 'lanc' : 'orc';
+  document.getElementById('newPatModal').style.display='flex';
+  // Limpa todos os campos primeiro
+  ['npNome','npCPF','npRG','npTel','npEmail'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.value='';
+  });
+  // Pre-preenche nome se veio do autocomplete
+  if(prefilledName){
+    // desfaz escape de aspas duplas/simples vindas do HTML
+    const cleanName = String(prefilledName).replace(/&quot;/g,'"').replace(/\\'/g,"'");
+    document.getElementById('npNome').value = cleanName;
+  }
+  // Fecha o dropdown de autocomplete da aba ativa
+  const dropdownId = _newPatContext === 'lanc' ? 'lancPacResults' : 'pacOrcResults';
+  const dd = document.getElementById(dropdownId); if(dd) dd.style.display='none';
+  setTimeout(()=>{
+    const inp = document.getElementById('npNome');
+    if(inp){ inp.focus(); inp.select(); }
+  }, 100);
+}
+
 function fecharNovoPatOrc(){
   document.getElementById('newPatModal').style.display='none';
   ['npNome','npCPF','npRG','npTel','npEmail'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
 }
+
 function salvarNovoPatOrc(){
   const nome=document.getElementById('npNome').value.trim();
   if(!nome){showToast('Informe o nome do paciente.','#e74c3c');return;}
-  const pid=Date.now();
+  // Evita duplicar paciente ja cadastrado com mesmo nome (case-insensitive)
+  const existente = Object.values(DATA.patients||{}).find(
+    p => p && p.nome && p.nome.trim().toLowerCase() === nome.toLowerCase()
+  );
+  if(existente){
+    if(!confirm(`Ja existe um paciente cadastrado com esse nome:\n\n  • ${existente.nome}\n  • CPF: ${existente.cpf||'(sem cpf)'}\n  • Tel: ${existente.tel||'(sem tel)'}\n\nCadastrar mesmo assim como NOVO paciente (duplicata)?`)){
+      return;
+    }
+  }
+  const pid=genId();
   const p={id:pid,nome,
     cpf:document.getElementById('npCPF').value.trim(),
     rg:document.getElementById('npRG').value.trim(),
@@ -1869,16 +2159,25 @@ function salvarNovoPatOrc(){
     email:document.getElementById('npEmail').value.trim(),
     criadoEm:new Date().toISOString(),usuario:CU
   };
-  dbRef.child('patients/'+pid).set(p);
-  fbAddLog('PACIENTE',`Novo paciente cadastrado: ${nome}`);
-  fecharNovoPatOrc();
-  selectPacOrc({...p,id:'pat_'+pid});
-  showToast('Paciente salvo!','#27ae60');
+  dbRef.child('patients/'+pid).set(p).then(()=>{
+    fbAddLog('PACIENTE',`Novo paciente cadastrado: ${nome} (id ${pid})`);
+    fecharNovoPatOrc();
+    // Auto-seleciona na aba correta (contexto definido em abrirNovoPatPara)
+    const selecionado = {...p, id: 'pat_'+pid};
+    if(_newPatContext === 'lanc'){
+      selectPacLanc(selecionado);
+    } else {
+      selectPacOrc(selecionado);
+    }
+    showToast('Paciente salvo!','#27ae60');
+  }).catch(err=>{
+    showToast('Erro ao salvar paciente: '+(err.message||err),'#e74c3c');
+  });
 }
 
 // ==================== PROCEDIMENTOS ====================
 function addItemOrc(){
-  orcItems.push({id:Date.now(),proc:'',qty:1,valorUnit:0,descPct:0});
+  orcItems.push({id:genId(),proc:'',qty:1,valorUnit:0,descPct:0});
   renderItemsOrc();
 }
 
@@ -1966,7 +2265,7 @@ function renderItemsOrc(){
 
 // ==================== HOSPITAL ROWS ====================
 function addHospRow(){
-  orcHospRows.push({id:Date.now(),hospKey:'',procName:'',hospitalCost:0,manual:false});
+  orcHospRows.push({id:genId(),hospKey:'',procName:'',hospitalCost:0,manual:false});
   renderHospRows();
 }
 
@@ -2124,7 +2423,7 @@ function salvarOrcamento(){
   }));
 
   const orc={
-    id:Date.now(),
+    id:genId(),
     paciente:orcPat.nome,cpf:orcPat.cpf||'',rg:orcPat.rg||'',tel:orcPat.tel||'',
     data,validade:document.getElementById('oValidade').value,
     servicos:itens.map(x=>({proc:x.proc,qty:x.qty,valorUnit:x.valorUnit,descPct:x.descPct,subtotal:_itemSub(x)})),
@@ -2158,7 +2457,7 @@ function gerarPDFOrcRapido(){
     paciente:orcPat.nome,cpf:orcPat.cpf||'',rg:orcPat.rg||'',
     data,validade:document.getElementById('oValidade').value,
     servicos:itens,hospRows,subtotal,desconto,hospTotal,total,
-    obs:document.getElementById('oObs').value.trim(),id:Date.now()
+    obs:document.getElementById('oObs').value.trim(),id:genId()
   });
 }
 
