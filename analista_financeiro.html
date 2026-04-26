@@ -963,7 +963,7 @@ const dbRef = firebase.database().ref('consultorio');
 const DEFAULT_USUARIOS = {
   'drfelipehissacoelho@gmail.com': 'Dr. Felipe (Titular)',
 };
-const DEFAULT_getMeta() = 50000;
+const DEFAULT_META = 50000;
 const DEFAULT_CLINICA = {
   medico: 'Dr. Felipe Hissa Coelho',
   crm: 'CRM-PE 15420',
@@ -974,7 +974,7 @@ const DEFAULT_CLINICA = {
 };
 
 // Helpers que leem da config salva no Firebase, com fallback para defaults
-function getMeta(){ return Number(DATA.config?.meta) > 0 ? Number(DATA.config.meta) : DEFAULT_getMeta(); }
+function getMeta(){ return Number(DATA.config?.meta) > 0 ? Number(DATA.config.meta) : DEFAULT_META; }
 function getClinica(){ return Object.assign({}, DEFAULT_CLINICA, DATA.config?.clinica || {}); }
 function getUsuariosConfig(){
   // Mescla defaults + config (config sobrescreve)
