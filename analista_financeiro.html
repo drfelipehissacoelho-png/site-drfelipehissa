@@ -976,9 +976,20 @@ const DEFAULT_CLINICA = {
 // Helpers que leem da config salva no Firebase, com fallback para defaults
 function getMeta(){ return Number(DATA.config?.meta) > 0 ? Number(DATA.config.meta) : DEFAULT_META; }
 function getClinica(){ return Object.assign({}, DEFAULT_CLINICA, DATA.config?.clinica || {}); }
+// Firebase RTDB nao permite . # $ [ ] / em chaves. Como emails contem ".",
+// substituimos por "," ao salvar e desfazemos ao ler. Eh um padrao classico.
+function _encodeEmail(email){ return String(email||'').replace(/\./g, ','); }
+function _decodeEmail(key){   return String(key||'').replace(/,/g, '.'); }
+
 function getUsuariosConfig(){
-  // Mescla defaults + config (config sobrescreve)
-  return Object.assign({}, DEFAULT_USUARIOS, DATA.config?.usuarios || {});
+  // Mescla defaults + config (config sobrescreve). Decodifica chaves
+  // que vem do Firebase (com vírgula no lugar do ponto).
+  const stored = DATA.config?.usuarios || {};
+  const decoded = {};
+  for(const [k, v] of Object.entries(stored)){
+    decoded[_decodeEmail(k)] = v;
+  }
+  return Object.assign({}, DEFAULT_USUARIOS, decoded);
 }
 
 // ==================== CONSTANTES ====================
@@ -1588,25 +1599,26 @@ function addConfigUsuario(){
   const nome  = document.getElementById('cfgNovoNome').value.trim();
   if(!email || !email.includes('@')){ showToast('Email invalido.', '#e74c3c'); return; }
   if(!nome){ showToast('Nome eh obrigatorio.', '#e74c3c'); return; }
-  // Salva no config (mantem outros usuarios)
+  // Encode email (substitui . por ,) para usar como chave no Firebase RTDB
   const usuarios = Object.assign({}, DATA.config?.usuarios || {});
-  usuarios[email] = nome;
+  usuarios[_encodeEmail(email)] = nome;
   fbAddLog('CONFIG USUARIO', `Usuario adicionado: ${nome} (${email})`);
   dbRef.child('config/usuarios').set(usuarios).then(()=>{
     document.getElementById('cfgNovoEmail').value = '';
     document.getElementById('cfgNovoNome').value = '';
     showToast(`✓ ${nome} adicionado!`, '#27ae60');
-  }).catch(err => showToast('Erro: '+(err.message||err), '#e74c3c'));
+  }).catch(err => showToast('Erro ao adicionar: '+(err.message||err), '#e74c3c'));
 }
 
 function removerConfigUsuario(email){
   if(!confirm(`Remover "${email}" do mapa de usuarios?\n\nIsso so remove o nome amigavel — o acesso ao sistema continua controlado pelas Regras do Firebase. Lancamentos antigos com esse usuario continuam intactos.`)) return;
   const usuarios = Object.assign({}, DATA.config?.usuarios || {});
-  delete usuarios[email];
+  // Email vem decodificado da UI; encode antes de procurar a chave
+  delete usuarios[_encodeEmail(email)];
   fbAddLog('CONFIG USUARIO', `Usuario removido: ${email}`);
   dbRef.child('config/usuarios').set(usuarios).then(()=>{
     showToast('Usuario removido.', '#e67e22');
-  }).catch(err => showToast('Erro: '+(err.message||err), '#e74c3c'));
+  }).catch(err => showToast('Erro ao remover: '+(err.message||err), '#e74c3c'));
 }
 
 // ==================== LIXEIRA ====================
