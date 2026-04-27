@@ -2390,17 +2390,26 @@ const PROC_ORC=[
 
 // ==================== LISTA DINÂMICA DE PROCEDIMENTOS ====================
 // Retorna seed (PROC_ORC) + procedimentos criados no Firebase, sem duplicatas, ordenados A-Z
-// Retorno e Outros sempre ficam no final
-function getAllProcs(){
+// Retorno e Outros sempre ficam no final.
+// includeArchived=true inclui procedimentos custom com active:false (usado
+// na aba Tabela quando o checkbox "Mostrar arquivados" esta marcado).
+function getAllProcs(includeArchived=false){
   const special=['Retorno','Outros'];
   const map={};
-  // 1. Seed: PROC_ORC como base
-  PROC_ORC.forEach(p=>{ map[p.nome]={nome:p.nome,valor:p.valor,categoria:p.categoria||'outros',_seed:true}; });
-  // 2. Override/extend com procedimentos do Firebase
-  Object.values(DATA.procedures||{}).forEach(p=>{
+  // 1. Seed: PROC_ORC como base (nunca podem ser arquivados)
+  PROC_ORC.forEach(p=>{
+    map[p.nome]={nome:p.nome,valor:p.valor,categoria:p.categoria||'outros',_seed:true,_active:true};
+  });
+  // 2. Override/extend com procedimentos do Firebase. Object.entries para
+  //    capturar a chave Firebase (_fbKey) — usada por arquivar/renomear.
+  Object.entries(DATA.procedures||{}).forEach(([fbKey, p])=>{
     if(!p||!p.nome)return;
-    if(p.active===false)return; // respeitar desativados
-    map[p.nome]={nome:p.nome,valor:p.valor||0,categoria:p.categoria||'outros',_custom:true,_fbKey:p._fbKey};
+    const archived = p.active === false;
+    if(archived && !includeArchived) return;  // respeita desativados
+    map[p.nome]={
+      nome:p.nome, valor:p.valor||0, categoria:p.categoria||'outros',
+      _custom:true, _fbKey:fbKey, _active:!archived
+    };
   });
   const normal=Object.values(map).filter(p=>!special.includes(p.nome)).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const tail=special.map(s=>map[s]).filter(Boolean);
@@ -3169,6 +3178,12 @@ function renderOrcamentos(){
 
 // ==================== TABELA HOSPITALAR (ADMIN) ====================
 let _thHospSel='';
+let _showArchivedProcs = false; // toggle "Mostrar arquivados" na aba Tabela
+
+function toggleShowArchivedProcs(){
+  _showArchivedProcs = !_showArchivedProcs;
+  renderProcedureConfig();
+}
 
 function renderTabelaHosp(){
   renderProcedureConfig();
@@ -3307,10 +3322,16 @@ function salvarTodosPrecos(){
 // ==================== CONFIG DE PROCEDIMENTOS (TABELA UNIFICADA) ====================
 function renderProcedureConfig(){
   const el=document.getElementById('procedureConfigList');if(!el)return;
-  const procs=getAllProcs().filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
+  // Inclui arquivados quando o toggle esta ligado
+  const procs=getAllProcs(_showArchivedProcs).filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
+  const archivedCount = Object.values(DATA.procedures||{}).filter(p=>p && p.active===false).length;
   const fv=v=>(+v)?fN(+v):'';
   el.innerHTML=`
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.82rem;text-transform:none;letter-spacing:0;margin:0;color:var(--text);font-weight:600">
+        <input type="checkbox" ${_showArchivedProcs?'checked':''} onchange="toggleShowArchivedProcs()" style="width:auto;accent-color:var(--primary);margin:0">
+        Mostrar arquivados${archivedCount>0?` <span style="background:#7f8c8d;color:#fff;border-radius:10px;padding:1px 7px;font-size:.7rem;font-weight:700">${archivedCount}</span>`:''}
+      </label>
       <button class="btn btn-ok" onclick="abrirNovoProc()" style="font-size:.84rem;padding:7px 16px">
         ＋ Novo Procedimento
       </button>
@@ -3329,7 +3350,7 @@ function renderProcedureConfig(){
           <th style="text-align:left;padding:7px 8px;min-width:120px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">Label comissão</th>
           <th style="text-align:center;padding:7px 8px;min-width:60px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">Ativo</th>
           <th style="padding:7px 8px;width:60px;border-bottom:2px solid var(--brd)"></th>
-          <th style="padding:7px 8px;width:60px;border-bottom:2px solid var(--brd)"></th>
+          <th style="padding:7px 8px;width:120px;border-bottom:2px solid var(--brd)" title="Acoes">Acoes</th>
         </tr>
       </thead>
       <tbody>
@@ -3337,9 +3358,15 @@ function renderProcedureConfig(){
         const cfg=getProcConfig(p.nome);
         const eid='pc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
         const hasCfg=!!(DATA.procedureConfig[p.nome]||DATA.procedureTeamCosts[p.nome]||DATA.procedureCommissionRules[p.nome]);
-        const isCustom=!!(DATA.procedures&&Object.values(DATA.procedures).find(d=>d.nome===p.nome));
-        return `<tr style="${hasCfg?'background:#f9fffe':''}${isCustom?' outline:2px solid #d1f5e0;outline-offset:-2px':''}">
-          <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">${p.nome}</td>
+        const isCustom = !!p._custom;
+        const isArchived = isCustom && p._active === false;
+        const rowStyle = isArchived
+          ? 'background:#f5f5f5;color:#9b9b9b;text-decoration:line-through'
+          : (hasCfg?'background:#f9fffe':'') + (isCustom?'; outline:2px solid #d1f5e0;outline-offset:-2px':'');
+        return `<tr style="${rowStyle}">
+          <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">
+            ${p.nome}${isArchived?' <span style="background:#7f8c8d;color:#fff;font-size:.62rem;padding:1px 6px;border-radius:8px;font-weight:700;text-decoration:none;display:inline-block;vertical-align:middle">ARQUIVADO</span>':''}
+          </td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_price" value="${fv(cfg.patientPrice)}" placeholder="0,00"
               oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
@@ -3378,9 +3405,19 @@ function renderProcedureConfig(){
           <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
             <button class="th-save-btn" onclick="salvarProcConfig('${p.nome.replace(/'/g,"\\'")}')">💾</button>
           </td>
-          <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
+          <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd);white-space:nowrap">
             <button title="Duplicar procedimento" onclick="duplicarProc('${p.nome.replace(/'/g,"\\'")}','${eid}')"
-              style="background:none;border:1px solid var(--brd);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem" title="Duplicar">📋</button>
+              style="background:none;border:1px solid var(--brd);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem;margin-right:2px">📋</button>
+            ${isCustom ? `
+              <button title="Renomear procedimento" onclick="renomearProc('${p._fbKey}','${p.nome.replace(/'/g,"\\'")}')"
+                style="background:none;border:1px solid var(--brd);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem;margin-right:2px">✏️</button>
+              ${isArchived
+                ? `<button title="Restaurar procedimento" onclick="restaurarProc('${p._fbKey}','${p.nome.replace(/'/g,"\\'")}')"
+                     style="background:#eafaf1;border:1px solid #a9dfbf;color:var(--ok);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem;font-weight:700">↩️</button>`
+                : `<button title="Arquivar procedimento" onclick="arquivarProc('${p._fbKey}','${p.nome.replace(/'/g,"\\'")}')"
+                     style="background:none;border:1px solid var(--brd);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem">📦</button>`
+              }
+            ` : `<span style="font-size:.66rem;color:var(--muted);font-style:italic">seed</span>`}
           </td>
         </tr>`;
       }).join('')}
@@ -3492,6 +3529,123 @@ function salvarNovoProc(){
   showToast(`✓ Procedimento "${nome}" criado com sucesso!`,'#27ae60');
   fecharNovoProc();
   // Firebase listener will trigger renderAll() automatically — proc will appear everywhere
+}
+
+// ==================== ARQUIVAR / RESTAURAR / RENOMEAR ====================
+// Arquivar: marca active=false. O procedimento some dos dropdowns mas
+// preserva todos os dados (preco hospitalar, custo de equipe, comissao,
+// lancamentos historicos). Pode ser restaurado a qualquer momento.
+async function arquivarProc(fbKey, nome){
+  if(!fbKey){ showToast('Procedimento sem chave Firebase (provavelmente seed).', '#e74c3c'); return; }
+  if(!confirm(
+    `Arquivar "${nome}"?\n\n`
+    + `O procedimento some dos dropdowns e listas, mas TODOS os dados ficam intactos:\n`
+    + `  • precos hospitalares\n`
+    + `  • custos de equipe + comissao\n`
+    + `  • lancamentos antigos\n\n`
+    + `Voce pode restaurar a qualquer momento marcando "Mostrar arquivados" no topo da tabela.`
+  )) return;
+  fbAddLog('ARQUIVAR PROC', `${nome} (${fbKey}) arquivado por ${CU}`);
+  try {
+    await dbRef.child('procedures/'+fbKey+'/active').set(false);
+    showToast(`📦 "${nome}" arquivado.`, '#7f8c8d');
+  } catch(err) {
+    const msg = (err.code === 'PERMISSION_DENIED' || /permission/i.test(err.message||''))
+      ? 'Sem permissao para arquivar (somente titular).'
+      : 'Erro: '+(err.message||err);
+    showToast('❌ '+msg, '#e74c3c');
+  }
+}
+
+async function restaurarProc(fbKey, nome){
+  if(!fbKey) return;
+  fbAddLog('RESTAURAR PROC', `${nome} (${fbKey}) restaurado por ${CU}`);
+  try {
+    await dbRef.child('procedures/'+fbKey+'/active').set(true);
+    showToast(`✓ "${nome}" restaurado.`, '#27ae60');
+  } catch(err) {
+    const msg = (err.code === 'PERMISSION_DENIED' || /permission/i.test(err.message||''))
+      ? 'Sem permissao para restaurar (somente titular).'
+      : 'Erro: '+(err.message||err);
+    showToast('❌ '+msg, '#e74c3c');
+  }
+}
+
+// Renomear: copia atomicamente todos os dados que sao keyed pelo nome
+// (procedureConfig, hospitalPrices em todos os hospitais, e nodes legacy
+// procedureTeamCosts/procedureCommissionRules) para o novo nome,
+// e apaga as chaves antigas. Lancamentos historicos NAO sao alterados —
+// preservam o nome no momento do lancamento (audit trail integro).
+async function renomearProc(fbKey, nomeAntigo){
+  if(!fbKey){ showToast('Apenas procedimentos custom podem ser renomeados (seeds nao).', '#e74c3c'); return; }
+  const sugestao = nomeAntigo;
+  const input = prompt(
+    `Renomear procedimento\n\n`
+    + `Atual: ${nomeAntigo}\n\n`
+    + `Os precos hospitalares, custos de equipe e comissao serao migrados\n`
+    + `automaticamente para o novo nome. Lancamentos antigos preservam\n`
+    + `o nome original (auditoria integra).\n\n`
+    + `Novo nome:`,
+    sugestao
+  );
+  if(!input) return;
+  const novo = input.trim();
+  if(!novo){ showToast('Nome vazio.', '#e74c3c'); return; }
+  if(novo === nomeAntigo){ showToast('Nome igual ao atual — nada a fazer.', '#7f8c8d'); return; }
+  // Valida: nao pode conflitar com outro procedimento existente (incluindo arquivados)
+  const conflitos = getAllProcs(true).filter(p => p._fbKey !== fbKey);
+  if(conflitos.some(p => p.nome.toLowerCase() === novo.toLowerCase())){
+    showToast(`Ja existe outro procedimento com nome "${novo}".`, '#e74c3c');
+    return;
+  }
+
+  // Monta updates atomicos: copiar dados antigos -> novo, deletar antigos
+  const updates = {};
+  let movidos = [];
+
+  // 1. Atualiza nome no nó procedures (mantém fbKey estável — chave nao muda)
+  updates['procedures/'+fbKey+'/nome'] = novo;
+
+  // 2. procedureConfig (esquema novo)
+  if(DATA.procedureConfig && DATA.procedureConfig[nomeAntigo]){
+    updates['procedureConfig/'+novo] = DATA.procedureConfig[nomeAntigo];
+    updates['procedureConfig/'+nomeAntigo] = null;
+    movidos.push('procedureConfig');
+  }
+  // 3. hospitalPrices: para cada hospital
+  const hMoved = [];
+  Object.entries(DATA.hospitalPrices||{}).forEach(([hospKey, hospProcs])=>{
+    if(hospProcs && hospProcs[nomeAntigo]){
+      updates['hospitalPrices/'+hospKey+'/'+novo] = hospProcs[nomeAntigo];
+      updates['hospitalPrices/'+hospKey+'/'+nomeAntigo] = null;
+      hMoved.push(hospKey);
+    }
+  });
+  if(hMoved.length) movidos.push(`hospitalPrices(${hMoved.length})`);
+
+  // 4. procedureTeamCosts (esquema legado, ainda lido por getProcConfig fallback)
+  if(DATA.procedureTeamCosts && DATA.procedureTeamCosts[nomeAntigo]){
+    updates['procedureTeamCosts/'+novo] = DATA.procedureTeamCosts[nomeAntigo];
+    updates['procedureTeamCosts/'+nomeAntigo] = null;
+    movidos.push('procedureTeamCosts');
+  }
+  // 5. procedureCommissionRules (esquema legado)
+  if(DATA.procedureCommissionRules && DATA.procedureCommissionRules[nomeAntigo]){
+    updates['procedureCommissionRules/'+novo] = DATA.procedureCommissionRules[nomeAntigo];
+    updates['procedureCommissionRules/'+nomeAntigo] = null;
+    movidos.push('procedureCommissionRules');
+  }
+
+  fbAddLog('RENOMEAR PROC', `"${nomeAntigo}" -> "${novo}" | migrado: ${movidos.join(', ')||'apenas nome'}`);
+  try {
+    await dbRef.update(updates);
+    showToast(`✓ "${nomeAntigo}" renomeado para "${novo}".`, '#27ae60');
+  } catch(err) {
+    const msg = (err.code === 'PERMISSION_DENIED' || /permission/i.test(err.message||''))
+      ? 'Sem permissao para renomear (somente titular).'
+      : 'Erro ao renomear: '+(err.message||err);
+    showToast('❌ '+msg, '#e74c3c');
+  }
 }
 
 function duplicarProc(procNome,eid){
