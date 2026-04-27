@@ -283,6 +283,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div class="hr">
     <select class="psel" id="periodSelect" onchange="changePeriod()"></select>
     <div class="ubadge" id="userBadge">👤 —</div>
+    <button class="logout-btn" onclick="abrirTrocarSenha()" title="Trocar minha senha">🔐</button>
     <button class="logout-btn" onclick="sair()">Sair</button>
   </div>
 </header>
@@ -841,6 +842,31 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   </div>
 </div>
 
+<!-- ===== MODAL TROCAR SENHA ===== -->
+<div class="modal-overlay" id="changePwdModal" style="display:none" onclick="if(event.target===this)fecharTrocarSenha()">
+  <div class="modal-box" style="max-width:420px">
+    <h3>🔐 Trocar Senha</h3>
+    <div id="cpUserInfo" style="font-size:.78rem;color:var(--muted);margin-bottom:14px;padding:8px 12px;background:#f0f4f8;border-radius:7px"></div>
+    <div id="cpErr" style="display:none;background:#fdf0f0;color:var(--err);border:1px solid #f5c6c6;border-radius:7px;padding:9px 12px;font-size:.82rem;margin-bottom:12px"></div>
+    <div class="fg">
+      <label>Senha atual</label>
+      <input type="password" id="cpCur" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="fg">
+      <label>Nova senha (mín. 6 caracteres)</label>
+      <input type="password" id="cpNew" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <div class="fg">
+      <label>Confirmar nova senha</label>
+      <input type="password" id="cpConf" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key==='Enter')salvarTrocarSenha()">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ok" style="flex:1" onclick="salvarTrocarSenha()">✓ Trocar Senha</button>
+      <button class="btn btn-neu" onclick="fecharTrocarSenha()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL EDITAR LANÇAMENTO ===== -->
 <div class="modal-overlay" id="editModal" style="display:none" onclick="if(event.target===this)fecharEdicao()">
   <div class="modal-box">
@@ -1068,6 +1094,66 @@ function sair() {
   if (confirm('Deseja sair do sistema?')) {
     fbAddLog('SAÍDA', `"${CU}" encerrou a sessão.`);
     setTimeout(() => auth.signOut(), 300);
+  }
+}
+
+// ==================== TROCAR SENHA ====================
+function abrirTrocarSenha(){
+  const user = auth.currentUser;
+  if(!user){ showToast('Sessao expirada. Faca login de novo.', '#e74c3c'); return; }
+  document.getElementById('cpUserInfo').innerHTML = `Conta: <b>${user.email}</b>`;
+  document.getElementById('cpErr').style.display = 'none';
+  ['cpCur','cpNew','cpConf'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.value='';
+  });
+  document.getElementById('changePwdModal').style.display = 'flex';
+  setTimeout(()=>document.getElementById('cpCur').focus(), 100);
+}
+
+function fecharTrocarSenha(){
+  document.getElementById('changePwdModal').style.display = 'none';
+}
+
+function _showCpErr(msg){
+  const el = document.getElementById('cpErr');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+async function salvarTrocarSenha(){
+  const cur = document.getElementById('cpCur').value;
+  const novo = document.getElementById('cpNew').value;
+  const conf = document.getElementById('cpConf').value;
+  document.getElementById('cpErr').style.display = 'none';
+
+  if(!cur || !novo || !conf){ _showCpErr('Preencha todos os campos.'); return; }
+  if(novo.length < 6){ _showCpErr('Nova senha precisa ter pelo menos 6 caracteres.'); return; }
+  if(novo !== conf){ _showCpErr('Nova senha e confirmacao nao batem.'); return; }
+  if(novo === cur){ _showCpErr('Nova senha precisa ser diferente da atual.'); return; }
+
+  const user = auth.currentUser;
+  if(!user){ _showCpErr('Sessao expirada. Faca login de novo.'); return; }
+
+  // Firebase requer re-autenticacao antes de operacao sensivel (trocar senha).
+  // Cria credencial com email atual + senha atual e re-autentica.
+  const cred = firebase.auth.EmailAuthProvider.credential(user.email, cur);
+  try {
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(novo);
+    // Log no audit (regra do projeto: log de alteracao + usuario + data)
+    fbAddLog('TROCA SENHA', `${CU} (${CUEmail}) alterou a propria senha`);
+    fecharTrocarSenha();
+    showToast('✓ Senha alterada com sucesso!', '#27ae60');
+  } catch(err) {
+    const msgs = {
+      'auth/wrong-password':         'Senha atual incorreta.',
+      'auth/invalid-credential':     'Senha atual incorreta.',
+      'auth/weak-password':          'Nova senha muito fraca (minimo 6 caracteres).',
+      'auth/requires-recent-login':  'Por seguranca, faca logout e login novamente, depois troque a senha.',
+      'auth/too-many-requests':      'Muitas tentativas. Aguarde alguns minutos.',
+      'auth/network-request-failed': 'Sem conexao com a internet. Tente de novo.'
+    };
+    _showCpErr(msgs[err.code] || ('Erro: ' + (err.message || err)));
   }
 }
 
@@ -3171,16 +3257,26 @@ function salvarPrecoHosp(hospKey,procName,eid){
     updatedAt:new Date().toISOString(),updatedBy:CU
   };
   const path='hospitalPrices/'+hospKey+'/'+procName;
-  dbRef.child(path).set(price);
-  // Update status badge immediately
-  const rowEl=document.getElementById('row_thpr_'+hospKey+'_'+procName.replace(/[^a-zA-Z0-9]/g,'_'));
-  if(rowEl){const badges=rowEl.querySelectorAll('.badge-sem');badges.forEach(b=>{b.className='badge-ok';b.textContent='✓ cadastrado';});}
-  fbAddLog('TABELA HOSPITALAR',`Custo hospitalar salvo: ${hospKey} + ${procName} = R$ ${fN(hc)}`);
-  showToast('✓ Custo salvo!','#27ae60');
+  // BUG FIX: antes mostrava toast verde mesmo se Firebase rejeitasse (sem .then/.catch).
+  // Agora so mostra sucesso APOS confirmacao do servidor; em caso de erro
+  // (ex: gerente sem permissao), mostra toast vermelho com a causa.
+  dbRef.child(path).set(price).then(()=>{
+    // Update status badge so apos sucesso real
+    const rowEl=document.getElementById('row_thpr_'+hospKey+'_'+procName.replace(/[^a-zA-Z0-9]/g,'_'));
+    if(rowEl){const badges=rowEl.querySelectorAll('.badge-sem');badges.forEach(b=>{b.className='badge-ok';b.textContent='✓ cadastrado';});}
+    fbAddLog('TABELA HOSPITALAR',`Custo hospitalar salvo: ${hospKey} + ${procName} = R$ ${fN(hc)}`);
+    showToast('✓ Custo salvo!','#27ae60');
+  }).catch(err=>{
+    const msg = (err.code === 'PERMISSION_DENIED' || /permission/i.test(err.message||''))
+      ? 'Sem permissao para alterar tabela hospitalar (somente titular).'
+      : 'Erro ao salvar: '+(err.message||err);
+    showToast('❌ '+msg, '#e74c3c');
+  });
 }
 
 function salvarTodosPrecos(){
   const procs=getAllProcs();
+  const updates={};
   let count=0;
   procs.forEach(p=>{
     const eid='thpr_'+_thHospSel+'_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
@@ -3188,16 +3284,24 @@ function salvarTodosPrecos(){
     if(!hcEl)return;
     const hc=parseMoeda(hcEl.value||'0');
     if(hc===0)return; // skip empty rows
-    const price={
+    updates['hospitalPrices/'+_thHospSel+'/'+p.nome]={
       hospital_cost:hc,
       notes:document.getElementById(eid+'_obs')?.value.trim()||'',
       updatedAt:new Date().toISOString(),updatedBy:CU
     };
-    dbRef.child('hospitalPrices/'+_thHospSel+'/'+p.nome).set(price);
     count++;
   });
-  fbAddLog('TABELA HOSPITALAR',`${count} precos salvos para ${_thHospSel}`);
-  showToast(`✓ ${count} preco(s) salvo(s)!`,'#27ae60');
+  if(count===0){ showToast('Nada para salvar (nenhum preco preenchido).', '#7f8c8d'); return; }
+  // Operacao atomica via update — se falhar, NADA salva. Toast condicionado ao resultado real.
+  dbRef.update(updates).then(()=>{
+    fbAddLog('TABELA HOSPITALAR',`${count} precos salvos para ${_thHospSel}`);
+    showToast(`✓ ${count} preco(s) salvo(s)!`,'#27ae60');
+  }).catch(err=>{
+    const msg = (err.code === 'PERMISSION_DENIED' || /permission/i.test(err.message||''))
+      ? 'Sem permissao para alterar tabela hospitalar (somente titular).'
+      : 'Erro ao salvar: '+(err.message||err);
+    showToast('❌ '+msg, '#e74c3c');
+  });
 }
 
 // ==================== CONFIG DE PROCEDIMENTOS (TABELA UNIFICADA) ====================
@@ -3308,9 +3412,20 @@ function salvarProcConfig(procNome){
     commissionActive:active,
     updatedAt:new Date().toISOString(),updatedBy:CU
   };
-  dbRef.child('procedureConfig/'+procNome).set(cfg);
-  fbAddLog('CONFIG PROC',`Config salva: ${procNome} | preço=${fN(cfg.patientPrice)} | ane=${fN(cfg.anesthetistCost)} | ins=${fN(cfg.instrumenterCost)} | aux=${fN(cfg.assistantCost)} | comissão=${pct}% (${active?'ativo':'inativo'})`);
-  showToast(`✓ Config de ${procNome} salva!`,'#27ae60');
+  // BUG FIX: toast condicionado ao resultado real do save (antes mostrava
+  // sucesso mesmo quando Firebase rejeitava por falta de permissao).
+  // Retorna a Promise para que salvarTodosProcConfig possa await.
+  return dbRef.child('procedureConfig/'+procNome).set(cfg).then(()=>{
+    fbAddLog('CONFIG PROC',`Config salva: ${procNome} | preço=${fN(cfg.patientPrice)} | ane=${fN(cfg.anesthetistCost)} | ins=${fN(cfg.instrumenterCost)} | aux=${fN(cfg.assistantCost)} | comissão=${pct}% (${active?'ativo':'inativo'})`);
+    showToast(`✓ Config de ${procNome} salva!`,'#27ae60');
+    return true;
+  }).catch(err=>{
+    const msg = (err.code === 'PERMISSION_DENIED' || /permission/i.test(err.message||''))
+      ? 'Sem permissao para alterar config de procedimento (somente titular).'
+      : 'Erro ao salvar: '+(err.message||err);
+    showToast('❌ '+msg, '#e74c3c');
+    return false;
+  });
 }
 
 // ==================== CRIAR / DUPLICAR PROCEDIMENTO ====================
@@ -3396,20 +3511,28 @@ function duplicarProc(procNome,eid){
   });
 }
 
-function salvarTodosProcConfig(){
+async function salvarTodosProcConfig(){
   const procs=getAllProcs().filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
-  let count=0;
+  const candidatos=[];
   procs.forEach(p=>{
     const eid='pc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
     const g=sfx=>parseMoeda(document.getElementById(eid+sfx)?.value||'0');
     const pct=parseFloat(document.getElementById(eid+'_pct')?.value)||0;
     // Only save if at least one value is set (avoid overwriting with all-zeros)
     if(g('_price')+g('_ane')+g('_ins')+g('_aux')+g('_ext')+pct===0)return;
-    salvarProcConfig(p.nome);
-    count++;
+    candidatos.push(p.nome);
   });
-  fbAddLog('CONFIG PROC',`${count} configurações de procedimento salvas em lote`);
-  showToast(`✓ ${count} configuração(ões) salva(s)!`,'#27ae60');
+  if(candidatos.length===0){ showToast('Nada para salvar (tudo zerado).', '#7f8c8d'); return; }
+  // Aguarda cada save individual; cada um ja tem .then/.catch e mostra toast proprio
+  const resultados = await Promise.all(candidatos.map(nome => salvarProcConfig(nome)));
+  const ok = resultados.filter(r => r === true).length;
+  const fail = resultados.length - ok;
+  if(fail === 0){
+    fbAddLog('CONFIG PROC',`${ok} configuracoes de procedimento salvas em lote`);
+    showToast(`✓ ${ok} configuracao(oes) salva(s)!`,'#27ae60');
+  } else {
+    showToast(`⚠ ${ok} salvas, ${fail} falharam (veja toasts).`, '#e74c3c');
+  }
 }
 
 // ==================== CFO ANALYSIS ====================
