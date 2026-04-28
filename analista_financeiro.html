@@ -1213,7 +1213,7 @@ function pararListeners() {
 function fbSalvarLanc(item) { dbRef.child('lancamentos/'+item.id).set(item); }
 function fbExcluirLanc(id)  { dbRef.child('lancamentos/'+id).remove(); }
 function fbAddLog(acao, detalhe) {
-  const e = { id: genId(), data: new Date().toLocaleString('pt-BR'), usuario: CU, email: CUEmail, acao, detalhe };
+  const e = { id: genId(), data: new Date().toISOString(), usuario: CU, email: CUEmail, acao, detalhe };
   dbRef.child('log/'+e.id).set(e);
 }
 
@@ -1294,7 +1294,7 @@ function salvarLancamento() {
 
   const item={id:genId(),data,valor,categoria:cat,pagamento:pag,descricao:desc,
     paciente:pac,procedimento:proc,tipo,usuario:CU,email:CUEmail,
-    criadoEm:new Date().toLocaleString('pt-BR')};
+    criadoEm:new Date().toISOString()};
   if(linked_group_id)item.linked_group_id=linked_group_id;
   fbSalvarLanc(item);
   const resumo=tipo==='receita'&&pac?`${pac}${proc?' · '+proc:''}`:(desc||cat);
@@ -1317,7 +1317,7 @@ function salvarLancamento() {
           categoria:'Equipe Cirúrgica',pagamento:'Transferência',
           descricao:`${m.label} — ${proc}`,
           paciente:pac,procedimento:proc,tipo:'despesa',
-          usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR'),
+          usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
           linked_group_id,auto_generated:true};
         fbSalvarLanc(d);
         fbAddLog('AUTO-DESPESA',`Equipe: ${m.label} · R$ ${fN(v)} · ${proc}`);
@@ -1332,7 +1332,7 @@ function salvarLancamento() {
         descricao:`Comissão gerente — ${proc}`,
         paciente:pac,procedimento:proc,tipo:'despesa',
         commission:true,commission_rate:procCfg.managerCommissionPct,
-        usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR'),
+        usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
         linked_group_id,auto_generated:true};
       fbSalvarLanc(dc);
       fbAddLog('COMISSÃO',`${lbl} · R$ ${fN(commVal)} (${procCfg.managerCommissionPct}% de R$ ${fN(valor)}) · ${proc}${pac?' · '+pac:''}`);
@@ -1514,7 +1514,7 @@ function salvarEdicao(){
     descricao: document.getElementById('eDesc').value.trim(),
     paciente: document.getElementById('ePaciente')?.value.trim() || original.paciente || '',
     procedimento: document.getElementById('eProcedimento')?.value.trim() || original.procedimento || '',
-    editadoEm: new Date().toLocaleString('pt-BR'),
+    editadoEm: new Date().toISOString(),
     editadoPor: CU,
   };
 
@@ -1558,7 +1558,7 @@ function salvarEdicao(){
       }
 
       if(mudou){
-        patch.editadoEm = new Date().toLocaleString('pt-BR');
+        patch.editadoEm = new Date().toISOString();
         patch.editadoPor = CU;
         patch.observacaoEdicao = 'Recalculado automaticamente apos edicao da receita ' + id;
         updates['lancamentos/'+g.id] = patch;
@@ -1744,7 +1744,7 @@ function renderLixeira(){
         const totalRec = items.filter(i => i.tipo==='receita').reduce((s,i)=>s+(i.valor||0), 0);
         const totalDesp = items.filter(i => i.tipo==='despesa').reduce((s,i)=>s+(i.valor||0), 0);
         const first = items[0];
-        const dt = first.deletedAt ? new Date(first.deletedAt).toLocaleString('pt-BR') : '?';
+        const dt = first.deletedAt ? new Date(first.deletedAt).toLocaleString('pt-BR',{timeZone:'America/Recife'}) : '?';
         const by = first.deletedBy || '?';
         const titulo = isGrupo
           ? `Grupo de ${items.length} itens · ${esc(first.paciente||first.descricao||first.categoria)}`
@@ -1777,7 +1777,7 @@ function renderLixeira(){
     } else {
       const arr = orcs.sort((a,b) => (b.deletedAt||'').localeCompare(a.deletedAt||''));
       oEl.innerHTML = arr.map(o => {
-        const dt = o.deletedAt ? new Date(o.deletedAt).toLocaleString('pt-BR') : '?';
+        const dt = o.deletedAt ? new Date(o.deletedAt).toLocaleString('pt-BR',{timeZone:'America/Recife'}) : '?';
         const by = o.deletedBy || '?';
         return `<div style="border:1.5px solid var(--brd);border-radius:9px;padding:13px;margin-bottom:10px;background:#fafbfc">
           <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap">
@@ -2154,7 +2154,7 @@ function renderLog(){
   const el=document.getElementById('logEl');if(!el)return;
   const ucm={};getUsuarios().forEach((u,i)=>{ucm[u]=UCORS[i%UCORS.length];});
   if(!logs.length){el.innerHTML='<div class="empty"><div class="ico">📜</div>Nenhum registro.</div>';return;}
-  el.innerHTML=logs.map(l=>`<div class="le"><div class="lm">🕐 ${esc(l.data)} &nbsp;|&nbsp; 👤 <b style="color:${ucm[l.usuario]||'#95a5a6'}">${esc(l.usuario)}</b>${l.email?` <span style="opacity:.6">(${esc(l.email)})</span>`:''} &nbsp;|&nbsp; 🏷 <b>${esc(l.acao)}</b></div><div>${esc(l.detalhe)}</div></div>`).join('');
+  el.innerHTML=logs.map(l=>`<div class="le"><div class="lm">🕐 ${esc(fDT(l.data))} &nbsp;|&nbsp; 👤 <b style="color:${ucm[l.usuario]||'#95a5a6'}">${esc(l.usuario)}</b>${l.email?` <span style="opacity:.6">(${esc(l.email)})</span>`:''} &nbsp;|&nbsp; 🏷 <b>${esc(l.acao)}</b></div><div>${esc(l.detalhe)}</div></div>`).join('');
 }
 
 // ==================== PDF ====================
@@ -2287,6 +2287,21 @@ function showToast(msg,color='#2c3e50'){const t=document.getElementById('toast')
 // Anti-XSS: escapa & < > " ' para uso seguro em innerHTML.
 // Usar em TODOS os lugares que injetam strings do banco via innerHTML.
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// fDT: formata data/hora para exibição no fuso America/Recife (UTC-3).
+// Compatível com o formato ISO (novo) e o legado pt-BR (dados antigos).
+function fDT(str){
+  if(!str)return'—';
+  // ISO: começa com YYYY-MM-DDT
+  if(/^\d{4}-\d{2}-\d{2}T/.test(str)){
+    return new Date(str).toLocaleString('pt-BR',{
+      timeZone:'America/Recife',
+      day:'2-digit',month:'2-digit',year:'numeric',
+      hour:'2-digit',minute:'2-digit',second:'2-digit'
+    });
+  }
+  // Legado: string pt-BR já formatada — exibe como veio do banco
+  return str;
+}
 
 // ==================== MOEDA ====================
 // parseMoeda: converte string em numero. Robusto contra ambiguidade BR/US.
@@ -3077,7 +3092,7 @@ function salvarOrcamento(){
     servicos:itens.map(x=>({proc:x.proc,qty:x.qty,valorUnit:x.valorUnit,descPct:x.descPct,subtotal:_itemSub(x)})),
     hospRows,subtotal,desconto,hospTotal,total,
     obs:document.getElementById('oObs').value.trim(),
-    usuario:CU,email:CUEmail,criadoEm:new Date().toLocaleString('pt-BR')
+    usuario:CU,email:CUEmail,criadoEm:new Date().toISOString()
   };
   dbRef.child('orcamentos/'+orc.id).set(orc);
   fbAddLog('ORCAMENTO',`Orcamento gerado para ${orcPat.nome} - Total R$ ${fN(total)}`);
