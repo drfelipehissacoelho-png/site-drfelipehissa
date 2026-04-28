@@ -3203,6 +3203,7 @@ function salvarOrcamento(){
     servicos:itens.map(x=>({proc:x.proc,qty:x.qty,valorUnit:x.valorUnit,descPct:x.descPct,subtotal:_itemSub(x)})),
     hospRows,subtotal,desconto,hospTotal,total,
     obs:document.getElementById('oObs').value.trim(),
+    status:'aberto',
     usuario:CU,email:CUEmail,criadoEm:new Date().toISOString()
   };
   dbRef.child('orcamentos/'+orc.id).set(orc);
@@ -3237,38 +3238,206 @@ function gerarPDFOrcRapido(){
 
 function excluirOrcamento(id){
   const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
-  if(!confirm(`Excluir orcamento de ${orc.paciente}?\nTotal: R$ ${fN(orc.total)}\n\nRegistrado no log de auditoria.`))return;
-  dbRef.child('orcamentos/'+id).remove();
-  fbAddLog('EXCLUSAO ORCAMENTO',`Orcamento de ${orc.paciente} R$ ${fN(orc.total)} excluido`);
-  showToast('Orcamento excluido.','#e67e22');
+  if(!confirm(`Mover orçamento de ${orc.paciente} (R$ ${fN(orc.total)}) para a Lixeira?\n\nPoderá ser restaurado pela aba Lixeira.`))return;
+  const ts=new Date().toISOString();
+  // Log ANTES da operação (regra do projeto)
+  fbAddLog('EXCLUSÃO ORÇAMENTO',`Orçamento de ${orc.paciente} R$ ${fN(orc.total)} movido para lixeira por ${CU}`);
+  dbRef.child('orcamentos/'+id).update({deletedAt:ts,deletedBy:CU});
+  showToast('Orçamento movido para a lixeira.','#e67e22');
+}
+
+// Estado do filtro de status na aba Orçamentos
+let _orcStatusFilter='todos';
+
+function _setOrcFilter(f){ _orcStatusFilter=f; renderOrcamentos(); }
+
+// Muda o status de um orçamento e registra no log de auditoria
+function mudarStatusOrc(id,novoStatus){
+  const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
+  const antigo=orc.status||'aberto';
+  if(antigo===novoStatus)return;
+  const LABELS={aberto:'Aberto',aceito:'Aceito',recusado:'Recusado',expirado:'Expirado'};
+  fbAddLog('STATUS ORÇAMENTO',
+    `Orçamento ${id} (${orc.paciente}) · ${LABELS[antigo]||antigo} → ${LABELS[novoStatus]||novoStatus} por ${CU}`);
+  dbRef.child('orcamentos/'+id+'/status').set(novoStatus)
+    .then(()=>showToast(`Status atualizado: ${LABELS[novoStatus]||novoStatus}`,'#27ae60'))
+    .catch(e=>showToast('Erro: '+(e.message||e),'#e74c3c'));
+}
+
+// Gera receita (e despesas automáticas de equipe) a partir de um orçamento aceito.
+// Usa a configuração do PRIMEIRO procedimento do orçamento para as auto-despesas.
+// Se houver múltiplos procedimentos, avisa no toast — o médico pode ajustar manualmente.
+function gerarReceitaDeOrcamento(id){
+  const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
+  if(orc.receitaGeradaId){
+    if(!confirm(`Este orçamento já gerou a receita #${orc.receitaGeradaId}.\n\nGerar novamente (não duplica se feito por engano)?`))return;
+  }
+  const data=new Date().toISOString().split('T')[0]; // hoje
+  const valor=orc.total;
+  const pac=orc.paciente;
+  const primeiroProc=(orc.servicos||[])[0]?.proc||'';
+  const nProcs=(orc.servicos||[]).filter(s=>s.proc).length;
+  const procCfg=primeiroProc?getProcConfig(primeiroProc):null;
+  const membros=[
+    {campo:'anesthetistCost',label:'Anestesista'},
+    {campo:'instrumenterCost',label:'Instrumentadora'},
+    {campo:'assistantCost',label:'Auxiliar'},
+    {campo:'extraMaterialCost',label:'Material Extra'},
+  ];
+  const temEquipe=procCfg&&membros.some(m=>(procCfg[m.campo]||0)>0);
+  const commVal=procCfg?_calcCommission(procCfg,valor):0;
+  const temAutoDesp=temEquipe||commVal>0;
+  const aviso=nProcs>1?`\n\n⚠ Orçamento tem ${nProcs} procedimentos. Auto-despesas usam config de "${primeiroProc}" (primeiro).`:'';
+  if(!confirm(
+    `Lançar receita de R$ ${fN(valor)} para ${pac}?\n`+
+    `Procedimento base: ${primeiroProc||'—'}\n`+
+    `Auto-despesas: ${temAutoDesp?'sim (equipe + comissão)':'não configuradas'}\n`+
+    `Data: ${fD(data)}${aviso}`
+  ))return;
+  const linked_group_id=temAutoDesp?('grp_'+genId()):undefined;
+  const lancId=genId();
+  // Receita principal
+  const item={
+    id:lancId,data,valor,categoria:'Cirurgias Particulares',
+    pagamento:'Pendente',descricao:'',paciente:pac,
+    procedimento:primeiroProc,tipo:'receita',
+    usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
+    linked_orc_id:id
+  };
+  if(linked_group_id)item.linked_group_id=linked_group_id;
+  fbSalvarLanc(item);
+  fbAddLog('RECEITA DE ORÇAMENTO',`Receita R$ ${fN(valor)} para ${pac} · orçamento #${id}`);
+  // Auto-despesas equipe
+  let desp_count=0;
+  if(temAutoDesp&&procCfg){
+    membros.forEach(m=>{
+      const v=procCfg[m.campo]||0;
+      if(v>0){
+        fbSalvarLanc({id:genId(),data,valor:v,categoria:'Equipe Cirúrgica',
+          pagamento:'Transferência',descricao:`${m.label} — ${primeiroProc}`,
+          paciente:pac,procedimento:primeiroProc,tipo:'despesa',
+          usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
+          linked_group_id,auto_generated:true});
+        fbAddLog('AUTO-DESPESA',`Equipe: ${m.label} · R$ ${fN(v)} · ${primeiroProc}`);
+        desp_count++;
+      }
+    });
+    if(commVal>0){
+      const lbl=procCfg.managerCommissionLabel||'Comissão gerente';
+      fbSalvarLanc({id:genId(),data,valor:commVal,categoria:'Comissões',
+        pagamento:'Transferência',descricao:`Comissão gerente — ${primeiroProc}`,
+        paciente:pac,procedimento:primeiroProc,tipo:'despesa',
+        commission:true,commission_rate:procCfg.managerCommissionPct,
+        usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
+        linked_group_id,auto_generated:true});
+      fbAddLog('COMISSÃO',`${lbl} · R$ ${fN(commVal)} (${procCfg.managerCommissionPct}%) · ${primeiroProc}`);
+      desp_count++;
+    }
+  }
+  // Marca orçamento para evitar lançamento duplo
+  dbRef.child('orcamentos/'+id+'/receitaGeradaId').set(String(lancId));
+  const msg=desp_count>0
+    ?`✓ Receita + ${desp_count} despesa(s) automática(s) lançada(s)!${nProcs>1?' (ajuste despesas se necessário)':''}`
+    :'✓ Receita lançada! Nenhuma despesa configurada para o procedimento.';
+  showToast(msg,'#27ae60');
+  // Muda status para aceito se ainda não estiver
+  if((orc.status||'aberto')!=='aceito')mudarStatusOrc(id,'aceito');
 }
 
 function renderOrcamentos(){
   const el=document.getElementById('orcList');if(!el)return;
-  const s=(document.getElementById('searchOrc')?.value||'').toLowerCase();
-  let orcs=Object.values(DATA.orcamentos||{}).sort((a,b)=>b.id-a.id);
-  if(s)orcs=orcs.filter(o=>(o.paciente||'').toLowerCase().includes(s)||
-    (o.cpf||'').includes(s)||(o.tel||'').includes(s));
-  if(!orcs.length){el.innerHTML='<div class="empty" style="padding:18px 0"><div class="ico" style="font-size:1.5rem">📋</div>Nenhum orcamento</div>';return;}
-  el.innerHTML=orcs.map(o=>`
-    <div style="border:1.5px solid var(--brd);border-radius:9px;padding:11px;margin-bottom:9px">
-      <div style="display:flex;justify-content:space-between;align-items:start;gap:6px">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.paciente}</div>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${fD(o.data)} · por <b>${o.usuario}</b></div>
-          <div style="font-size:.74rem;margin-top:3px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            ${(o.servicos||[]).map(s=>s.proc).join(' · ')||'—'}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:1rem;font-weight:700;color:var(--primary)">R$ ${fN(o.total)}</div>
-          <div style="display:flex;gap:4px;margin-top:5px;justify-content:flex-end">
-            <button class="btn btn-ok btn-sm" onclick="gerarPDFOrcamento(${o.id})">PDF</button>
-            <button class="btn btn-err btn-sm" onclick="excluirOrcamento(${o.id})">🗑</button>
-          </div>
-        </div>
+  const sq=(document.getElementById('searchOrc')?.value||'').toLowerCase();
+  const today=new Date().toISOString().split('T')[0];
+  // Bug fix: getOrcamentos() já filtra deletedAt (antes mostrava lixeira aqui)
+  let all=getOrcamentos();
+  if(sq)all=all.filter(o=>(o.paciente||'').toLowerCase().includes(sq)||(o.cpf||'').includes(sq));
+
+  // Métricas de conversão
+  const total=all.length;
+  const aceitos=all.filter(o=>(o.status||'aberto')==='aceito').length;
+  const taxa=total>0?Math.round(aceitos/total*100):0;
+  const valAceito=all.filter(o=>(o.status||'aberto')==='aceito').reduce((s,o)=>s+(o.total||0),0);
+
+  // Config visual de status
+  const ST={
+    aberto:  {label:'Aberto',  bg:'#eaf3fb',fg:'#1a4f7a',brd:'var(--brd)',  bg2:'#fff',   em:'📋'},
+    aceito:  {label:'Aceito',  bg:'#eafaf1',fg:'#1e8449',brd:'#a9dfbf',     bg2:'#f9fef9',em:'✅'},
+    recusado:{label:'Recusado',bg:'#fdf0f0',fg:'#922b21',brd:'#f5c6c6',     bg2:'#fef9f9',em:'❌'},
+    expirado:{label:'Expirado',bg:'#f5f5f5',fg:'#616161',brd:'#dce3ea',     bg2:'#fafafa',em:'⏰'},
+  };
+
+  // Contagem por status (expirado = validade vencida + status ainda aberto)
+  const cnts={todos:total,aberto:0,aceito:0,recusado:0,expirado:0};
+  all.forEach(o=>{
+    const st=o.status||'aberto';
+    const exp=st==='aberto'&&o.validade&&o.validade<today;
+    if(exp)cnts.expirado++;else cnts[st]=(cnts[st]||0)+1;
+  });
+
+  // Tabs de filtro
+  const tabs=['todos','aberto','aceito','recusado','expirado'];
+  const tabsHtml=tabs.map(t=>{
+    const lbl=t==='todos'?'Todos':(ST[t]?.label||t);
+    const cnt=cnts[t]||0;
+    const act=_orcStatusFilter===t;
+    return `<button onclick="_setOrcFilter('${t}')" style="padding:3px 8px;border-radius:6px;border:1.5px solid ${act?'var(--primary)':'var(--brd)'};background:${act?'var(--primary)':'#fff'};color:${act?'#fff':'var(--muted)'};font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap">${lbl}${cnt>0?` (${cnt})`:''}</button>`;
+  }).join('');
+
+  const statsHtml=total>0?`<div style="font-size:.71rem;color:var(--muted);padding:5px 8px;background:#f7f9fb;border-radius:6px;margin:5px 0;line-height:1.7"><span style="color:var(--ok);font-weight:700">${aceitos}</span>/${total} aceitos · conversão <b>${taxa}%</b>${valAceito>0?' · R$ '+fN(valAceito):''}</div>`:'';
+
+  // Filtrar para exibição
+  let filtered=all.filter(o=>{
+    if(_orcStatusFilter==='todos')return true;
+    const st=o.status||'aberto';
+    const exp=st==='aberto'&&o.validade&&o.validade<today;
+    if(_orcStatusFilter==='expirado')return exp;
+    if(_orcStatusFilter==='aberto')return st==='aberto'&&!exp;
+    return st===_orcStatusFilter;
+  }).sort((a,b)=>b.id-a.id);
+
+  const cardsHtml=filtered.length===0
+    ?'<div class="empty" style="padding:14px 0"><div class="ico" style="font-size:1.2rem">📋</div>Nenhum orçamento aqui</div>'
+    :filtered.map(o=>{
+      const stRaw=o.status||'aberto';
+      const expired=stRaw==='aberto'&&o.validade&&o.validade<today;
+      const st=expired?'expirado':stRaw;
+      const cfg=ST[st]||ST.aberto;
+      const primeiroProc=esc((o.servicos||[])[0]?.proc||'—');
+      const acoes=[];
+      if(st==='aberto')acoes.push(
+        `<button class="btn btn-ok btn-sm" onclick="mudarStatusOrc(${o.id},'aceito')">✓ Aceitar</button>`,
+        `<button class="btn btn-err btn-sm" onclick="mudarStatusOrc(${o.id},'recusado')">✗ Recusar</button>`
+      );
+      if(st==='aceito'&&!o.receitaGeradaId)acoes.push(
+        `<button class="btn btn-sm" style="background:var(--primary);color:#fff;font-weight:700" onclick="gerarReceitaDeOrcamento(${o.id})">→ Lançar receita</button>`
+      );
+      if(st==='aceito'&&o.receitaGeradaId)acoes.push(
+        `<span style="font-size:.68rem;color:var(--ok);font-weight:700">✅ Receita lançada</span>`
+      );
+      if(st!=='aberto')acoes.push(
+        `<button class="btn btn-sm" style="background:#f0f4f8;color:var(--muted);border:1px solid var(--brd)" onclick="mudarStatusOrc(${o.id},'aberto')">Reabrir</button>`
+      );
+      acoes.push(
+        `<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef" onclick="gerarPDFOrcamento(${o.id})">PDF</button>`,
+        `<button class="btn btn-err btn-sm" onclick="excluirOrcamento(${o.id})">🗑</button>`
+      );
+      return `<div style="border:1.5px solid ${cfg.brd};border-radius:9px;padding:10px;margin-bottom:7px;background:${cfg.bg2}">
+  <div style="display:flex;justify-content:space-between;align-items:start;gap:6px">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+        <span style="font-weight:700;font-size:.87rem">${esc(o.paciente)}</span>
+        <span style="padding:1px 7px;border-radius:9px;font-size:.66rem;font-weight:700;background:${cfg.bg};color:${cfg.fg}">${cfg.em} ${cfg.label}</span>
       </div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:2px">${fD(o.data)}${o.validade?' · val. '+fD(o.validade):''} · <b>${esc(o.usuario)}</b></div>
+      <div style="font-size:.72rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${primeiroProc}</div>
     </div>
-  `).join('');
+    <div style="font-size:.97rem;font-weight:700;color:var(--primary);flex-shrink:0">R$ ${fN(o.total)}</div>
+  </div>
+  <div style="display:flex;gap:4px;margin-top:7px;flex-wrap:wrap">${acoes.join('')}</div>
+</div>`;
+    }).join('');
+
+  el.innerHTML=`<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">${tabsHtml}</div>${statsHtml}${cardsHtml}`;
 }
 
 // ==================== TABELA HOSPITALAR (ADMIN) ====================
