@@ -310,6 +310,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div class="tab" onclick="showPage('orcamento',this);initOrcamento()">💰 Orçamentos</div>
   <div class="tab" onclick="showPage('tabela-hosp',this);renderTabelaHosp()">🏥 Tabela</div>
   <div class="tab" onclick="showPage('auditoria',this)">🔒 Auditoria</div>
+  <div class="tab" onclick="showPage('recorrentes',this);renderRecorrentes()">🔁 Recorrentes</div>
   <div class="tab" onclick="showPage('lixeira',this)" id="tabLixeira">🗑️ Lixeira <span id="lixeiraBadge" style="display:none;background:var(--err);color:#fff;border-radius:10px;padding:1px 7px;font-size:.7rem;font-weight:700;margin-left:3px"></span></div>
   <div class="tab" onclick="showPage('config',this);renderConfig()">⚙️ Config</div>
 </nav>
@@ -782,6 +783,17 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
 </div>
 
 <!-- LIXEIRA -->
+<div id="page-recorrentes" class="page">
+  <div class="help-box">
+    🔁 <strong>Despesas Recorrentes</strong> — Cadastre despesas fixas (aluguel, salários, internet) e o sistema gera os lançamentos automaticamente a cada período. Ao abrir o sistema, períodos faltantes dos últimos 3 meses são criados automaticamente.
+    <br><small style="color:var(--muted)">Apenas o titular pode criar/editar recorrentes. Lançamentos gerados aparecem em Lançamentos com ícone 🔁.</small>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div id="recStatsLine" style="font-size:.85rem;color:var(--muted)"></div>
+    <button class="btn" id="btnNovaRec" onclick="abrirRecModal()" style="font-size:.82rem">+ Nova Recorrente</button>
+  </div>
+  <div id="recList"></div>
+</div>
 <div id="page-lixeira" class="page">
   <div class="alert ai" style="margin-bottom:14px">
     🗑️ <strong>Lixeira</strong> — Itens excluidos ficam aqui em vez de sumir do banco. Voce pode <b>Restaurar</b> a qualquer momento (volta para listas e DRE) ou <b>Apagar Permanentemente</b> (sem volta, requer confirmacao). Tudo registrado no log de auditoria.
@@ -1103,10 +1115,10 @@ function mostrarErroLogin(msg) {
 }
 
 function sair() {
-  if (confirm('Deseja sair do sistema?')) {
+  showConfirm('Sair do sistema', 'Deseja encerrar a sessão?', () => {
     fbAddLog('SAÍDA', `"${CU}" encerrou a sessão.`);
     setTimeout(() => auth.signOut(), 300);
-  }
+  }, null, 'Sair', '#e74c3c');
 }
 
 // ==================== TROCAR SENHA ====================
@@ -1201,6 +1213,9 @@ function iniciarApp() {
     DATA.procedureConfig = val.procedureConfig || {};
     DATA.procedures = val.procedures || {};
     DATA.config = val.config || {};
+    DATA.recorrentes = val.recorrentes || {};
+    // Processa recorrentes após carregar dados (gera retroativo se necessário)
+    if(CU) setTimeout(_processarRecorrentes, 500);
     renderAll();
   });
 
@@ -1272,32 +1287,9 @@ function salvarLancamento() {
   // BUG FIX: se for receita, usuario digitou nome mas NAO selecionou do
   // dropdown nem clicou em + Cadastrar — antes a receita era salva sem
   // paciente (silenciosamente). Agora bloqueia e oferece caminho claro.
-  if(tipo==='receita' && !_lancPat){
-    const digitado = (document.getElementById('lancPacInput')?.value||'').trim();
-    if(digitado){
-      const op = confirm(
-        `Voce digitou "${digitado}" mas nao selecionou do dropdown nem cadastrou esse paciente.\n\n`
-        + `OK    -> abrir cadastro de novo paciente com esse nome\n`
-        + `Cancelar -> registrar a receita SEM paciente vinculado (texto livre)\n\n`
-        + `Recomendado: OK para cadastrar (mantem historico do paciente correto).`
-      );
-      if(op){
-        // abre o modal de cadastro pre-preenchido — usuario continua o fluxo
-        abrirNovoPatPara('lanc', digitado);
-        return;
-      } else {
-        // ad-hoc: usa o texto digitado (preserva o que o usuario escreveu)
-        pac = digitado;
-        showToast('⚠ Receita salva como texto livre. Considere cadastrar o paciente.', '#e8a838');
-      }
-    } else {
-      showToast('⚠️ Selecione ou cadastre um paciente para registrar a receita.', '#e74c3c');
-      document.getElementById('lancPacInput')?.focus();
-      return;
-    }
-  }
-
-  const chkAuto=document.getElementById('chkAutoDesp');
+  // doSave: função interna que fecha sobre os locais (pac pode ser reatribuído antes de chamar)
+  function doSave() {
+    const chkAuto=document.getElementById('chkAutoDesp');
   const gerarAuto=tipo==='receita'&&chkAuto&&chkAuto.checked&&proc;
   const procCfg=proc?getProcConfig(proc):null;
   const commVal=gerarAuto&&procCfg?_calcCommission(procCfg,valor):0;
@@ -1356,16 +1348,40 @@ function salvarLancamento() {
     showToast('✓ Lançamento registrado!','#27ae60');
   }
 
-  // Reset form
-  document.getElementById('fValor').value='';
-  document.getElementById('fDesc').value='';
-  if(document.getElementById('fProcSel')){document.getElementById('fProcSel').value='';}
-  const hint=document.getElementById('procHint');if(hint)hint.classList.remove('show');
-  const tw=document.getElementById('teamPrevWrap');if(tw)tw.style.display='none';
-  const cHint=document.getElementById('commissionHint');if(cHint)cHint.style.display='none';
-  if(chkAuto)chkAuto.checked=false;
-  clearPacLanc();
-  setDate();
+    // Reset form
+    document.getElementById('fValor').value='';
+    document.getElementById('fDesc').value='';
+    if(document.getElementById('fProcSel')){document.getElementById('fProcSel').value='';}
+    const hint=document.getElementById('procHint');if(hint)hint.classList.remove('show');
+    const tw=document.getElementById('teamPrevWrap');if(tw)tw.style.display='none';
+    const cHint=document.getElementById('commissionHint');if(cHint)cHint.style.display='none';
+    if(chkAuto)chkAuto.checked=false;
+    clearPacLanc();
+    setDate();
+  } // fim doSave
+
+  if(tipo==='receita' && !_lancPat){
+    const digitado = (document.getElementById('lancPacInput')?.value||'').trim();
+    if(digitado){
+      showConfirm(
+        'Paciente não selecionado',
+        `Voce digitou "${digitado}" mas nao selecionou do dropdown.\n\nOK → Abrir cadastro de novo paciente com esse nome\nCancelar → Salvar a receita sem vínculo (texto livre)\n\nRecomendado: OK para manter histórico correto do paciente.`,
+        () => { abrirNovoPatPara('lanc', digitado); },  // OK: abre modal de cadastro
+        () => {  // Cancelar: texto livre, continua o salvamento
+          pac = digitado;
+          showToast('⚠ Receita salva como texto livre. Considere cadastrar o paciente.', '#e8a838');
+          doSave();
+        },
+        'Cadastrar paciente'
+      );
+      return;
+    } else {
+      showToast('⚠️ Selecione ou cadastre um paciente para registrar a receita.', '#e74c3c');
+      document.getElementById('lancPacInput')?.focus();
+      return;
+    }
+  }
+  doSave();
 }
 
 // ==================== EXCLUSÃO ====================
@@ -1407,8 +1423,7 @@ function excluir(id) {
       + `Voce pode restaurar a qualquer momento na aba Lixeira.\n`
       + `Tudo sera registrado no log de auditoria.`;
   }
-  if(!confirm(msg)) return;
-
+  showConfirm('Mover para Lixeira', msg, () => {
   // CRITICO (regra do projeto): log ANTES da operacao. Se o log falhar,
   // nada e modificado. Garante "nunca exclusao sem registro".
   const detalhes = grupo.map(g =>
@@ -1438,6 +1453,7 @@ function excluir(id) {
     fbAddLog('SOFT-DELETE ERRO', `Falha em ${item.id}: ${err.message||err}`);
     showToast('Erro ao mover: '+(err.message||err), '#e74c3c');
   });
+  }); // fim showConfirm excluir
 }
 
 // ==================== RESTAURAR / PURGA ====================
@@ -1448,8 +1464,10 @@ function restaurarLancamento(id){
   if(!item.deletedAt){ showToast('Esse item nao esta na lixeira.', '#e74c3c'); return; }
   const grupo = _itensDoGrupo(item).filter(g => g.deletedAt);
   const isGrupo = grupo.length > 1;
-  if(!confirm(`Restaurar ${isGrupo?'grupo de '+grupo.length+' itens':'esse lancamento'} da Lixeira?\nVoltara a aparecer normalmente nas listas e DRE.`)) return;
-
+  showConfirm(
+    'Restaurar da Lixeira',
+    `Restaurar ${isGrupo?'grupo de '+grupo.length+' itens':'esse lancamento'} da Lixeira?\nVoltará a aparecer normalmente nas listas e DRE.`,
+    () => {
   fbAddLog('RESTAURAR', `${isGrupo?'Grupo '+item.linked_group_id+' ('+grupo.length+' itens)':item.tipo+' R$ '+fN(item.valor)+' '+item.categoria} restaurado da Lixeira`);
 
   const updates = {};
@@ -1460,6 +1478,7 @@ function restaurarLancamento(id){
   dbRef.update(updates).then(()=>{
     showToast(`✓ ${isGrupo?grupo.length+' itens':'Item'} restaurado(s)!`, '#27ae60');
   }).catch(err=>showToast('Erro ao restaurar: '+(err.message||err),'#e74c3c'));
+  }); // fim showConfirm restaurar
 }
 
 // Purga (apaga PERMANENTEMENTE) item da Lixeira. Sem volta. Double-confirm.
@@ -1469,15 +1488,11 @@ function purgarLancamento(id){
   if(!item.deletedAt){ showToast('Item precisa estar na Lixeira para purgar.', '#e74c3c'); return; }
   const grupo = _itensDoGrupo(item);
   const isGrupo = grupo.length > 1;
-  const conf = prompt(
-    `APAGAR PERMANENTEMENTE${isGrupo?' GRUPO ('+grupo.length+' itens)':''}\n\n`
-    + `${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${item.paciente||item.descricao||item.categoria}\n\n`
-    + `Isso remove o item DEFINITIVAMENTE do banco. NAO ha como recuperar.\n`
-    + `(Restaurar para a tela normal eh sempre uma opcao mais segura.)\n\n`
-    + `Para confirmar, digite a palavra: APAGAR\n(em maiusculas)`
-  );
-  if(conf !== 'APAGAR'){ showToast('Cancelado.', '#7f8c8d'); return; }
-
+  showPrompt(
+    `Apagar permanentemente${isGrupo?' grupo ('+grupo.length+' itens)':''}`,
+    `${item.tipo.toUpperCase()} · R$ ${fN(item.valor)} · ${item.paciente||item.descricao||item.categoria}\n\nIsso remove o item DEFINITIVAMENTE do banco. Não há como recuperar.\n(Restaurar para a lista é sempre a opção mais segura.)\n\nPara confirmar, digite: APAGAR`,
+    'APAGAR', 'APAGAR',
+    () => {
   fbAddLog('PURGA',
     `${isGrupo?'Grupo '+item.linked_group_id+' ('+grupo.length+' itens)':item.tipo+' R$ '+fN(item.valor)+' '+item.categoria} APAGADO PERMANENTEMENTE da Lixeira`
   );
@@ -1486,6 +1501,7 @@ function purgarLancamento(id){
   dbRef.update(updates).then(()=>{
     showToast(`💀 ${isGrupo?grupo.length+' itens':'Item'} apagado(s) permanentemente.`, '#7b241c');
   }).catch(err=>showToast('Erro ao purgar: '+(err.message||err),'#e74c3c'));
+  }); // fim showPrompt purgar
 }
 
 // ==================== EDIÇÃO ====================
@@ -1709,7 +1725,10 @@ function addConfigUsuario(){
 }
 
 function removerConfigUsuario(email){
-  if(!confirm(`Remover "${email}" do mapa de usuarios?\n\nIsso so remove o nome amigavel — o acesso ao sistema continua controlado pelas Regras do Firebase. Lancamentos antigos com esse usuario continuam intactos.`)) return;
+  showConfirm(
+    'Remover usuário',
+    `Remover "${email}" do mapa de usuários?\n\nIsso só remove o nome amigável — o acesso ao sistema continua controlado pelas Regras do Firebase. Lançamentos antigos com esse usuário continuam intactos.`,
+    () => {
   const usuarios = Object.assign({}, DATA.config?.usuarios || {});
   // Email vem decodificado da UI; encode antes de procurar a chave
   delete usuarios[_encodeEmail(email)];
@@ -1717,6 +1736,7 @@ function removerConfigUsuario(email){
   dbRef.child('config/usuarios').set(usuarios).then(()=>{
     showToast('Usuario removido.', '#e67e22');
   }).catch(err => showToast('Erro ao remover: '+(err.message||err), '#e74c3c'));
+  }); // fim showConfirm removerConfigUsuario
 }
 
 // ==================== LIXEIRA ====================
@@ -2067,17 +2087,11 @@ function esquecerPaciente(){
   const pat=DATA.patients[pid];
   if(!pat){showToast('Paciente não encontrado.','#e74c3c');return;}
   const nomeOriginal=pat.nome||'Desconhecido';
-  const conf=prompt(
-    `DIREITO AO ESQUECIMENTO — LGPD Art. 18\n\n`+
-    `Paciente: ${nomeOriginal}\n\n`+
-    `Esta ação:\n`+
-    `  • Apaga nome, CPF, RG, telefone, e-mail e observações\n`+
-    `  • Substitui o nome nos lançamentos por um token anônimo\n`+
-    `  • É IRREVERSÍVEL\n`+
-    `  • Fica registrada no log de auditoria\n\n`+
-    `Para confirmar, digite: ESQUECER`
-  );
-  if(conf!=='ESQUECER'){showToast('Operação cancelada.','#7f8c8d');return;}
+  showPrompt(
+    'LGPD — Direito ao Esquecimento',
+    `Paciente: ${nomeOriginal}\n\nEsta ação:\n  • Apaga nome, CPF, RG, telefone, e-mail e observações\n  • Substitui o nome nos lançamentos por um token anônimo\n  • É IRREVERSÍVEL\n  • Fica registrada no log de auditoria\n\nPara confirmar, digite: ESQUECER`,
+    'ESQUECER', 'ESQUECER',
+    () => {
   const token='Paciente Anônimo #'+String(pid).slice(-6);
   // 1. Log ANTES de qualquer alteração (regra do projeto: log antes da op destrutiva)
   fbAddLog('LGPD ESQUECIMENTO',
@@ -2103,6 +2117,7 @@ function esquecerPaciente(){
     showToast(`✅ Paciente anonimizado como "${token}".`,'#27ae60');
     fecharEdicaoPaciente();
   }).catch(e=>showToast('Erro ao anonimizar: '+(e.message||e),'#e74c3c'));
+  }); // fim showPrompt esquecerPaciente
 }
 
 function salvarEdicaoPaciente(){
@@ -2342,11 +2357,11 @@ function importarJSON(inp){
       + `Os dados ATUAIS dos nos acima serao SOBRESCRITOS pelo conteudo do backup.\n`
       + `Esta acao NAO pode ser desfeita facilmente.\n\n`
       + `Para confirmar, digite a palavra:  RESTAURAR\n(em maiusculas, sem aspas)`;
-    const conf = prompt(msg);
-    if(conf !== 'RESTAURAR'){
-      showToast('Restauracao cancelada.', '#7f8c8d');
-      inp.value=''; return;
-    }
+    showPrompt(
+      'Restaurar backup',
+      msg,
+      'RESTAURAR', 'RESTAURAR',
+      () => {
     // CRITICO: usar update() em vez de set() na raiz, para nao apagar
     // nos que NAO estao no backup (ex: backup v1 sem patients).
     dbRef.update(nodes).then(()=>{
@@ -2357,6 +2372,7 @@ function importarJSON(inp){
       showToast('Erro ao restaurar: '+(err.message||err), '#e74c3c');
     });
     inp.value='';
+      }); // fim showPrompt restaurarBackup
   };
   r.readAsText(f);
 }
@@ -2397,6 +2413,79 @@ function mascaraRG(rg){
   if(d.length<4)return'**-***';
   return`**.**.*${d.slice(-3)}`;
 }
+
+// ==================== MODAIS CUSTOMIZADOS (item 11) ====================
+// Substituem confirm() e prompt() nativos que bloqueiam a UI e quebram
+// em alguns ambientes (ex: iframes, PWA). Callbacks assíncronos.
+let _confirmCb = null, _confirmCancelCb = null;
+
+function showConfirm(titulo, msg, cbOk, cbCancel, okLabel, okStyle) {
+  document.getElementById('confirmModalTitulo').textContent = titulo;
+  document.getElementById('confirmModalMsg').textContent = msg;
+  const btn = document.getElementById('confirmModalOkBtn');
+  btn.textContent = okLabel || 'Confirmar';
+  btn.style.background = okStyle || '';
+  btn.style.color = okStyle ? '#fff' : '';
+  _confirmCb = cbOk || null;
+  _confirmCancelCb = cbCancel || null;
+  document.getElementById('confirmModal').style.display = 'flex';
+}
+function _confirmOk() {
+  document.getElementById('confirmModal').style.display = 'none';
+  const cb = _confirmCb;
+  _confirmCb = _confirmCancelCb = null;
+  if(cb) cb();
+}
+function _confirmCancel() {
+  document.getElementById('confirmModal').style.display = 'none';
+  const cb = _confirmCancelCb;
+  _confirmCb = _confirmCancelCb = null;
+  if(cb) cb();
+}
+
+let _promptCb = null, _promptChave = null;
+function showPrompt(titulo, msg, placeholder, palavraChave, cbOk) {
+  document.getElementById('promptModalTitulo').textContent = titulo;
+  document.getElementById('promptModalMsg').textContent = msg;
+  const inp = document.getElementById('promptModalInput');
+  inp.value = ''; inp.placeholder = placeholder || '';
+  document.getElementById('promptModalErr').textContent = '';
+  _promptCb = cbOk || null;
+  _promptChave = palavraChave || null;
+  document.getElementById('promptModal').style.display = 'flex';
+  setTimeout(() => inp.focus(), 80);
+}
+function _promptOk() {
+  const val = document.getElementById('promptModalInput').value;
+  const errEl = document.getElementById('promptModalErr');
+  if(_promptChave && val !== _promptChave) {
+    errEl.textContent = `Digite exatamente: ${_promptChave}`;
+    document.getElementById('promptModalInput').focus();
+    return;
+  }
+  document.getElementById('promptModal').style.display = 'none';
+  const cb = _promptCb;
+  _promptCb = _promptChave = null;
+  errEl.textContent = '';
+  if(cb) cb(val);
+}
+function _promptCancel() {
+  document.getElementById('promptModal').style.display = 'none';
+  _promptCb = _promptChave = null;
+  document.getElementById('promptModalErr').textContent = '';
+}
+
+// ESC fecha qualquer modal aberto (incluindo modais customizados)
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  const modais = ['confirmModal','promptModal','recModal','editPatModal',
+                  'newPatModal','changePwdModal','editModal','novoProcModal'];
+  for(const id of modais){
+    const el = document.getElementById(id);
+    if(el && el.style.display !== 'none') { el.style.display = 'none'; break; }
+  }
+});
+
 function fDT(str){
   if(!str)return'—';
   // ISO: começa com YYYY-MM-DDT
@@ -2919,10 +3008,15 @@ function salvarNovoPatOrc(){
     p => p && p.nome && p.nome.trim().toLowerCase() === nome.toLowerCase()
   );
   if(existente){
-    if(!confirm(`Ja existe um paciente cadastrado com esse nome:\n\n  • ${existente.nome}\n  • CPF: ${existente.cpf||'(sem cpf)'}\n  • Tel: ${existente.tel||'(sem tel)'}\n\nCadastrar mesmo assim como NOVO paciente (duplicata)?`)){
-      return;
-    }
+    showConfirm(
+      'Paciente duplicado',
+      `Já existe um paciente cadastrado com esse nome:\n\n  • ${existente.nome}\n  • CPF: ${existente.cpf||'(sem cpf)'}\n  • Tel: ${existente.tel||'(sem tel)'}\n\nCadastrar mesmo assim como NOVO paciente (duplicata)?`,
+      () => { _doSalvarNovoPat(); }
+    );
+    return;
   }
+  _doSalvarNovoPat();
+  function _doSalvarNovoPat(){
   const pid=genId();
   const consentido=document.getElementById('npConsentimento')?.checked;
   const p={id:pid,nome,
@@ -2947,7 +3041,8 @@ function salvarNovoPatOrc(){
   }).catch(err=>{
     showToast('Erro ao salvar paciente: '+(err.message||err),'#e74c3c');
   });
-}
+  } // fim _doSalvarNovoPat
+} // fim salvarNovoPatOrc
 
 // ==================== PROCEDIMENTOS ====================
 function addItemOrc(){
@@ -3238,12 +3333,16 @@ function gerarPDFOrcRapido(){
 
 function excluirOrcamento(id){
   const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
-  if(!confirm(`Mover orçamento de ${orc.paciente} (R$ ${fN(orc.total)}) para a Lixeira?\n\nPoderá ser restaurado pela aba Lixeira.`))return;
+  showConfirm(
+    'Mover para Lixeira',
+    `Mover orçamento de ${orc.paciente} (R$ ${fN(orc.total)}) para a Lixeira?\n\nPoderá ser restaurado pela aba Lixeira.`,
+    () => {
   const ts=new Date().toISOString();
   // Log ANTES da operação (regra do projeto)
   fbAddLog('EXCLUSÃO ORÇAMENTO',`Orçamento de ${orc.paciente} R$ ${fN(orc.total)} movido para lixeira por ${CU}`);
   dbRef.child('orcamentos/'+id).update({deletedAt:ts,deletedBy:CU});
   showToast('Orçamento movido para a lixeira.','#e67e22');
+  }); // fim showConfirm excluirOrcamento
 }
 
 // Estado do filtro de status na aba Orçamentos
@@ -3270,7 +3369,12 @@ function mudarStatusOrc(id,novoStatus){
 function gerarReceitaDeOrcamento(id){
   const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
   if(orc.receitaGeradaId){
-    if(!confirm(`Este orçamento já gerou a receita #${orc.receitaGeradaId}.\n\nGerar novamente (não duplica se feito por engano)?`))return;
+    showConfirm(
+      'Receita já gerada',
+      `Este orçamento já gerou a receita #${orc.receitaGeradaId}.\n\nGerar novamente (não duplica se feito por engano)?`,
+      () => _gerarReceitaOrcCore(id)
+    );
+    return;
   }
   const data=new Date().toISOString().split('T')[0]; // hoje
   const valor=orc.total;
@@ -3288,12 +3392,10 @@ function gerarReceitaDeOrcamento(id){
   const commVal=procCfg?_calcCommission(procCfg,valor):0;
   const temAutoDesp=temEquipe||commVal>0;
   const aviso=nProcs>1?`\n\n⚠ Orçamento tem ${nProcs} procedimentos. Auto-despesas usam config de "${primeiroProc}" (primeiro).`:'';
-  if(!confirm(
-    `Lançar receita de R$ ${fN(valor)} para ${pac}?\n`+
-    `Procedimento base: ${primeiroProc||'—'}\n`+
-    `Auto-despesas: ${temAutoDesp?'sim (equipe + comissão)':'não configuradas'}\n`+
-    `Data: ${fD(data)}${aviso}`
-  ))return;
+  showConfirm(
+    'Confirmar lançamento',
+    `Lançar receita de R$ ${fN(valor)} para ${pac}?\nProcedimento base: ${primeiroProc||'—'}\nAuto-despesas: ${temAutoDesp?'sim (equipe + comissão)':'não configuradas'}\nData: ${fD(data)}${aviso}`,
+    () => {
   const linked_group_id=temAutoDesp?('grp_'+genId()):undefined;
   const lancId=genId();
   // Receita principal
@@ -3342,7 +3444,10 @@ function gerarReceitaDeOrcamento(id){
   showToast(msg,'#27ae60');
   // Muda status para aceito se ainda não estiver
   if((orc.status||'aberto')!=='aceito')mudarStatusOrc(id,'aceito');
-}
+  }); // fim showConfirm gerarReceita
+} // fim gerarReceitaDeOrcamento
+
+function _gerarReceitaOrcCore(id){ gerarReceitaDeOrcamento(id); }
 
 function renderOrcamentos(){
   const el=document.getElementById('orcList');if(!el)return;
@@ -3440,11 +3545,251 @@ function renderOrcamentos(){
   el.innerHTML=`<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">${tabsHtml}</div>${statsHtml}${cardsHtml}`;
 }
 
+
+// ==================== DESPESAS RECORRENTES (item 6) ====================
+// Cada recorrente: descricao, categoria, valor, frequencia (mensal|quinzenal|anual),
+// diaVencimento (1-28), mes (01-12 — só anual), ativo, ultimoPeriodoGerado, criadoEm, criadoPor
+// Lançamentos gerados ganham recorrente_id + recorrente_periodo → detecção de duplicatas.
+
+function abrirRecModal(id){
+  const isTitular = CUEmail === 'drfelipehissacoelho@gmail.com';
+  if(!isTitular){ showToast('Apenas o titular pode gerenciar recorrentes.','#e74c3c'); return; }
+  document.getElementById('recModalTitulo').textContent = id ? '🔁 Editar Recorrente' : '🔁 Nova Despesa Recorrente';
+  document.getElementById('recModalId').value = id || '';
+  const catEl = document.getElementById('recCat');
+  catEl.innerHTML = CAT_E.map(c => `<option>${c}</option>`).join('');
+  if(id && DATA.recorrentes && DATA.recorrentes[id]){
+    const r = DATA.recorrentes[id];
+    document.getElementById('recDesc').value = r.descricao || '';
+    document.getElementById('recValor').value = r.valor ? fN(r.valor) : '';
+    catEl.value = r.categoria || CAT_E[0];
+    document.getElementById('recFreq').value = r.frequencia || 'mensal';
+    document.getElementById('recDia').value = r.diaVencimento || 1;
+    document.getElementById('recObs').value = r.obs || '';
+    if(r.mes) document.getElementById('recMes').value = r.mes;
+  } else {
+    document.getElementById('recDesc').value = '';
+    document.getElementById('recValor').value = '';
+    document.getElementById('recDia').value = 1;
+    document.getElementById('recObs').value = '';
+  }
+  _recFreqChange();
+  document.getElementById('recModal').style.display = 'flex';
+}
+
+function fecharRecModal(){ document.getElementById('recModal').style.display = 'none'; }
+
+function _recFreqChange(){
+  const freq = document.getElementById('recFreq').value;
+  document.getElementById('recDiaWrap').style.display = freq === 'quinzenal' ? 'none' : '';
+  document.getElementById('recMesWrap').style.display = freq === 'anual' ? '' : 'none';
+}
+
+function salvarRecorrente(){
+  const isTitular = CUEmail === 'drfelipehissacoelho@gmail.com';
+  if(!isTitular){ showToast('Apenas o titular pode gerenciar recorrentes.','#e74c3c'); return; }
+  const id = document.getElementById('recModalId').value || String(genId());
+  const descricao = document.getElementById('recDesc').value.trim();
+  const valor = parseMoeda(document.getElementById('recValor').value);
+  const categoria = document.getElementById('recCat').value;
+  const frequencia = document.getElementById('recFreq').value;
+  const diaVencimento = parseInt(document.getElementById('recDia').value) || 1;
+  const mes = document.getElementById('recMes').value;
+  const obs = document.getElementById('recObs').value.trim();
+  if(!descricao){ showToast('Informe a descrição.','#e74c3c'); return; }
+  if(isNaN(valor)||valor<=0){ showToast('Informe um valor válido.','#e74c3c'); return; }
+  const isNew = !document.getElementById('recModalId').value;
+  const existing = DATA.recorrentes && DATA.recorrentes[id];
+  const obj = {
+    descricao, valor, categoria, frequencia, obs,
+    diaVencimento: frequencia==='quinzenal' ? 1 : Math.min(Math.max(diaVencimento,1),28),
+    ...(frequencia==='anual' ? {mes} : {}),
+    ativo: existing?.ativo !== undefined ? existing.ativo : true,
+    criadoEm: existing?.criadoEm || new Date().toISOString(),
+    criadoPor: existing?.criadoPor || CU,
+    ultimoPeriodoGerado: existing?.ultimoPeriodoGerado || null,
+  };
+  fbAddLog(isNew?'NOVA RECORRENTE':'EDITAR RECORRENTE',
+    `${descricao} · R$ ${fN(valor)} · ${frequencia} · ${isNew?'criada':'editada'} por ${CU}`);
+  dbRef.child('recorrentes/'+id).set(obj)
+    .then(()=>{ showToast(`✓ Recorrente ${isNew?'criada':'atualizada'}!`,'#27ae60'); fecharRecModal(); })
+    .catch(e=>showToast('Erro ao salvar: '+(e.message||e),'#e74c3c'));
+}
+
+function toggleRecorrente(id){
+  const isTitular = CUEmail === 'drfelipehissacoelho@gmail.com';
+  if(!isTitular){ showToast('Apenas o titular pode gerenciar recorrentes.','#e74c3c'); return; }
+  const r = DATA.recorrentes && DATA.recorrentes[id];
+  if(!r) return;
+  const novoAtivo = !r.ativo;
+  fbAddLog('TOGGLE RECORRENTE', `${r.descricao} → ${novoAtivo?'ativada':'pausada'} por ${CU}`);
+  dbRef.child('recorrentes/'+id+'/ativo').set(novoAtivo)
+    .then(()=>showToast(`Recorrente ${novoAtivo?'ativada':'pausada'}.`,'#27ae60'))
+    .catch(e=>showToast('Erro: '+(e.message||e),'#e74c3c'));
+}
+
+function excluirRecorrente(id){
+  const isTitular = CUEmail === 'drfelipehissacoelho@gmail.com';
+  if(!isTitular){ showToast('Apenas o titular pode gerenciar recorrentes.','#e74c3c'); return; }
+  const r = DATA.recorrentes && DATA.recorrentes[id];
+  if(!r) return;
+  showConfirm(
+    'Excluir recorrente',
+    `Excluir "${r.descricao}" (R$ ${fN(r.valor)} · ${r.frequencia})?\n\nOs lançamentos já gerados NÃO serão excluídos.`,
+    () => {
+      fbAddLog('EXCLUSÃO RECORRENTE', `${r.descricao} · R$ ${fN(r.valor)} excluída por ${CU}`);
+      dbRef.child('recorrentes/'+id).remove()
+        .then(()=>showToast('Recorrente excluída.','#e67e22'))
+        .catch(e=>showToast('Erro: '+(e.message||e),'#e74c3c'));
+    }, null, 'Excluir', '#e74c3c'
+  );
+}
+
+function renderRecorrentes(){
+  const recs = DATA.recorrentes || {};
+  const lista = Object.entries(recs).sort((a,b) => (a[1].descricao||'').localeCompare(b[1].descricao||''));
+  const isTitular = CUEmail === 'drfelipehissacoelho@gmail.com';
+  const el = document.getElementById('recList');
+  const statsEl = document.getElementById('recStatsLine');
+  if(!el) return;
+
+  const total = lista.length;
+  const ativas = lista.filter(([,r])=>r.ativo).length;
+  const valorMensal = lista.filter(([,r])=>r.ativo&&r.frequencia==='mensal').reduce((s,[,r])=>s+(r.valor||0),0)
+    + lista.filter(([,r])=>r.ativo&&r.frequencia==='quinzenal').reduce((s,[,r])=>s+(r.valor||0)*2,0)
+    + lista.filter(([,r])=>r.ativo&&r.frequencia==='anual').reduce((s,[,r])=>s+(r.valor||0)/12,0);
+  if(statsEl) statsEl.textContent = `${ativas} ativa(s) de ${total} · ~R$ ${fN(valorMensal)}/mês`;
+
+  const btnNova = document.getElementById('btnNovaRec');
+  if(btnNova) btnNova.style.display = isTitular ? '' : 'none';
+
+  if(lista.length === 0){
+    el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px">Nenhuma despesa recorrente cadastrada.</div>';
+    return;
+  }
+
+  const FREQ_LABEL = {mensal:'Mensal', quinzenal:'Quinzenal', anual:'Anual'};
+  el.innerHTML = lista.map(([id, r]) => `
+    <div style="background:#fff;border:1.5px solid var(--brd);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;opacity:${r.ativo?1:.55}">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.95rem;color:var(--text)">${esc(r.descricao)}</div>
+        <div style="font-size:.82rem;color:var(--muted);margin-top:2px">
+          ${_catChip(r.categoria)} &nbsp;
+          <span style="background:#e8f4fd;color:#1a6ea0;padding:1px 8px;border-radius:20px;font-size:.78rem">${FREQ_LABEL[r.frequencia]||r.frequencia}</span>
+          &nbsp;dia ${r.diaVencimento||1}${r.frequencia==='anual'&&r.mes?' · mês '+r.mes:''}
+          ${r.obs?`<span style="color:var(--muted)"> · ${esc(r.obs)}</span>`:''}
+        </div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:3px">
+          Último período: ${esc(r.ultimoPeriodoGerado||'(nunca gerado)')}
+        </div>
+      </div>
+      <div style="font-weight:700;font-size:1.05rem;color:var(--err);white-space:nowrap">−R$ ${fN(r.valor||0)}</div>
+      ${isTitular ? `
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-neu" onclick="abrirRecModal('${id}')" style="font-size:.75rem;padding:4px 10px">✏️</button>
+        <button class="btn btn-neu" onclick="toggleRecorrente('${id}')" style="font-size:.75rem;padding:4px 10px">${r.ativo?'⏸':'▶'}</button>
+        <button class="btn btn-neu" onclick="excluirRecorrente('${id}')" style="font-size:.75rem;padding:4px 10px;color:var(--err)">🗑</button>
+      </div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── BACKFILL: gera lançamentos retroativos de recorrentes ──────
+// Chamado após carregar DATA. Verifica períodos faltantes (até 3 meses)
+// e gera lançamentos. Idempotente: checa recorrente_id+periodo antes de criar.
+
+function _processarRecorrentes(){
+  const recs = DATA.recorrentes || {};
+  let totalGerado = 0;
+  const hoje = new Date();
+  Object.entries(recs).forEach(([id, rec]) => {
+    if(!rec || !rec.ativo) return;
+    const periodos = _periodosFaltando(id, rec, hoje);
+    periodos.forEach(p => {
+      if(_lancRecorrenteExiste(id, p.chave)) return; // idempotente
+      _gerarLancRecorrente(id, rec, p);
+      totalGerado++;
+    });
+  });
+  if(totalGerado > 0)
+    showToast(`🔁 ${totalGerado} lançamento(s) recorrente(s) gerado(s).`, '#27ae60');
+}
+
+function _lancRecorrenteExiste(recId, periodoChave){
+  return Object.values(DATA.lancamentos||{}).some(
+    l => l && l.recorrente_id === recId && l.recorrente_periodo === periodoChave && !l.deletedAt
+  );
+}
+
+function _periodosFaltando(recId, rec, hoje){
+  const MAX = 3; // meses máximos de retroativo
+  const result = [];
+  const freq = rec.frequencia || 'mensal';
+  const dia = Math.min(Math.max(rec.diaVencimento||1, 1), 28);
+  const ultimo = rec.ultimoPeriodoGerado;
+
+  if(freq === 'mensal'){
+    for(let i = MAX; i >= 0; i--){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      const chave = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if(ultimo && chave <= ultimo) continue; // já gerado
+      const venc = new Date(d.getFullYear(), d.getMonth(), dia);
+      if(venc > hoje) continue; // dia ainda não chegou
+      const dataStr = `${chave}-${String(dia).padStart(2,'0')}`;
+      result.push({chave, data: dataStr});
+    }
+  } else if(freq === 'quinzenal'){
+    for(let i = MAX; i >= 0; i--){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      const ano = d.getFullYear();
+      const mes = d.getMonth()+1;
+      const mesStr = String(mes).padStart(2,'0');
+      const chQ1 = `${ano}-${mesStr}-Q1`;
+      const chQ2 = `${ano}-${mesStr}-Q2`;
+      if(new Date(ano, mes-1, 1) <= hoje && (!ultimo || chQ1 > ultimo))
+        result.push({chave: chQ1, data: `${ano}-${mesStr}-01`});
+      if(new Date(ano, mes-1, 15) <= hoje && (!ultimo || chQ2 > ultimo))
+        result.push({chave: chQ2, data: `${ano}-${mesStr}-15`});
+    }
+  } else if(freq === 'anual'){
+    const mes = rec.mes || '01';
+    for(const ano of [hoje.getFullYear()-1, hoje.getFullYear()]){
+      const chave = `${ano}`;
+      if(ultimo && chave <= ultimo) continue;
+      const dataStr = `${ano}-${mes}-${String(dia).padStart(2,'0')}`;
+      if(new Date(dataStr) <= hoje) result.push({chave, data: dataStr});
+    }
+  }
+  return result;
+}
+
+function _gerarLancRecorrente(recId, rec, periodo){
+  const id = genId();
+  const item = {
+    id, data: periodo.data, valor: rec.valor, categoria: rec.categoria,
+    pagamento: 'Transferência', descricao: `🔁 ${rec.descricao}`,
+    tipo: 'despesa', usuario: CU, email: CUEmail,
+    criadoEm: new Date().toISOString(),
+    recorrente_id: recId, recorrente_periodo: periodo.chave,
+    auto_generated: true
+  };
+  // Log ANTES da operação (regra do projeto)
+  fbAddLog('LANÇAMENTO RECORRENTE',
+    `${rec.descricao} · R$ ${fN(rec.valor)} · período ${periodo.chave} gerado por ${CU}`);
+  dbRef.child('lancamentos/'+id).set(item).then(() => {
+    // Atualiza ultimoPeriodoGerado para otimizar próximas verificações
+    dbRef.child('recorrentes/'+recId+'/ultimoPeriodoGerado').set(periodo.chave);
+  });
+}
+
 // ==================== TABELA HOSPITALAR (ADMIN) ====================
 let _thHospSel='';
 
 function renderTabelaHosp(){
   renderProcedureConfig();
+  // Auto-seleciona o primeiro hospital se nenhum estava selecionado ainda
+  // (evita painel vazio ao abrir a aba pela primeira vez)
+  if(!_thHospSel && HOSP_KEYS.length > 0) _thHospSel = HOSP_KEYS[0].key;
   // Render hospital pills
   const pills=document.getElementById('thHospPills');
   if(pills){
@@ -4221,6 +4566,89 @@ function gerarPDFOrcamento(id){
   showToast('PDF gerado!','#8e44ad');
 }
 </script>
+
+<!-- ===== MODAL GENÉRICO: CONFIRM ===== -->
+<div class="modal-overlay" id="confirmModal" style="display:none" onclick="if(event.target===this)_confirmCancel()">
+  <div class="modal-box" style="max-width:500px">
+    <h3 id="confirmModalTitulo" style="margin-bottom:10px"></h3>
+    <div id="confirmModalMsg" style="white-space:pre-wrap;font-size:.93rem;color:var(--text);line-height:1.6;margin-bottom:4px"></div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn btn-neu" onclick="_confirmCancel()" id="confirmModalCancelBtn">Cancelar</button>
+      <button class="btn" id="confirmModalOkBtn" onclick="_confirmOk()">Confirmar</button>
+    </div>
+  </div>
+</div>
+<!-- ===== MODAL GENÉRICO: PROMPT ===== -->
+<div class="modal-overlay" id="promptModal" style="display:none" onclick="if(event.target===this)_promptCancel()">
+  <div class="modal-box" style="max-width:500px">
+    <h3 id="promptModalTitulo" style="margin-bottom:10px"></h3>
+    <div id="promptModalMsg" style="white-space:pre-wrap;font-size:.93rem;color:var(--text);line-height:1.5;margin-bottom:14px"></div>
+    <input type="text" id="promptModalInput" class="input-field" placeholder=""
+      style="width:100%;box-sizing:border-box;margin-bottom:6px"
+      onkeydown="if(event.key==='Enter')_promptOk()">
+    <div id="promptModalErr" style="color:var(--err);font-size:.82rem;min-height:1.1em"></div>
+    <div class="modal-actions" style="margin-top:12px">
+      <button class="btn btn-neu" onclick="_promptCancel()">Cancelar</button>
+      <button class="btn" id="promptModalOkBtn" onclick="_promptOk()">Confirmar</button>
+    </div>
+  </div>
+</div>
+<!-- ===== MODAL: RECORRENTES (cadastro/edição) ===== -->
+<div class="modal-overlay" id="recModal" style="display:none" onclick="if(event.target===this)fecharRecModal()">
+  <div class="modal-box" style="max-width:500px">
+    <h3 id="recModalTitulo">🔁 Nova Despesa Recorrente</h3>
+    <input type="hidden" id="recModalId">
+    <div style="display:grid;gap:10px">
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Descrição *</label>
+        <input type="text" id="recDesc" class="input-field" placeholder="Ex: Aluguel consultório" style="width:100%;box-sizing:border-box">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Valor (R$) *</label>
+          <input type="text" id="recValor" class="input-field moeda-input" placeholder="0,00" style="width:100%;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Categoria *</label>
+          <select id="recCat" class="input-field" style="width:100%;box-sizing:border-box"></select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Frequência *</label>
+          <select id="recFreq" class="input-field" style="width:100%;box-sizing:border-box" onchange="_recFreqChange()">
+            <option value="mensal">Mensal</option>
+            <option value="quinzenal">Quinzenal (1º e 15)</option>
+            <option value="anual">Anual</option>
+          </select>
+        </div>
+        <div id="recDiaWrap">
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Dia do mês *</label>
+          <input type="number" id="recDia" class="input-field" min="1" max="28" value="1" style="width:100%;box-sizing:border-box">
+        </div>
+      </div>
+      <div id="recMesWrap" style="display:none">
+        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Mês do ano *</label>
+        <select id="recMes" class="input-field" style="width:100%;box-sizing:border-box">
+          <option value="01">Janeiro</option><option value="02">Fevereiro</option>
+          <option value="03">Março</option><option value="04">Abril</option>
+          <option value="05">Maio</option><option value="06">Junho</option>
+          <option value="07">Julho</option><option value="08">Agosto</option>
+          <option value="09">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Observações</label>
+        <input type="text" id="recObs" class="input-field" placeholder="Opcional" style="width:100%;box-sizing:border-box">
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-neu" onclick="fecharRecModal()">Cancelar</button>
+      <button class="btn" onclick="salvarRecorrente()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
           
