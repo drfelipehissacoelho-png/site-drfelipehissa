@@ -3257,6 +3257,7 @@ function onProcLancChange(proc){
     if(hint)hint.classList.remove('show');
     if(tw)tw.style.display='none';
     if(cHint)cHint.style.display='none';
+    _onPagChange(); // recalcula hint taxa (valor pode ter voltado a 0)
     return;
   }
   // Auto-fill valor from procedureConfig.patientPrice (falls back to PROC_ORC)
@@ -3268,6 +3269,8 @@ function onProcLancChange(proc){
   } else {
     if(hint)hint.classList.remove('show');
   }
+  // Recalcula hint de taxa com o novo valor do procedimento
+  _onPagChange();
   // Show commission hint if active
   if(cfg.commissionActive&&cfg.managerCommissionPct>0&&cHint&&cHintTxt){
     cHintTxt.textContent=`Comissão gerente: ${cfg.managerCommissionPct}% sobre o valor lançado`;
