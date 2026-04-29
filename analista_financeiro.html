@@ -1765,13 +1765,26 @@ function renderLixeira(){
         if(!grupos[k]) grupos[k] = [];
         grupos[k].push(l);
       });
-      // Ordena por deletedAt mais recente
+      // Sort dinâmico (_lixSort)
       const arr = Object.entries(grupos).sort((a,b) => {
-        const da = Math.max(...a[1].map(x => x.deletedAt || ''));
-        const db = Math.max(...b[1].map(x => x.deletedAt || ''));
-        return db.localeCompare(da);
+        const {col,dir}=_lixSort;
+        const ia=a[1][0], ib=b[1][0];
+        let va,vb;
+        if(col==='paciente')  { va=(ia.paciente||ia.descricao||ia.categoria||'').toLowerCase(); vb=(ib.paciente||ib.descricao||ib.categoria||'').toLowerCase(); }
+        else if(col==='valor'){ va=a[1].reduce((s,x)=>s+(x.tipo==='receita'?x.valor:0),0); vb=b[1].reduce((s,x)=>s+(x.tipo==='receita'?x.valor:0),0); }
+        else { va=Math.max(...a[1].map(x=>x.deletedAt||'')); vb=Math.max(...b[1].map(x=>x.deletedAt||'')); }
+        if(va<vb) return dir==='asc'?-1:1;
+        if(va>vb) return dir==='asc'?1:-1;
+        return 0;
       });
-      lEl.innerHTML = arr.map(([gid, items]) => {
+      // Barra de sort (lixeira de lançamentos)
+      const lixHdr=`<div style="display:flex;gap:8px;margin-bottom:8px;font-size:.74rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;align-items:center">
+        <span style="flex:1">Ordenar por:</span>
+        <button class="btn btn-neu" style="font-size:.72rem;padding:3px 10px" onclick="_setSortLix('deletedAt')">📅 Data exclusão ${_sortArrow('deletedAt',_lixSort)}</button>
+        <button class="btn btn-neu" style="font-size:.72rem;padding:3px 10px" onclick="_setSortLix('paciente')">👤 Paciente ${_sortArrow('paciente',_lixSort)}</button>
+        <button class="btn btn-neu" style="font-size:.72rem;padding:3px 10px" onclick="_setSortLix('valor')">💰 Valor ${_sortArrow('valor',_lixSort)}</button>
+      </div>`;
+      lEl.innerHTML = lixHdr + arr.map(([gid, items]) => {
         const isGrupo = items.length > 1;
         const totalRec = items.filter(i => i.tipo==='receita').reduce((s,i)=>s+(i.valor||0), 0);
         const totalDesp = items.filter(i => i.tipo==='despesa').reduce((s,i)=>s+(i.valor||0), 0);
@@ -1807,7 +1820,16 @@ function renderLixeira(){
     if(!orcs.length){
       oEl.innerHTML = '<div class="empty" style="padding:18px"><div class="ico">✨</div>Nenhum orcamento na Lixeira.</div>';
     } else {
-      const arr = orcs.sort((a,b) => (b.deletedAt||'').localeCompare(a.deletedAt||''));
+      const arr = [...orcs].sort((a,b) => {
+        const {col,dir}=_lixSort;
+        let va,vb;
+        if(col==='paciente')  { va=(a.paciente||'').toLowerCase(); vb=(b.paciente||'').toLowerCase(); }
+        else if(col==='valor'){ va=a.total||0;            vb=b.total||0; }
+        else { va=a.deletedAt||''; vb=b.deletedAt||''; }
+        if(va<vb) return dir==='asc'?-1:1;
+        if(va>vb) return dir==='asc'?1:-1;
+        return 0;
+      });
       oEl.innerHTML = arr.map(o => {
         const dt = o.deletedAt ? new Date(o.deletedAt).toLocaleString('pt-BR',{timeZone:'America/Recife'}) : '?';
         const by = o.deletedBy || '?';
@@ -2183,7 +2205,22 @@ function renderPacientes(){
     if(!map[k].cpf&&o.cpf)map[k].cpf=o.cpf;
   });
 
-  const pacs=Object.values(map).sort((a,b)=>(b.total+b.totalOrc)-(a.total+a.totalOrc));
+  // Sort dinâmico (col + dir definidos em _pacSort)
+  const pacs=Object.values(map).sort((a,b)=>{
+    const {col,dir}=_pacSort;
+    let va,vb;
+    if(col==='nome')        { va=a.nome.toLowerCase(); vb=b.nome.toLowerCase(); }
+    else if(col==='visitas'){ va=a.visitas.length;     vb=b.visitas.length; }
+    else if(col==='ultimo') {
+      const ua=[...a.visitas].sort((x,y)=>y.data.localeCompare(x.data))[0];
+      const ub=[...b.visitas].sort((x,y)=>y.data.localeCompare(x.data))[0];
+      va=ua?ua.data:''; vb=ub?ub.data:'';
+    }
+    else { va=a.total+a.totalOrc; vb=b.total+b.totalOrc; } // faturado (default)
+    if(va<vb) return dir==='asc'?-1:1;
+    if(va>vb) return dir==='asc'?1:-1;
+    return 0;
+  });
   if(!pacs.length){
     el.innerHTML='<div class="empty"><div class="ico">👤</div>Nenhum paciente cadastrado ainda.</div>';return;
   }
@@ -2194,10 +2231,14 @@ function renderPacientes(){
       <button class="btn btn-ok btn-sm" onclick="cadastrarNovoPacienteManual()">+ Novo Paciente</button>
     </div>
     <table><thead><tr>
-      <th>Paciente</th><th>Contato</th><th>Procedimentos</th>
-      <th style="text-align:center">Atend.</th><th style="text-align:center">Orç.</th>
-      <th>Último</th><th>Por</th>
-      <th style="text-align:right">Faturado</th><th title="Consentimento LGPD">LGPD</th><th></th>
+      <th onclick="_setSortPac('nome')" style="cursor:pointer;user-select:none">Paciente ${_sortArrow('nome',_pacSort)}</th>
+      <th>Contato</th><th>Procedimentos</th>
+      <th style="text-align:center;cursor:pointer;user-select:none" onclick="_setSortPac('visitas')">Atend. ${_sortArrow('visitas',_pacSort)}</th>
+      <th style="text-align:center">Orç.</th>
+      <th style="cursor:pointer;user-select:none" onclick="_setSortPac('ultimo')">Último ${_sortArrow('ultimo',_pacSort)}</th>
+      <th>Por</th>
+      <th style="text-align:right;cursor:pointer;user-select:none" onclick="_setSortPac('faturado')">Faturado ${_sortArrow('faturado',_pacSort)}</th>
+      <th title="Consentimento LGPD">LGPD</th><th></th>
     </tr></thead><tbody>`+
   pacs.map(p=>{
     const visOrd=[...p.visitas].sort((a,b)=>b.data.localeCompare(a.data));
@@ -2258,10 +2299,32 @@ function renderLog(){
   if(fa)logs=logs.filter(l=>l.acao&&l.acao.includes(fa));
   if(fu)logs=logs.filter(l=>l.usuario===fu);
   if(s)logs=logs.filter(l=>((l.detalhe||'')+(l.usuario||'')+(l.acao||'')).toLowerCase().includes(s));
+
+  // Sort dinâmico (default: data desc = mais recente primeiro)
+  logs.sort((a,b)=>{
+    const {col,dir}=_logSort;
+    let va,vb;
+    if(col==='usuario') { va=(a.usuario||'').toLowerCase(); vb=(b.usuario||'').toLowerCase(); }
+    else if(col==='acao'){ va=(a.acao||'').toLowerCase();    vb=(b.acao||'').toLowerCase(); }
+    else                 { va=a.id||0; vb=b.id||0; } // data (id é timestamp)
+    if(va<vb) return dir==='asc'?-1:1;
+    if(va>vb) return dir==='asc'?1:-1;
+    return 0;
+  });
+
   const el=document.getElementById('logEl');if(!el)return;
   const ucm={};getUsuarios().forEach((u,i)=>{ucm[u]=UCORS[i%UCORS.length];});
   if(!logs.length){el.innerHTML='<div class="empty"><div class="ico">📜</div>Nenhum registro.</div>';return;}
-  el.innerHTML=logs.map(l=>`<div class="le"><div class="lm">🕐 ${esc(fDT(l.data))} &nbsp;|&nbsp; 👤 <b style="color:${ucm[l.usuario]||'#95a5a6'}">${esc(l.usuario)}</b>${l.email?` <span style="opacity:.6">(${esc(l.email)})</span>`:''} &nbsp;|&nbsp; 🏷 <b>${esc(l.acao)}</b></div><div>${esc(l.detalhe)}</div></div>`).join('');
+
+  // Cabeçalho com sort clicável
+  const hdr=`<div style="display:flex;gap:0;margin-bottom:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">
+    <span style="flex:1.2;cursor:pointer;user-select:none;padding:4px 8px;border-radius:5px;background:#f0f4f8" onclick="_setSortLog('data')">Data/hora ${_sortArrow('data',_logSort)}</span>
+    <span style="flex:.8;cursor:pointer;user-select:none;padding:4px 8px" onclick="_setSortLog('usuario')">Usuário ${_sortArrow('usuario',_logSort)}</span>
+    <span style="flex:.8;cursor:pointer;user-select:none;padding:4px 8px" onclick="_setSortLog('acao')">Ação ${_sortArrow('acao',_logSort)}</span>
+    <span style="flex:2;padding:4px 8px">Detalhe</span>
+  </div>`;
+
+  el.innerHTML=hdr+logs.map(l=>`<div class="le"><div class="lm">🕐 ${esc(fDT(l.data))} &nbsp;|&nbsp; 👤 <b style="color:${ucm[l.usuario]||'#95a5a6'}">${esc(l.usuario)}</b>${l.email?` <span style="opacity:.6">(${esc(l.email)})</span>`:''} &nbsp;|&nbsp; 🏷 <b>${esc(l.acao)}</b></div><div>${esc(l.detalhe)}</div></div>`).join('');
 }
 
 // ==================== PDF ====================
@@ -2475,14 +2538,23 @@ function _promptCancel() {
   document.getElementById('promptModalErr').textContent = '';
 }
 
-// ESC fecha qualquer modal aberto (incluindo modais customizados)
+// ESC fecha qualquer modal aberto chamando a função fechar* adequada,
+// garantindo que estado interno (campos, callbacks) seja limpo corretamente.
 document.addEventListener('keydown', e => {
   if(e.key !== 'Escape') return;
-  const modais = ['confirmModal','promptModal','recModal','editPatModal',
-                  'newPatModal','changePwdModal','editModal','novoProcModal'];
-  for(const id of modais){
+  const modalFns = [
+    ['confirmModal',  () => _confirmCancel()],
+    ['promptModal',   () => _promptCancel()],
+    ['recModal',      () => fecharRecModal()],
+    ['editPatModal',  () => fecharEdicaoPaciente()],
+    ['newPatModal',   () => fecharNovoPatOrc()],
+    ['changePwdModal',() => fecharTrocarSenha()],
+    ['editModal',     () => fecharEdicao()],
+    ['novoProcModal', () => fecharNovoProc()],
+  ];
+  for(const [id, fn] of modalFns){
     const el = document.getElementById(id);
-    if(el && el.style.display !== 'none') { el.style.display = 'none'; break; }
+    if(el && el.style.display !== 'none'){ fn(); break; }
   }
 });
 
@@ -2656,6 +2728,22 @@ const HOSP_KEYS=[
 ];
 
 // ==================== STATE ====================
+// Estado de ordenação das tabelas (item 12)
+let _pacSort  = {col:'faturado', dir:'desc'}; // Pacientes
+let _logSort  = {col:'data',     dir:'desc'}; // Auditoria
+let _lixSort  = {col:'deletedAt',dir:'desc'}; // Lixeira
+
+function _sortArrow(col, cur){
+  if(cur.col !== col) return '<span style="opacity:.25;font-size:.7rem">⇅</span>';
+  return cur.dir==='asc'
+    ? '<span style="font-size:.7rem;color:var(--primary)">▲</span>'
+    : '<span style="font-size:.7rem;color:var(--primary)">▼</span>';
+}
+function _setSort(state, col){ state.dir = state.col===col&&state.dir==='desc'?'asc':'desc'; state.col=col; }
+function _setSortPac(col)  { _setSort(_pacSort, col); renderPacientes(); }
+function _setSortLog(col)  { _setSort(_logSort, col); renderLog(); }
+function _setSortLix(col)  { _setSort(_lixSort, col); renderLixeira(); }
+
 let orcItems=[];     // [{id,proc,qty,valorUnit,descPct}]
 let orcPat=null;     // {id,nome,cpf,rg,tel,email}
 let orcHospRows=[];  // [{id,hospKey,procName,hospitalCost,manual}]
@@ -3786,11 +3874,15 @@ function _gerarLancRecorrente(recId, rec, periodo){
 let _thHospSel='';
 
 function renderTabelaHosp(){
-  renderProcedureConfig();
+  // ORDEM IMPORTA: pills e tabela primeiro (dependem só de HOSP_KEYS, constante estática).
+  // renderProcedureConfig() fica por último porque acessa DATA.procedures e pode
+  // falhar silenciosamente se o Firebase ainda não carregou — o que causava os pills
+  // ficarem invisíveis ao abrir a aba pela primeira vez.
+
   // Auto-seleciona o primeiro hospital se nenhum estava selecionado ainda
-  // (evita painel vazio ao abrir a aba pela primeira vez)
   if(!_thHospSel && HOSP_KEYS.length > 0) _thHospSel = HOSP_KEYS[0].key;
-  // Render hospital pills
+
+  // 1. Pills de seleção de hospital (usa só HOSP_KEYS — sempre disponível)
   const pills=document.getElementById('thHospPills');
   if(pills){
     pills.innerHTML=HOSP_KEYS.map(h=>`
@@ -3799,11 +3891,16 @@ function renderTabelaHosp(){
       </div>
     `).join('');
   }
+
+  // 2. Tabela de preços do hospital selecionado
   if(!_thHospSel){
     document.getElementById('thTableWrap').innerHTML='<div class="empty" style="padding:40px 0"><div class="ico">🏥</div>Selecione um hospital para ver a tabela de precos</div>';
-    return;
+  } else {
+    _renderThTable();
   }
-  _renderThTable();
+
+  // 3. Config de procedimentos (acessa DATA — fica por último para não bloquear o resto)
+  try { renderProcedureConfig(); } catch(e) { /* DATA ainda carregando — renderAll() vai chamar de novo */ }
 }
 
 function _thSelectHosp(key){
