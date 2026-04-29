@@ -247,6 +247,11 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
 .modal-box h3{font-size:1rem;font-weight:700;color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 .modal-actions{display:flex;gap:8px;margin-top:14px;}
 .btn-neu{background:#f0f4f8;color:var(--text);border:1.5px solid var(--brd);}.btn-neu:hover{background:var(--brd);}
+.range-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:7px 10px;background:#eaf3fb;border:1.5px solid #c0d8ef;border-radius:8px;margin-bottom:8px;}
+.range-bar label{font-size:.75rem;font-weight:700;color:var(--primary);white-space:nowrap;}
+.range-bar input[type=date]{font-size:.82rem;padding:4px 8px;border:1.5px solid var(--brd);border-radius:6px;font-family:inherit;color:var(--text);}
+.range-ativo-badge{display:inline-flex;align-items:center;gap:5px;background:#d4edff;color:var(--primary);border:1.5px solid #9dd0f5;border-radius:20px;padding:2px 10px;font-size:.74rem;font-weight:700;}
+.psel-dimmed{opacity:.45;pointer-events:none;}
 </style>
 </head>
 <body>
@@ -282,6 +287,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div><h1>💊 Analista Financeiro · Cirurgia Plástica</h1><small>Consultório Dr. Felipe</small></div>
   <div class="hr">
     <select class="psel" id="periodSelect" onchange="changePeriod()"></select>
+    <span id="rangeActiveBadge" class="range-ativo-badge" style="display:none">📅 range ativo <button onclick="_clearRangeLanc()" style="background:none;border:none;cursor:pointer;font-size:.85rem;padding:0 2px;color:var(--primary)" title="Voltar ao mês">✕</button></span>
     <div class="ubadge" id="userBadge">👤 —</div>
     <button class="logout-btn" onclick="abrirTrocarSenha()" title="Trocar minha senha">🔐</button>
     <button class="logout-btn" onclick="sair()">Sair</button>
@@ -394,23 +400,48 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
         </div>
       </div>
       <div class="fg"><label>Forma de Pagamento</label>
-        <select id="fPag">
+        <select id="fPag" onchange="_onPagChange()">
           <option>Dinheiro</option><option>PIX</option><option>Cartão de Débito</option>
           <option>Cartão de Crédito</option><option>Transferência</option>
           <option>Convênio / Plano</option><option>Parcelado</option>
         </select>
+      </div>
+      <!-- Parcelas — aparece só para Cartão de Crédito -->
+      <div id="parcelasWrap" style="display:none" class="fg">
+        <label>Parcelas</label>
+        <select id="fParcelas" onchange="_onPagChange()">
+          <option value="1">1x (à vista)</option>
+          <option value="2">2x</option><option value="3">3x</option>
+          <option value="4">4x</option><option value="5">5x</option>
+          <option value="6">6x</option><option value="7">7x</option>
+          <option value="8">8x</option><option value="9">9x</option>
+          <option value="10">10x</option>
+        </select>
+      </div>
+      <!-- Hint taxa maquininha -->
+      <div id="taxaHint" style="display:none;font-size:.76rem;padding:6px 11px;background:#fff3e0;border:1px solid #ffcc80;border-radius:7px;color:#795548;margin-bottom:6px">
+        🏧 <span id="taxaHintText"></span>
       </div>
       <div class="fg" style="margin-bottom:13px"><label>Observação</label><textarea id="fDesc" rows="2" placeholder="Observações..."></textarea></div>
       <button class="btn btn-ok" style="width:100%;font-size:.91rem" onclick="salvarLancamento()">✓ Registrar Lançamento</button>
     </div>
     <div class="sec">
       <h3>📋 Lançamentos do Período</h3>
-      <div style="display:flex;gap:6px;margin-bottom:11px;flex-wrap:wrap">
+      <div id="lancRangeBar" class="range-bar" style="display:none">
+        <label>📅 De:</label>
+        <input type="date" id="lancRangeDE" onchange="_onRangeLancChange()">
+        <label>Até:</label>
+        <input type="date" id="lancRangeATE" onchange="_onRangeLancChange()">
+        <button class="btn btn-neu" style="font-size:.76rem;padding:3px 10px" onclick="_clearRangeLanc()">✕ Mês</button>
+        <span style="font-size:.74rem;color:var(--muted)">DRE e gráficos também atualizam</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center">
         <input type="text" id="searchL" placeholder="🔍 paciente, categoria..." style="flex:1;min-width:120px" oninput="renderLancs()">
         <select id="ftTipo" onchange="renderLancs()" style="width:115px">
           <option value="">Todos</option><option value="receita">Receitas</option><option value="despesa">Despesas</option>
         </select>
         <select id="ftUser" onchange="renderLancs()" style="width:125px"><option value="">Todos usuários</option></select>
+        <button class="btn btn-neu" id="btnToggleRangeLanc" style="font-size:.76rem;padding:4px 11px;white-space:nowrap" onclick="_toggleRangeLanc()" title="Filtrar por intervalo de datas">📅 Range</button>
       </div>
       <div class="tw">
         <table>
@@ -720,13 +751,21 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
   <div class="alert aw">🔒 Todos os lançamentos e exclusões são registrados. Nenhuma exclusão ocorre sem registro.</div>
   <div class="sec">
     <h3>📜 Log de Auditoria</h3>
-    <div style="display:flex;gap:6px;margin-bottom:11px;flex-wrap:wrap">
+    <div id="logRangeBar" class="range-bar" style="display:none">
+        <label>📅 De:</label>
+        <input type="date" id="logRangeDE" onchange="renderLog()">
+        <label>Até:</label>
+        <input type="date" id="logRangeATE" onchange="renderLog()">
+        <button class="btn btn-neu" style="font-size:.76rem;padding:3px 10px" onclick="_clearRangeLog()">✕ Limpar</button>
+      </div>
+    <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center">
       <input type="text" id="searchLog" placeholder="🔍 buscar..." style="flex:1;min-width:120px" oninput="renderLog()">
       <select id="ftLog" onchange="renderLog()" style="width:130px">
         <option value="">Todos</option><option value="INCLUSÃO">Inclusões</option>
         <option value="EXCLUSÃO">Exclusões</option><option value="ACESSO">Acessos</option>
       </select>
       <select id="ftLogUser" onchange="renderLog()" style="width:130px"><option value="">Todos usuários</option></select>
+      <button class="btn btn-neu" style="font-size:.76rem;padding:4px 11px;white-space:nowrap" onclick="_toggleRangeLog()" title="Filtrar por intervalo de datas">📅 Range</button>
     </div>
     <div id="logEl"></div>
   </div>
@@ -765,6 +804,73 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#f7f9fb;}
       <div class="fg"><label>Endereço</label><input type="text" id="cfgEnd" placeholder="Rua, número, sala — Cidade/UF"></div>
       <button class="btn btn-ok" style="margin-top:10px;width:100%" onclick="salvarConfigClinica()">💾 Salvar Dados do Médico</button>
     </div>
+  </div>
+
+  <!-- BLOCO 3: TAXAS MAQUININHA -->
+  <div class="sec" style="margin-top:18px">
+    <h3>🏧 Taxas da Maquininha (% descontado no recebimento)</h3>
+    <div style="font-size:.74rem;color:var(--muted);margin-bottom:12px">
+      Ao registrar uma receita com Cartão de Débito ou Crédito, o sistema gera automaticamente
+      uma despesa "Taxa Maquininha" no grupo vinculado. Edite as taxas abaixo conforme sua maquininha.
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Débito</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txDebito" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 1x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC1" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 2x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC2" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 3x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC3" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 4x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC4" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 5x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC5" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 6x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC6" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 7x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC7" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 8x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC8" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 9x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC9" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+      <div><label style="font-size:.78rem;font-weight:700;color:var(--muted)">Crédito 10x</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="txC10" step="0.01" min="0" max="30" class="input-field" style="width:100%;text-align:right">
+          <span style="font-size:.82rem;color:var(--muted)">%</span>
+        </div></div>
+    </div>
+    <button class="btn btn-ok" style="margin-top:14px" onclick="salvarTaxasMaquininha()">💾 Salvar Taxas</button>
   </div>
 
   <!-- BLOCO 3: USUÁRIOS AUTORIZADOS -->
@@ -1258,7 +1364,85 @@ function fillPeriods() {
   }
   period = s.value;
 }
-function changePeriod() { period = document.getElementById('periodSelect').value; renderAll(); }
+function changePeriod() {
+  period = document.getElementById('periodSelect').value;
+  // Ao trocar o mês manualmente, sai do modo range (evita confusão)
+  _clearRangeLanc(false);
+  renderAll();
+}
+
+// ==================== FILTRO POR DATE RANGE (item 13) ====================
+// _rangeDE / _rangeATE: quando ambos preenchidos, substituem o filtro de mês
+// em getLP(), renderLancs() e renderLog(). DRE e gráficos cascateiam via getLP().
+let _rangeDE = '', _rangeATE = '';
+let _logRangeDE = '', _logRangeATE = '';
+
+function _rangeAtivo(){ return !!(_rangeDE && _rangeATE && _rangeDE <= _rangeATE); }
+function _logRangeAtivo(){ return !!(_logRangeDE && _logRangeATE && _logRangeDE <= _logRangeATE); }
+
+function _toggleRangeLanc(){
+  const bar = document.getElementById('lancRangeBar');
+  if(!bar) return;
+  const visible = bar.style.display !== 'none';
+  bar.style.display = visible ? 'none' : 'flex';
+  if(!visible){
+    // Sugere range do mês atual como ponto de partida
+    if(!_rangeDE){
+      const [y,m] = period.split('-');
+      const ult = new Date(+y, +m, 0).getDate();
+      document.getElementById('lancRangeDE').value = `${y}-${m}-01`;
+      document.getElementById('lancRangeATE').value = `${y}-${m}-${String(ult).padStart(2,'0')}`;
+      _onRangeLancChange();
+    }
+    document.getElementById('lancRangeDE').focus();
+  }
+}
+
+function _onRangeLancChange(){
+  _rangeDE  = document.getElementById('lancRangeDE')?.value  || '';
+  _rangeATE = document.getElementById('lancRangeATE')?.value || '';
+  // Validação visual
+  const valido = _rangeAtivo();
+  const psel = document.getElementById('periodSelect');
+  const badge = document.getElementById('rangeActiveBadge');
+  if(psel)  psel.className = valido ? 'psel psel-dimmed' : 'psel';
+  if(badge) badge.style.display = valido ? 'inline-flex' : 'none';
+  if(valido) renderAll();
+}
+
+function _clearRangeLanc(rerender=true){
+  _rangeDE = _rangeATE = '';
+  const deEl  = document.getElementById('lancRangeDE');
+  const ateEl = document.getElementById('lancRangeATE');
+  if(deEl)  deEl.value  = '';
+  if(ateEl) ateEl.value = '';
+  const bar   = document.getElementById('lancRangeBar');
+  const psel  = document.getElementById('periodSelect');
+  const badge = document.getElementById('rangeActiveBadge');
+  if(bar)   bar.style.display   = 'none';
+  if(psel)  psel.className      = 'psel';
+  if(badge) badge.style.display = 'none';
+  if(rerender) renderAll();
+}
+
+function _toggleRangeLog(){
+  const bar = document.getElementById('logRangeBar');
+  if(!bar) return;
+  const visible = bar.style.display !== 'none';
+  bar.style.display = visible ? 'none' : 'flex';
+  if(!visible) document.getElementById('logRangeDE').focus();
+}
+
+function _clearRangeLog(){
+  _logRangeDE = _logRangeATE = '';
+  const deEl  = document.getElementById('logRangeDE');
+  const ateEl = document.getElementById('logRangeATE');
+  if(deEl)  deEl.value  = '';
+  if(ateEl) ateEl.value = '';
+  const bar = document.getElementById('logRangeBar');
+  if(bar) bar.style.display = 'none';
+  renderLog();
+}
 function setDate() { document.getElementById('fData').value = new Date().toISOString().split('T')[0]; }
 
 // ==================== TIPO ====================
@@ -1289,16 +1473,22 @@ function salvarLancamento() {
   // paciente (silenciosamente). Agora bloqueia e oferece caminho claro.
   // doSave: função interna que fecha sobre os locais (pac pode ser reatribuído antes de chamar)
   function doSave() {
+    const pag2=document.getElementById('fPag')?.value||pag; // pag já lido acima no escopo externo
+    const parcelas=document.getElementById('fParcelas')?.value||'1';
+    const taxaPct=tipo==='receita'?getTaxaPct(pag2,parcelas):0;
+    const taxaVal=taxaPct>0?Math.round(valor*taxaPct)/100:0;
+    const hasTaxa=taxaVal>0;
     const chkAuto=document.getElementById('chkAutoDesp');
   const gerarAuto=tipo==='receita'&&chkAuto&&chkAuto.checked&&proc;
   const procCfg=proc?getProcConfig(proc):null;
   const commVal=gerarAuto&&procCfg?_calcCommission(procCfg,valor):0;
   const hasAuto=gerarAuto;
-  const linked_group_id=hasAuto?('grp_'+genId()):undefined;
+  const linked_group_id=(hasAuto||hasTaxa)?('grp_'+genId()):undefined;
 
   const item={id:genId(),data,valor,categoria:cat,pagamento:pag,descricao:desc,
     paciente:pac,procedimento:proc,tipo,usuario:CU,email:CUEmail,
     criadoEm:new Date().toISOString()};
+  if(parseInt(parcelas)>1)item.parcelas=parseInt(parcelas);
   if(linked_group_id)item.linked_group_id=linked_group_id;
   fbSalvarLanc(item);
   const resumo=tipo==='receita'&&pac?`${pac}${proc?' · '+proc:''}`:(desc||cat);
@@ -1347,6 +1537,20 @@ function salvarLancamento() {
   } else {
     showToast('✓ Lançamento registrado!','#27ae60');
   }
+  // Despesa de taxa da maquininha (independente das auto-despesas de equipe)
+  if(hasTaxa){
+    const parLabel=pag==='Cartão de Débito'?'Débito':`Crédito ${parcelas}x`;
+    const taxaItem={
+      id:genId(),data,valor:taxaVal,
+      categoria:'Taxas de Cartão',pagamento:'Transferência',
+      descricao:`Taxa maquininha ${parLabel} (${taxaPct.toFixed(2)}%)${pac?' — '+pac:''}`,
+      paciente:pac,procedimento:proc,tipo:'despesa',
+      usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
+      linked_group_id,auto_generated:true
+    };
+    fbSalvarLanc(taxaItem);
+    fbAddLog('TAXA MAQUININHA',`${parLabel} ${taxaPct}% = R$ ${fN(taxaVal)} sobre R$ ${fN(valor)}${pac?' · '+pac:''}`);
+  }
 
     // Reset form
     document.getElementById('fValor').value='';
@@ -1358,6 +1562,11 @@ function salvarLancamento() {
     if(chkAuto)chkAuto.checked=false;
     clearPacLanc();
     setDate();
+    // Esconder parcelas e taxa hint após salvar
+    const pw=document.getElementById('parcelasWrap');if(pw)pw.style.display='none';
+    const th=document.getElementById('taxaHint');if(th)th.style.display='none';
+    const fp=document.getElementById('fParcelas');if(fp)fp.value='1';
+    document.getElementById('fPag').value='Dinheiro';
   } // fim doSave
 
   if(tipo==='receita' && !_lancPat){
@@ -1630,7 +1839,13 @@ function getLancsDeleted(){return Object.values(DATA.lancamentos||{}).filter(l=>
 function getOrcamentos(){return Object.values(DATA.orcamentos||{}).filter(o=>o && !o.deletedAt);}
 function getOrcamentosDeleted(){return Object.values(DATA.orcamentos||{}).filter(o=>o && o.deletedAt);}
 function getLog(){return Object.values(DATA.log||{}).sort((a,b)=>b.id-a.id);}
-function getLP(){return getLancs().filter(l=>l.data&&l.data.startsWith(period));}
+function getLP(){
+  if(_rangeAtivo()){
+    // Range livre: filtra entre _rangeDE e _rangeATE (comparação ISO YYYY-MM-DD)
+    return getLancs().filter(l=>l.data&&l.data>=_rangeDE&&l.data<=_rangeATE);
+  }
+  return getLancs().filter(l=>l.data&&l.data.startsWith(period));
+}
 function soma(items,tp,cat){return items.filter(l=>l.tipo===tp&&(!cat||l.categoria===cat)).reduce((s,l)=>s+l.valor,0);}
 function getUsuarios(){return[...new Set(getLancs().map(l=>l.usuario).filter(Boolean))];}
 
@@ -1658,6 +1873,15 @@ function renderConfig(){
   document.getElementById('cfgEmail').value  = c.email  || '';
   document.getElementById('cfgEnd').value    = c.endereco || '';
   _renderConfigUsuarios();
+  // Preencher taxas da maquininha (com defaults se não configurado)
+  const tx = getTaxasMaquininha();
+  const setTx = (id, val) => { const el=document.getElementById(id); if(el) el.value=val; };
+  setTx('txDebito', tx.debito);    setTx('txC1', tx.credito1x);
+  setTx('txC2',  tx.credito2x);    setTx('txC3', tx.credito3x);
+  setTx('txC4',  tx.credito4x);    setTx('txC5', tx.credito5x);
+  setTx('txC6',  tx.credito6x);    setTx('txC7', tx.credito7x);
+  setTx('txC8',  tx.credito8x);    setTx('txC9', tx.credito9x);
+  setTx('txC10', tx.credito10x);
 }
 
 function _renderConfigUsuarios(){
@@ -2005,7 +2229,8 @@ function _renderLancHead(){
 function renderLancs(){
   const s=(document.getElementById('searchL')?.value||'').toLowerCase();
   const ft=document.getElementById('ftTipo')?.value||'',fu=document.getElementById('ftUser')?.value||'';
-  let l=getLancs().filter(x=>x.data&&x.data.startsWith(period));
+  // Usa getLP() que já lida com range vs mês — evita duplicar lógica
+  let l=getLP();
   if(ft)l=l.filter(x=>x.tipo===ft);if(fu)l=l.filter(x=>x.usuario===fu);
   if(s)l=l.filter(x=>((x.descricao||'')+(x.categoria||'')+(x.paciente||'')+(x.procedimento||'')).toLowerCase().includes(s));
   // Sort dinamico controlado por _lancSort (colunas clicaveis no header)
@@ -2268,7 +2493,8 @@ function renderPacientes(){
 
 function renderDRE(){
   const sel=document.getElementById('periodSelect'),lbl=sel?.options[sel.selectedIndex]?.text||period;
-  const et=document.getElementById('dreTitle');if(et)et.textContent=lbl;
+  const et=document.getElementById('dreTitle');
+  if(et) et.textContent=_rangeAtivo()?`${_rangeDE} → ${_rangeATE}`:lbl;
   const l=getLP(),de=document.getElementById('dreContent');if(!de)return;
   const rC=soma(l,'receita','Cirurgias Particulares'),rCo=soma(l,'receita','Consultas e Retornos'),rE=soma(l,'receita','Procedimentos Estéticos (Botox/Preenchimento)'),rO=soma(l,'receita','Outros'),tR=rC+rCo+rE+rO;
   const dEq=soma(l,'despesa','Equipe Cirúrgica'),dCom=soma(l,'despesa','Comissões'),dP=soma(l,'despesa','Pessoal e Pró-labore'),dM=soma(l,'despesa','Materiais e Insumos Cirúrgicos'),dI=soma(l,'despesa','Impostos e Taxas (Simples/CRM)'),dA=soma(l,'despesa','Aluguel e Infraestrutura'),dMk=soma(l,'despesa','Marketing e Captação'),dO=soma(l,'despesa','Outros'),tE=dEq+dCom+dP+dM+dI+dA+dMk+dO,rs=tR-tE,mg=tR>0?rs/tR*100:0;
@@ -2295,7 +2521,15 @@ function renderRelatorio(){
 function renderLog(){
   const s=(document.getElementById('searchLog')?.value||'').toLowerCase();
   const fa=document.getElementById('ftLog')?.value||'',fu=document.getElementById('ftLogUser')?.value||'';
+  // Sync range state do log
+  _logRangeDE  = document.getElementById('logRangeDE')?.value  || '';
+  _logRangeATE = document.getElementById('logRangeATE')?.value || '';
   let logs=getLog();
+  // Filtro de range (log usa campo 'data' ISO)
+  if(_logRangeAtivo()){
+    const de=_logRangeDE, ate=_logRangeATE+'T23:59:59';
+    logs=logs.filter(l=>l.data&&l.data>=de&&l.data<=ate);
+  }
   if(fa)logs=logs.filter(l=>l.acao&&l.acao.includes(fa));
   if(fu)logs=logs.filter(l=>l.usuario===fu);
   if(s)logs=logs.filter(l=>((l.detalhe||'')+(l.usuario||'')+(l.acao||'')).toLowerCase().includes(s));
@@ -2475,6 +2709,76 @@ function mascaraRG(rg){
   const d=rg.replace(/\D/g,'');
   if(d.length<4)return'**-***';
   return`**.**.*${d.slice(-3)}`;
+}
+
+// ==================== TAXAS MAQUININHA ====================
+// Defaults da maquininha Stone/Cielo conforme tabela do titular (foto).
+// Sobrescritos por DATA.config.taxasMaquininha quando disponível.
+const DEFAULT_TAXAS = {
+  debito:1.29, credito1x:3.09, credito2x:5.59, credito3x:6.15,
+  credito4x:6.95, credito5x:7.95, credito6x:8.95, credito7x:9.55,
+  credito8x:9.95, credito9x:10.95, credito10x:10.99
+};
+
+function getTaxasMaquininha(){
+  return Object.assign({}, DEFAULT_TAXAS, DATA.config?.taxasMaquininha||{});
+}
+
+// Retorna a % de taxa para a combinação pagamento + parcelas
+function getTaxaPct(pag, parcelas){
+  const t = getTaxasMaquininha();
+  if(pag === 'Cartão de Débito')   return +(t.debito   || 0);
+  if(pag === 'Cartão de Crédito'){
+    const p = Math.max(1, Math.min(10, parseInt(parcelas)||1));
+    return +(t[`credito${p}x`] || 0);
+  }
+  return 0;
+}
+
+// Atualiza o hint de taxa e mostra/oculta o campo de parcelas
+function _onPagChange(){
+  const pag      = document.getElementById('fPag')?.value      || '';
+  const parcelas = document.getElementById('fParcelas')?.value || '1';
+  const valor    = parseMoeda(document.getElementById('fValor')?.value || '0');
+  const parWrap  = document.getElementById('parcelasWrap');
+  const hintEl   = document.getElementById('taxaHint');
+  const hintTxt  = document.getElementById('taxaHintText');
+
+  // Parcelas só faz sentido para crédito
+  if(parWrap) parWrap.style.display = pag === 'Cartão de Crédito' ? '' : 'none';
+
+  const pct = getTaxaPct(pag, parcelas);
+  if(pct > 0 && valor > 0 && (pag === 'Cartão de Débito' || pag === 'Cartão de Crédito')){
+    const taxaVal  = valor * pct / 100;
+    const liquido  = valor - taxaVal;
+    const label    = pag === 'Cartão de Débito' ? 'Débito' : `Crédito ${parcelas}x`;
+    if(hintTxt) hintTxt.textContent =
+      `${label}: taxa ${pct.toFixed(2)}% = R$ ${fN(taxaVal)} descontado → líquido R$ ${fN(liquido)}`;
+    if(hintEl) hintEl.style.display = '';
+  } else {
+    if(hintEl) hintEl.style.display = 'none';
+  }
+}
+
+function salvarTaxasMaquininha(){
+  const g = id => { const v=parseFloat(document.getElementById(id)?.value); return isNaN(v)?null:v; };
+  const t = {
+    debito:    g('txDebito') ?? DEFAULT_TAXAS.debito,
+    credito1x: g('txC1')     ?? DEFAULT_TAXAS.credito1x,
+    credito2x: g('txC2')     ?? DEFAULT_TAXAS.credito2x,
+    credito3x: g('txC3')     ?? DEFAULT_TAXAS.credito3x,
+    credito4x: g('txC4')     ?? DEFAULT_TAXAS.credito4x,
+    credito5x: g('txC5')     ?? DEFAULT_TAXAS.credito5x,
+    credito6x: g('txC6')     ?? DEFAULT_TAXAS.credito6x,
+    credito7x: g('txC7')     ?? DEFAULT_TAXAS.credito7x,
+    credito8x: g('txC8')     ?? DEFAULT_TAXAS.credito8x,
+    credito9x: g('txC9')     ?? DEFAULT_TAXAS.credito9x,
+    credito10x:g('txC10')    ?? DEFAULT_TAXAS.credito10x,
+  };
+  fbAddLog('CONFIG TAXAS', `Taxas maquininha salvas por ${CU}: débito ${t.debito}% | crédito 1x ${t.credito1x}%`);
+  dbRef.child('config/taxasMaquininha').set(t)
+    .then(()=>showToast('✓ Taxas salvas!','#27ae60'))
+    .catch(e=>showToast('Erro: '+(e.message||e),'#e74c3c'));
 }
 
 // ==================== MODAIS CUSTOMIZADOS (item 11) ====================
@@ -2966,7 +3270,7 @@ function onProcLancChange(proc){
   }
   // Show commission hint if active
   if(cfg.commissionActive&&cfg.managerCommissionPct>0&&cHint&&cHintTxt){
-    cHintTxt.textContent=`${cfg.managerCommissionLabel}: ${cfg.managerCommissionPct}% sobre o valor lançado`;
+    cHintTxt.textContent=`Comissão gerente: ${cfg.managerCommissionPct}% sobre o valor lançado`;
     cHint.style.display='block';
   } else if(cHint){
     cHint.style.display='none';
@@ -2996,6 +3300,8 @@ function _onValorLancChange(){
     const proc=document.getElementById('fProcSel')?.value;
     if(proc)_showTeamPreview(proc);
   }
+  // Atualiza hint de taxa toda vez que o valor muda
+  _onPagChange();
 }
 
 function _showTeamPreview(proc){
@@ -3024,7 +3330,7 @@ function _showTeamPreview(proc){
   if(cfg.commissionActive&&cfg.managerCommissionPct>0){
     const commVal=valorAtual*cfg.managerCommissionPct/100;
     if(commVal>0){
-      commHtml=`<div class="team-row" style="color:#7b3f00"><span>💼 ${esc(cfg.managerCommissionLabel)} (${cfg.managerCommissionPct}% de R$ ${fN(valorAtual)})</span><span>R$ ${fN(commVal)}</span></div>`;
+      commHtml=`<div class="team-row" style="color:#7b3f00"><span>💼 Comissão gerente (${cfg.managerCommissionPct}% de R$ ${fN(valorAtual)})</span><span>R$ ${fN(commVal)}</span></div>`;
       total+=commVal;
     }
   }
@@ -4023,7 +4329,6 @@ function renderProcedureConfig(){
           <th style="text-align:right;padding:7px 8px;min-width:105px;font-size:.76rem;color:#2980b9;font-weight:700;border-bottom:2px solid var(--brd)">🩺 Auxiliar</th>
           <th style="text-align:right;padding:7px 8px;min-width:105px;font-size:.76rem;color:#2980b9;font-weight:700;border-bottom:2px solid var(--brd)">📦 Mat. Extra</th>
           <th style="text-align:right;padding:7px 8px;min-width:80px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">💼 Comissão %</th>
-          <th style="text-align:left;padding:7px 8px;min-width:120px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">Label comissão</th>
           <th style="text-align:center;padding:7px 8px;min-width:60px;font-size:.76rem;color:#7b3f00;font-weight:700;border-bottom:2px solid var(--brd)">Ativo</th>
           <th style="padding:7px 8px;width:60px;border-bottom:2px solid var(--brd)"></th>
           <th style="padding:7px 8px;width:60px;border-bottom:2px solid var(--brd)"></th>
@@ -4061,11 +4366,6 @@ function renderProcedureConfig(){
             <input type="number" id="${eid}_pct" value="${cfg.managerCommissionPct||''}" min="0" max="100" step="0.1"
               placeholder="0" style="width:100%;text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;font-family:inherit">
           </td>
-          <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
-            <input type="text" id="${eid}_lbl" value="${cfg.managerCommissionLabel}"
-              placeholder="Comissão gerente"
-              style="width:100%;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;font-family:inherit">
-          </td>
           <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
             <label class="comm-toggle">
               <input type="checkbox" id="${eid}_act" ${cfg.commissionActive?' checked':''}>
@@ -4096,7 +4396,7 @@ function salvarProcConfig(procNome){
   const eid='pc_'+procNome.replace(/[^a-zA-Z0-9]/g,'_');
   const g=sfx=>parseMoeda(document.getElementById(eid+sfx)?.value||'0');
   const pct=parseFloat(document.getElementById(eid+'_pct')?.value)||0;
-  const lbl=(document.getElementById(eid+'_lbl')?.value.trim())||'Comissão gerente';
+  const lbl='Comissão gerente'; // label fixo — coluna removida da UI
   const active=document.getElementById(eid+'_act')?.checked||false;
   const cfg={
     patientPrice:g('_price'),
