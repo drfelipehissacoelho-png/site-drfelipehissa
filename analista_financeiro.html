@@ -2047,6 +2047,16 @@ function showPage(p,tab) {
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active'); tab.classList.add('active');
   renderAll();
+  // Chart.js não consegue medir canvas em display:none — re-renderiza
+  // após dois frames (browser precisa recalcular layout da página recém-visível)
+  const pageCharts = {
+    'relatorio': rChComp,
+    'dre':       rChDRE,
+    'dashboard': ()=>{ rChRec(); rChExp(); rChEvol(); },
+  };
+  if(pageCharts[p]){
+    requestAnimationFrame(()=>requestAnimationFrame(pageCharts[p]));
+  }
 }
 
 // ==================== RENDER ====================
