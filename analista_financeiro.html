@@ -521,11 +521,16 @@ tr:hover td{background:#f5f8fb;}
 <!-- DASHBOARD -->
 <div id="page-dashboard" class="page active">
   <div class="crow" id="kpiCards"></div>
+  <div id="projSecao" class="sec" style="margin-bottom:16px;display:none">
+    <h3>🔮 Projeção de Fechamento</h3>
+    <div id="projConteudo"></div>
+  </div>
   <div class="g2">
     <div class="sec"><h3>📊 Receitas por Categoria</h3><div class="cw"><canvas id="chRec"></canvas></div></div>
     <div class="sec"><h3>📊 Despesas por Categoria</h3><div class="cw"><canvas id="chExp"></canvas></div></div>
   </div>
   <div class="sec"><h3>📅 Evolução Mensal</h3><div class="cw" style="height:240px"><canvas id="chEvol"></canvas></div></div>
+  <div class="sec" id="heatCalSec"><h3>🗓️ Receita por Dia — <span id="heatCalTitle"></span></h3><div id="heatCal"></div></div>
   <div class="g2">
     <div class="sec"><h3>👥 Quem alimentou o sistema este mês</h3><div id="userPanel"></div></div>
     <div class="sec"><h3>🎯 Metas do Mês</h3><div id="metasEl"></div></div>
@@ -630,6 +635,7 @@ tr:hover td{background:#f5f8fb;}
         <button class="btn btn-neu" style="font-size:.76rem;padding:3px 10px" onclick="_clearRangeLanc()">✕ Mês</button>
         <span style="font-size:.74rem;color:var(--muted)">DRE e gráficos também atualizam</span>
       </div>
+      <div id="catPillsBar" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--brd)"></div>
       <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center">
         <input type="text" id="searchL" placeholder="🔍 paciente, categoria..." style="flex:1;min-width:120px" oninput="renderLancs()">
         <select id="ftTipo" onchange="renderLancs()" style="width:115px">
@@ -665,6 +671,10 @@ tr:hover td{background:#f5f8fb;}
   <div class="g2">
     <div class="sec"><h3>📋 DRE — <span id="dreTitle"></span></h3><div id="dreContent"></div></div>
     <div class="sec"><h3>📊 Composição</h3><div class="cw"><canvas id="chDRE"></canvas></div><div style="margin-top:13px" id="indEl"></div></div>
+  </div>
+  <div class="g2">
+    <div class="sec"><h3>💳 Conciliação por Forma de Pagamento</h3><div id="conciliacaoEl"></div></div>
+    <div class="sec"><h3>🏆 Margem por Procedimento</h3><div id="margemProcEl"></div></div>
   </div>
 </div>
 
@@ -1561,7 +1571,7 @@ function fillPeriods() {
 }
 function changePeriod() {
   period = document.getElementById('periodSelect').value;
-  // Ao trocar o mês manualmente, sai do modo range (evita confusão)
+  _catFilter = ''; // reseta pill ao trocar período
   _clearRangeLanc(false);
   renderAll();
 }
@@ -2060,10 +2070,11 @@ function soma(items,tp,cat){return items.filter(l=>l.tipo===tp&&(!cat||l.categor
 function getUsuarios(){return[...new Set(getLancs().map(l=>l.usuario).filter(Boolean))];}
 
 function renderAll(){
-  updateFilters();renderKPIs();renderUserPanel();renderMetas();
-  renderLancs();renderPacientes();renderDRE();renderRelatorio();renderLog();renderOrcamentos();renderCFO();
+  updateFilters();renderKPIs();renderProjecao();renderUserPanel();renderMetas();
+  renderLancs();renderPacientes();renderDRE();renderConciliacao();renderMargemProc();renderRelatorio();renderLog();renderOrcamentos();renderCFO();
   renderLixeira(); // Atualiza lista da Lixeira + badge na nav
   rChRec();rChExp();rChEvol();rChDRE();rChComp();
+  renderHeatCal();
   populateProcSel(); // rebuild proc select whenever data changes (includes new procedures)
   // Update tabela if currently visible
   if(document.getElementById('page-tabela-hosp')?.classList.contains('active'))renderTabelaHosp();
@@ -2301,33 +2312,133 @@ function updateFilters(){
   });
 }
 
+// Retorna o período YYYY-MM anterior ao período atual
+function _prevPeriod(p){
+  if(!p||p.length<7) return '';
+  const y=+p.slice(0,4), m=+p.slice(5,7);
+  const pm=m===1?12:m-1, py=m===1?y-1:y;
+  return `${py}-${String(pm).padStart(2,'0')}`;
+}
+// Renderiza badge de variação vs período anterior
+function _delta(cur, prev){
+  if(!prev||prev===0) return '';
+  const d=(cur-prev)/prev*100;
+  const up=d>=0;
+  return `<span style="font-size:.69rem;font-weight:700;color:${up?'var(--ok)':'var(--err)'};margin-left:4px">${up?'↑':'↓'} ${Math.abs(d).toFixed(0)}%</span>`;
+}
+
 function renderKPIs(){
   const l=getLP(),rc=soma(l,'receita'),ex=soma(l,'despesa'),rs=rc-ex,mg=rc>0?rs/rc*100:0;
   const nr=l.filter(x=>x.tipo==='receita').length,tk=nr>0?rc/nr:0;
   const metaP=Math.min(rc/getMeta()*100,100);
   const metaIcon=rc>=getMeta()?'🏆':rc>=getMeta()*.7?'📈':'📉';
   const rsIcon=rs>=0?'✅':'⚠️';
+  // Período anterior para delta
+  const lPrev=_rangeAtivo()?[]:getLancs().filter(l=>l.data&&l.data.startsWith(_prevPeriod(period)));
+  const rcP=soma(lPrev,'receita'),exP=soma(lPrev,'despesa'),rsP=rcP-exP;
+  const nrP=lPrev.filter(x=>x.tipo==='receita').length,tkP=nrP>0?rcP/nrP:0;
   document.getElementById('kpiCards').innerHTML=`
     <div class="card g">
-      <div class="cl">💰 Receita Total</div>
+      <div class="cl">💰 Receita Total ${_delta(rc,rcP)}</div>
       <div class="cv g">R$ ${fN(rc)}</div>
       <div class="cs">${metaIcon} ${pct(rc,getMeta())} da meta · R$ ${fN(getMeta())}</div>
       <div class="pb" style="margin-top:7px"><div class="pf" style="width:${metaP}%;background:var(--ok)"></div></div>
     </div>
     <div class="card r">
-      <div class="cl">💸 Despesas Totais</div>
+      <div class="cl">💸 Despesas Totais ${_delta(ex,exP)}</div>
       <div class="cv r">R$ ${fN(ex)}</div>
       <div class="cs">${pct(ex,rc)} da receita bruta</div>
     </div>
     <div class="card ${rs>=0?'b':'r'}">
-      <div class="cl">📊 Resultado Líquido</div>
+      <div class="cl">📊 Resultado Líquido ${_delta(rs,rsP)}</div>
       <div class="cv ${rs>=0?'b':'r'}">R$ ${fN(rs)}</div>
       <div class="cs">${rsIcon} Margem: <b>${mg.toFixed(1)}%</b></div>
     </div>
     <div class="card y">
-      <div class="cl">🎯 Ticket Médio</div>
+      <div class="cl">🎯 Ticket Médio ${_delta(tk,tkP)}</div>
       <div class="cv" style="color:var(--acc)">R$ ${fN(tk)}</div>
       <div class="cs">${nr} receita${nr!==1?'s':''} lançada${nr!==1?'s':''}</div>
+    </div>`;
+}
+
+function renderProjecao(){
+  const sec = document.getElementById('projSecao');
+  const el  = document.getElementById('projConteudo');
+  if(!sec||!el) return;
+  // Só em modo mês normal (não range)
+  if(_rangeAtivo()||!period){ sec.style.display='none'; return; }
+
+  const hoje    = new Date();
+  const [y,m]   = period.split('-').map(Number);
+  const isThisMonth = hoje.getFullYear()===y && hoje.getMonth()+1===m;
+  const diasTotais  = new Date(y,m,0).getDate();
+
+  // Dias corridos até hoje (se for o mês atual) ou mês completo
+  const diaHoje  = isThisMonth ? hoje.getDate() : diasTotais;
+  if(diaHoje < 3){ sec.style.display='none'; return; } // dados insuficientes
+
+  sec.style.display='';
+
+  const l   = getLP();
+  const rc  = soma(l,'receita');
+  const ex  = soma(l,'despesa');
+  const taxa= soma(l,'despesa','Taxas de Cartão');
+  const meta= getMeta();
+
+  // Ritmo diário → projeção linear simples
+  const ritmoDia  = rc / diaHoje;
+  const projRec   = Math.round(ritmoDia * diasTotais);
+  const ritmoDesp = (ex-taxa) / diaHoje;
+  const projDesp  = Math.round(ritmoDesp * diasTotais);
+  const projRes   = projRec - projDesp - taxa; // taxas já pagas, não crescem linearmente
+  const projMg    = projRec > 0 ? projRes/projRec*100 : 0;
+  const pMeta     = Math.min(projRec/meta*100,100);
+  const diasFaltam= diasTotais - diaHoje;
+
+  // Quantos dias para bater a meta (se ainda não bateu)
+  let diasParaMeta = '';
+  if(rc < meta && ritmoDia > 0){
+    const faltaRec  = meta - rc;
+    const diasNec   = Math.ceil(faltaRec / ritmoDia);
+    diasParaMeta = diasNec <= diasFaltam
+      ? `<span style="color:var(--ok);font-weight:700">🎯 Atinge a meta em ~${diasNec} dia${diasNec>1?'s':''}</span>`
+      : `<span style="color:var(--err);font-weight:700">⚠️ Ritmo insuficiente para meta (faltam R$ ${fN(meta-rc)})</span>`;
+  } else if(rc >= meta){
+    diasParaMeta = `<span style="color:var(--ok);font-weight:700">🏆 Meta já atingida!</span>`;
+  }
+
+  const corProj = projRec >= meta ? 'var(--ok)' : projRec >= meta*.8 ? 'var(--acc)' : 'var(--err)';
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px">
+      <div style="background:var(--surface2);border-radius:9px;padding:13px 15px;border-left:4px solid ${corProj}">
+        <div style="font-size:.69rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:4px">Receita Projetada</div>
+        <div style="font-size:1.3rem;font-weight:800;color:${corProj}">R$ ${fN(projRec)}</div>
+        <div style="font-size:.73rem;color:var(--muted);margin-top:3px">R$ ${fN(ritmoDia.toFixed(0))}/dia × ${diasTotais} dias</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:9px;padding:13px 15px;border-left:4px solid var(--err)">
+        <div style="font-size:.69rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:4px">Despesa Projetada</div>
+        <div style="font-size:1.3rem;font-weight:800;color:var(--err)">R$ ${fN(projDesp)}</div>
+        <div style="font-size:.73rem;color:var(--muted);margin-top:3px">Custo op. · excl. taxas cartão</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:9px;padding:13px 15px;border-left:4px solid ${projRes>=0?'var(--primary)':'var(--err)'}">
+        <div style="font-size:.69rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:4px">Resultado Projetado</div>
+        <div style="font-size:1.3rem;font-weight:800;color:${projRes>=0?'var(--primary)':'var(--err)'}">R$ ${fN(projRes)}</div>
+        <div style="font-size:.73rem;color:var(--muted);margin-top:3px">Margem proj.: ${projMg.toFixed(1)}%</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:9px;padding:13px 15px;border-left:4px solid var(--acc)">
+        <div style="font-size:.69rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:4px">Progresso</div>
+        <div style="font-size:1.3rem;font-weight:800;color:var(--acc)">${pMeta.toFixed(0)}% da meta</div>
+        <div style="font-size:.73rem;color:var(--muted);margin-top:3px">Dia ${diaHoje} de ${diasTotais} · ${diasFaltam} faltam</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--surface2);border-radius:8px;font-size:.82rem">
+      <span>📅 Baseado em <b>${diaHoje}</b> dias de dados</span>
+      <span style="color:var(--brd2)">|</span>
+      ${diasParaMeta}
+    </div>
+    <div class="pb" style="margin-top:10px;height:7px">
+      <div class="pf" style="width:${pMeta}%;background:${corProj}"></div>
     </div>`;
 }
 
@@ -2362,6 +2473,78 @@ function renderMetas(){
       <div style="font-size:.69rem;color:var(--muted);text-align:right;margin-top:3px">${p.toFixed(0)}%</div>
     </div>`;
   }).join('');
+}
+
+// ==================== CALENDÁRIO DE CALOR ====================
+function renderHeatCal(){
+  const sec = document.getElementById('heatCalSec');
+  const el  = document.getElementById('heatCal');
+  const tit = document.getElementById('heatCalTitle');
+  if(!sec||!el) return;
+
+  // Só faz sentido em modo mês (não range)
+  if(_rangeAtivo() || !period){ sec.style.display='none'; return; }
+  sec.style.display='';
+
+  const [y,m] = period.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const firstWeekDay= new Date(y, m-1, 1).getDay(); // 0=Dom
+  if(tit) tit.textContent = new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  // Mapa dia → total receitas
+  const recByDay = {};
+  getLP().filter(l=>l.tipo==='receita'&&l.data&&l.data.startsWith(period)).forEach(l=>{
+    const d = +l.data.slice(8,10);
+    recByDay[d] = (recByDay[d]||0) + l.valor;
+  });
+  const maxVal = Math.max(...Object.values(recByDay), 1);
+
+  // Grade semanal: Dom–Sáb
+  const dayNames=['D','S','T','Q','Q','S','S'];
+  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px">`;
+  dayNames.forEach(d=>{
+    html+=`<div style="text-align:center;font-size:.62rem;font-weight:700;color:var(--muted);padding-bottom:2px">${d}</div>`;
+  });
+  html+='</div>';
+
+  html+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">`;
+  // Células vazias antes do dia 1
+  for(let i=0;i<firstWeekDay;i++){
+    html+=`<div></div>`;
+  }
+  for(let d=1;d<=daysInMonth;d++){
+    const val   = recByDay[d]||0;
+    const ratio = val/maxVal;
+    // Escala de verde: sem receita = cinza claro, máximo = verde escuro
+    const bg = val===0
+      ? '#edf2f7'
+      : `rgba(39,174,96,${(0.15 + ratio*0.85).toFixed(2)})`;
+    const txt = val===0
+      ? 'var(--muted)'
+      : ratio > 0.5 ? '#fff' : 'var(--ok)';
+    const today = new Date();
+    const isToday = today.getFullYear()===y && today.getMonth()+1===m && today.getDate()===d;
+    html+=`<div title="Dia ${d}${val?': R$ '+fN(val):': sem receita'}"
+      style="aspect-ratio:1;border-radius:6px;background:${bg};display:flex;flex-direction:column;
+             align-items:center;justify-content:center;cursor:default;
+             border:${isToday?'2px solid var(--primary)':'2px solid transparent'};
+             transition:transform .12s"
+      onmouseenter="this.style.transform='scale(1.12)'"
+      onmouseleave="this.style.transform='scale(1)'">
+      <span style="font-size:.65rem;font-weight:700;color:${txt}">${d}</span>
+      ${val?`<span style="font-size:.52rem;color:${txt};opacity:.9">${val>=1000?(val/1000).toFixed(1)+'k':fN(val)}</span>`:''}
+    </div>`;
+  }
+  html+='</div>';
+
+  // Legenda
+  html+=`<div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:.72rem;color:var(--muted)">
+    <span>Sem receita</span>
+    ${[.15,.35,.55,.75,1].map(r=>`<div style="width:14px;height:14px;border-radius:3px;background:rgba(39,174,96,${r.toFixed(2)})"></div>`).join('')}
+    <span>Máximo (R$ ${fN(maxVal)})</span>
+  </div>`;
+
+  el.innerHTML = html;
 }
 
 // ==================== SORT DA TABELA DE LANCAMENTOS ====================
@@ -2481,6 +2664,8 @@ function renderLancs(){
   let l=getLP();
   if(ft)l=l.filter(x=>x.tipo===ft);if(fu)l=l.filter(x=>x.usuario===fu);
   if(s)l=l.filter(x=>((x.descricao||'')+(x.categoria||'')+(x.paciente||'')+(x.procedimento||'')).toLowerCase().includes(s));
+  if(_catFilter)l=l.filter(x=>x.categoria===_catFilter);
+  renderCatPills();
   // Sort dinamico controlado por _lancSort (colunas clicaveis no header)
   l = _sortLancs(l);
   // Atualiza o header (com seta indicadora) sempre que renderiza
@@ -2762,6 +2947,155 @@ function renderDRE(){
   const ie=document.getElementById('indEl');if(!ie)return;
   ie.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><div style="background:#f7f9fb;border-radius:7px;padding:10px;text-align:center"><div style="font-size:.69rem;color:var(--muted);text-transform:uppercase">Margem Líquida</div><div style="font-size:1.35rem;font-weight:700;color:${mg>=20?'var(--ok)':mg>=10?'var(--acc)':'var(--err)'}">${mg.toFixed(1)}%</div></div><div style="background:#f7f9fb;border-radius:7px;padding:10px;text-align:center"><div style="font-size:.69rem;color:var(--muted);text-transform:uppercase">Desp/Rec</div><div style="font-size:1.35rem;font-weight:700;color:var(--primary)">${tR>0?(tE/tR*100).toFixed(1):0}%</div></div></div>`;
 }
+function renderMargemProc(){
+  const el = document.getElementById('margemProcEl');
+  if(!el) return;
+  const l = getLP();
+
+  // Agrupa receitas por procedimento e coleta custos vinculados via linked_group_id
+  const procMap = {};
+  l.filter(x => x.tipo==='receita' && x.procedimento && !x.auto_generated).forEach(rec => {
+    const p = rec.procedimento;
+    if(!procMap[p]) procMap[p] = { receita:0, equipe:0, comissao:0, taxa:0, n:0 };
+    procMap[p].receita += rec.valor;
+    procMap[p].n++;
+
+    if(rec.linked_group_id){
+      l.filter(d =>
+        d.tipo==='despesa' && d.linked_group_id===rec.linked_group_id
+      ).forEach(d => {
+        if(d.categoria==='Equipe Cirúrgica')        procMap[p].equipe    += d.valor;
+        else if(d.categoria==='Comissões')           procMap[p].comissao  += d.valor;
+        else if(d.categoria==='Taxas de Cartão')    procMap[p].taxa      += d.valor;
+      });
+    }
+  });
+
+  const procs = Object.entries(procMap)
+    .map(([nome, v]) => ({
+      nome,
+      receita: v.receita,
+      custos:  v.equipe + v.comissao + v.taxa,
+      equipe:  v.equipe,
+      comissao:v.comissao,
+      taxa:    v.taxa,
+      liquido: v.receita - v.equipe - v.comissao - v.taxa,
+      margem:  v.receita>0 ? (v.receita - v.equipe - v.comissao - v.taxa)/v.receita*100 : 0,
+      n:       v.n,
+    }))
+    .sort((a,b) => b.margem - a.margem);
+
+  if(!procs.length){
+    el.innerHTML='<div class="empty"><div class="ico">🏆</div><div style="font-weight:600">Lance receitas com procedimento vinculado para ver margens</div></div>';
+    return;
+  }
+
+  const maxRec = Math.max(...procs.map(p=>p.receita),1);
+
+  el.innerHTML = procs.map((p,i) => {
+    const barW  = p.receita/maxRec*100;
+    const mgCor = p.margem>=70?'var(--ok)':p.margem>=50?'var(--pl)':p.margem>=30?'var(--acc)':'var(--err)';
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    return `
+    <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--brd)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-weight:700;font-size:.83rem;color:var(--text)">${medal} ${esc(p.nome)}</span>
+        <span style="font-size:1rem;font-weight:800;color:${mgCor}">${p.margem.toFixed(0)}%</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.76rem;color:var(--muted);margin-bottom:5px">
+        <span>${p.n} cirurgia${p.n>1?'s':''} · R$ ${fN(p.receita)} bruto</span>
+        <span style="color:var(--ok);font-weight:600">R$ ${fN(p.liquido)} líquido</span>
+      </div>
+      <div class="pb" style="height:6px;margin-bottom:4px">
+        <div class="pf" style="width:${barW}%;background:${mgCor}"></div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:.72rem;color:var(--muted);flex-wrap:wrap">
+        ${p.equipe?`<span>👥 Equipe R$ ${fN(p.equipe)}</span>`:''}
+        ${p.comissao?`<span>💼 Comissão R$ ${fN(p.comissao)}</span>`:''}
+        ${p.taxa?`<span>💳 Taxa R$ ${fN(p.taxa)}</span>`:''}
+        ${!p.custos?'<span style="color:var(--ok)">✓ Sem custos vinculados</span>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderConciliacao(){
+  const el = document.getElementById('conciliacaoEl');
+  if(!el) return;
+  const l = getLP();
+  const meios = ['Dinheiro','PIX','Cartão de Débito','Cartão de Crédito','Transferência','Convênio / Plano','Parcelado'];
+  const icons = {'Dinheiro':'💵','PIX':'⚡','Cartão de Débito':'💳','Cartão de Crédito':'💳','Transferência':'🏦','Convênio / Plano':'🏥','Parcelado':'📆'};
+
+  // Para cada meio: receitas brutas, taxa de cartão vinculada, líquido
+  const rows = meios.map(meio => {
+    const recItems = l.filter(x => x.tipo==='receita' && x.pagamento===meio);
+    const bruto    = recItems.reduce((s,x)=>s+x.valor,0);
+    const nRec     = recItems.length;
+    if(!bruto && !nRec) return null;
+
+    // Taxas vinculadas (mesmo linked_group_id das receitas desse meio)
+    const grupoIds = new Set(recItems.map(x=>x.linked_group_id).filter(Boolean));
+    const taxas    = l.filter(x =>
+      x.tipo==='despesa' && x.categoria==='Taxas de Cartão' &&
+      x.linked_group_id && grupoIds.has(x.linked_group_id)
+    ).reduce((s,x)=>s+x.valor,0);
+
+    const liquido  = bruto - taxas;
+    const taxaPct  = bruto > 0 ? taxas/bruto*100 : 0;
+    return { meio, icon: icons[meio]||'💱', bruto, taxas, liquido, nRec, taxaPct };
+  }).filter(Boolean);
+
+  const totalBruto   = rows.reduce((s,r)=>s+r.bruto,0);
+  const totalTaxas   = rows.reduce((s,r)=>s+r.taxas,0);
+  const totalLiquido = rows.reduce((s,r)=>s+r.liquido,0);
+
+  if(!rows.length){
+    el.innerHTML='<div class="empty"><div class="ico">💳</div><div style="font-weight:600">Sem lançamentos no período</div></div>';
+    return;
+  }
+
+  const rowsHtml = rows.map(r => {
+    const pct = totalBruto>0 ? r.bruto/totalBruto*100 : 0;
+    return `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-weight:700;font-size:.84rem">${r.icon} ${r.meio}</span>
+        <span style="font-size:.72rem;color:var(--muted)">${r.nRec} rec · ${pct.toFixed(0)}%</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px">
+        <span style="color:var(--muted)">Bruto</span>
+        <span style="color:var(--ok);font-weight:700">R$ ${fN(r.bruto)}</span>
+      </div>
+      ${r.taxas>0?`<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px">
+        <span style="color:var(--muted)">Taxa cartão (${r.taxaPct.toFixed(1)}%)</span>
+        <span style="color:var(--err)">− R$ ${fN(r.taxas)}</span>
+      </div>`:''}
+      ${r.taxas>0?`<div style="display:flex;justify-content:space-between;font-size:.82rem;font-weight:700;padding-top:3px;border-top:1px dashed var(--brd)">
+        <span>Líquido</span>
+        <span style="color:var(--primary)">R$ ${fN(r.liquido)}</span>
+      </div>`:''}
+      <div class="pb" style="margin-top:5px">
+        <div class="pf" style="width:${pct}%;background:var(--pl)"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = rowsHtml + `
+    <div style="border-top:2px solid var(--brd);padding-top:10px;margin-top:4px">
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;font-weight:700;margin-bottom:4px">
+        <span>Total Bruto</span><span style="color:var(--ok)">R$ ${fN(totalBruto)}</span>
+      </div>
+      ${totalTaxas>0?`<div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px">
+        <span style="color:var(--muted)">Total taxas cartão</span>
+        <span style="color:var(--err)">− R$ ${fN(totalTaxas)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.88rem;font-weight:800;background:var(--pl-light);padding:8px 10px;border-radius:7px">
+        <span style="color:var(--primary)">Total Líquido</span>
+        <span style="color:var(--primary)">R$ ${fN(totalLiquido)}</span>
+      </div>`:''}
+    </div>`;
+}
+
 function dRow(l,v,n=false){if(!v)return'';return`<div class="dr"><span style="color:var(--muted)">${l}</span><span class="${n?'an':'ap'}">${n?'- ':''}R$ ${fN(v)}</span></div>`;}
 
 function renderRelatorio(){
@@ -3308,6 +3642,37 @@ const HOSP_KEYS=[
 let _pacSort  = {col:'faturado', dir:'desc'}; // Pacientes
 let _logSort  = {col:'data',     dir:'desc'}; // Auditoria
 let _lixSort  = {col:'deletedAt',dir:'desc'}; // Lixeira
+
+let _catFilter = ''; // categoria ativa nas pills da tabela de lançamentos
+
+function renderCatPills(){
+  const l = getLP();
+  const ft = document.getElementById('ftTipo')?.value || '';
+  // Categorias presentes no período atual (respeitando filtro receita/despesa)
+  const cats = [...new Set(
+    l.filter(x => !ft || x.tipo === ft).map(x => x.categoria).filter(Boolean)
+  )].sort();
+  const el = document.getElementById('catPillsBar');
+  if(!el) return;
+  if(!cats.length){ el.style.display='none'; return; }
+  el.style.display='flex';
+  const pills = [''].concat(cats).map(c => {
+    const active = _catFilter === c;
+    const label  = c || 'Todas';
+    return `<button onclick="_setCatFilter('${c.replace(/'/g,"\'")}')"
+      style="padding:3px 11px;border-radius:20px;font-size:.74rem;font-weight:700;cursor:pointer;
+             border:1.5px solid ${active?'var(--primary)':'var(--brd)'};
+             background:${active?'var(--primary)':'var(--surface)'};
+             color:${active?'#fff':'var(--muted)'};
+             white-space:nowrap;transition:all .15s">${label}</button>`;
+  }).join('');
+  el.innerHTML = pills;
+}
+function _setCatFilter(cat){
+  _catFilter = cat;
+  renderCatPills();
+  renderLancs();
+}
 
 function _sortArrow(col, cur){
   if(cur.col !== col) return '<span style="opacity:.25;font-size:.7rem">⇅</span>';
