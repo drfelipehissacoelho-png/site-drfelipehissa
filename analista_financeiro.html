@@ -575,14 +575,26 @@ tr:hover td{background:#f5f8fb;}
             <button class="pac-clr" onclick="clearPacLanc()" title="Remover paciente">✕</button>
           </div>
         </div>
-        <!-- Procedimento select -->
+        <!-- Procedimentos múltiplos -->
         <div class="fg">
-          <label>Procedimento</label>
-          <select id="fProcSel" onchange="onProcLancChange(this.value)">
-            <option value="">— Selecione o procedimento —</option>
-            <option value="Outros">Outros (sem sugestão de valor)</option>
-          </select>
-          <div class="proc-hint" id="procHint">✓ Valor sugerido preenchido automaticamente</div>
+          <label>Procedimentos</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select id="fProcSel" onchange="onProcLancChange(this.value)" style="flex:1">
+              <option value="">— Selecione o procedimento —</option>
+              <option value="Outros">Outros (sem sugestão de valor)</option>
+            </select>
+            <button type="button" id="btnAddProc" onclick="addProcLanc()"
+              style="white-space:nowrap;padding:7px 13px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:.82rem;cursor:pointer;opacity:.45;pointer-events:none">
+              + Adicionar
+            </button>
+          </div>
+          <div class="proc-hint" id="procHint" style="margin-top:4px"></div>
+          <!-- Lista de procedimentos adicionados -->
+          <div id="procsListWrap" style="display:none;margin-top:8px;padding:8px 10px;background:var(--card);border:1px solid var(--brd);border-radius:8px">
+            <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">Procedimentos adicionados</div>
+            <div id="procsList"></div>
+            <div id="procsTotal" style="font-size:.8rem;font-weight:600;color:var(--primary);margin-top:6px;text-align:right"></div>
+          </div>
         </div>
         <!-- Team costs preview -->
         <div id="teamPrevWrap" style="display:none">
@@ -1659,6 +1671,13 @@ function setTipo(t) {
   document.getElementById('fCategoria').innerHTML=(t==='receita'?CAT_R:CAT_E).map(c=>`<option>${c}</option>`).join('');
   // Rebuild proc select (includes dynamically created procedures)
   if(t==='receita') populateProcSel();
+  // Limpa lista de procs ao trocar tipo
+  _lancProcs=[];
+  const plw=document.getElementById('procsListWrap');if(plw)plw.style.display='none';
+  const pll=document.getElementById('procsList');if(pll)pll.innerHTML='';
+  const plt=document.getElementById('procsTotal');if(plt)plt.textContent='';
+  const btnAP=document.getElementById('btnAddProc');if(btnAP){btnAP.style.opacity='.45';btnAP.style.pointerEvents='none';}
+  const hint=document.getElementById('procHint');if(hint){hint.textContent='';hint.classList.remove('show');}
 }
 
 // ==================== LANÇAMENTO ====================
@@ -1670,7 +1689,10 @@ function salvarLancamento() {
   const desc=document.getElementById('fDesc').value.trim();
   // Smart fields (receita)
   let pac=tipo==='receita'?(_lancPat?_lancPat.nome:''):'';
-  const proc=tipo==='receita'?(document.getElementById('fProcSel')?.value||''):'';
+  // Múltiplos procedimentos: concatena os nomes (ex: "Botox + Preenchedor labial")
+  const proc=tipo==='receita'
+    ?(_lancProcs.length?_lancProcs.map(p=>p.nome).join(' + '):(document.getElementById('fProcSel')?.value||''))
+    :'';
   if(!data||isNaN(valor)||valor<=0){showToast('⚠️ Preencha data e valor.','#e74c3c');return;}
 
   // BUG FIX: se for receita, usuario digitou nome mas NAO selecionou do
@@ -1685,7 +1707,9 @@ function salvarLancamento() {
     const hasTaxa=taxaVal>0;
     const chkAuto=document.getElementById('chkAutoDesp');
   const gerarAuto=tipo==='receita'&&chkAuto&&chkAuto.checked&&proc;
-  const procCfg=proc?getProcConfig(proc):null;
+  // Para config de custos/comissão, usa sempre o PRIMEIRO procedimento da lista
+  const _procCfgKey=_lancProcs.length?_lancProcs[0].nome:proc;
+  const procCfg=_procCfgKey?getProcConfig(_procCfgKey):null;
   const commVal=gerarAuto&&procCfg?_calcCommission(procCfg,valor):0;
   const hasAuto=gerarAuto;
   const linked_group_id=(hasAuto||hasTaxa)?('grp_'+genId()):undefined;
@@ -1761,10 +1785,16 @@ function salvarLancamento() {
     document.getElementById('fValor').value='';
     document.getElementById('fDesc').value='';
     if(document.getElementById('fProcSel')){document.getElementById('fProcSel').value='';}
-    const hint=document.getElementById('procHint');if(hint)hint.classList.remove('show');
+    const hint=document.getElementById('procHint');if(hint){hint.textContent='';hint.classList.remove('show');}
     const tw=document.getElementById('teamPrevWrap');if(tw)tw.style.display='none';
     const cHint=document.getElementById('commissionHint');if(cHint)cHint.style.display='none';
     if(chkAuto)chkAuto.checked=false;
+    // Limpa lista de múltiplos procedimentos
+    _lancProcs=[];
+    const plw=document.getElementById('procsListWrap');if(plw)plw.style.display='none';
+    const pll=document.getElementById('procsList');if(pll)pll.innerHTML='';
+    const pltt=document.getElementById('procsTotal');if(pltt)pltt.textContent='';
+    const btnAP=document.getElementById('btnAddProc');if(btnAP){btnAP.style.opacity='.45';btnAP.style.pointerEvents='none';}
     clearPacLanc();
     setDate();
     // Esconder parcelas e taxa hint após salvar
@@ -3890,46 +3920,112 @@ function getProcConfig(procNome){
     extraMaterialCost: cfg.extraMaterialCost!=null ? +cfg.extraMaterialCost : +(tc.extraTeam||0),
     managerCommissionPct: cfg.managerCommissionPct!=null ? +cfg.managerCommissionPct : (cr.type==='percent'?+(cr.value||0):0),
     managerCommissionLabel: cfg.managerCommissionLabel||cr.label||'Comissão gerente',
-    commissionActive: cfg.commissionActive!=null ? !!cfg.commissionActive : !!(cr.active&&+(cr.value||0)>0),
+    // commissionActive: usa valor explícito se salvo; se pct>0 e sem flag salva → ativa por padrão; fallback legado
+    commissionActive: cfg.commissionActive!=null
+      ? !!cfg.commissionActive
+      : ((cfg.managerCommissionPct!=null&&+cfg.managerCommissionPct>0) || !!(cr.active&&+(cr.value||0)>0)),
   };
+}
+
+// ==================== LANÇAMENTOS — MÚLTIPLOS PROCEDIMENTOS ====================
+let _lancProcs = []; // [{nome, valor}]
+
+function _renderProcsLanc(){
+  const wrap=document.getElementById('procsListWrap');
+  const listEl=document.getElementById('procsList');
+  const totalEl=document.getElementById('procsTotal');
+  if(!listEl)return;
+  if(!_lancProcs.length){
+    if(wrap)wrap.style.display='none';
+    return;
+  }
+  if(wrap)wrap.style.display='block';
+  listEl.innerHTML=_lancProcs.map((p,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--brd);gap:6px">
+      <span style="font-size:.83rem;color:var(--text);flex:1">${p.nome}</span>
+      <span style="font-size:.83rem;font-weight:600;color:var(--pl);white-space:nowrap">R$ ${fN(p.valor)}</span>
+      <button type="button" onclick="removeProcLanc(${i})"
+        style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:.9rem;padding:0 4px;line-height:1"
+        title="Remover">✕</button>
+    </div>`).join('');
+  const tot=_lancProcs.reduce((s,p)=>s+p.valor,0);
+  if(totalEl)totalEl.textContent=`Total: R$ ${fN(tot)}`;
+  // Sync fValor with sum
+  const fv=document.getElementById('fValor');
+  if(fv){fv.value=fN(tot);fmtMoeda(fv);}
+  _onPagChange();
+  // Atualiza teamPreview se estiver aberto
+  const chk=document.getElementById('chkAutoDesp');
+  if(chk&&chk.checked&&_lancProcs[0]){_showTeamPreview(_lancProcs[0].nome);}
+}
+
+function addProcLanc(){
+  const sel=document.getElementById('fProcSel');
+  if(!sel||!sel.value)return;
+  const nome=sel.value;
+  const cfg=nome==='Outros'?{patientPrice:0}:getProcConfig(nome);
+  // Permite adicionar o mesmo procedimento mais de uma vez (ex: 2 regiões de Botox)
+  _lancProcs.push({nome, valor: cfg.patientPrice||0});
+  _renderProcsLanc();
+  // Limpa o select e o hint
+  sel.value='';
+  const hint=document.getElementById('procHint');
+  if(hint){hint.textContent='';hint.classList.remove('show');}
+  const btn=document.getElementById('btnAddProc');
+  if(btn){btn.style.opacity='.45';btn.style.pointerEvents='none';}
+  // Mostra painel de equipe (baseado no primeiro proc)
+  const tw=document.getElementById('teamPrevWrap');
+  if(tw)tw.style.display='';
+  const chk=document.getElementById('chkAutoDesp');if(chk)chk.checked=false;
+  document.getElementById('teamPrevCard').style.display='none';
+  // Atualiza commission hint para o primeiro proc
+  _updateCommissionHint();
+  fbAddLog('UI','Procedimento adicionado ao lançamento: '+nome);
+}
+
+function removeProcLanc(i){
+  _lancProcs.splice(i,1);
+  _renderProcsLanc();
+  if(!_lancProcs.length){
+    const tw=document.getElementById('teamPrevWrap');if(tw)tw.style.display='none';
+    const fv=document.getElementById('fValor');if(fv){fv.value='';fmtMoeda(fv);}
+    _onPagChange();
+  }
+  _updateCommissionHint();
+}
+
+function _updateCommissionHint(){
+  const cHint=document.getElementById('commissionHint');
+  const cHintTxt=document.getElementById('commissionHintText');
+  if(!cHint||!cHintTxt)return;
+  if(!_lancProcs.length){cHint.style.display='none';return;}
+  const cfg=getProcConfig(_lancProcs[0].nome);
+  if(cfg.commissionActive&&cfg.managerCommissionPct>0){
+    cHintTxt.textContent=`Comissão gerente: ${cfg.managerCommissionPct}% sobre o valor lançado (baseado em "${_lancProcs[0].nome}")`;
+    cHint.style.display='block';
+  } else {
+    cHint.style.display='none';
+  }
 }
 
 // ==================== LANÇAMENTOS — PROCEDIMENTO / EQUIPE ====================
 function onProcLancChange(proc){
   const hint=document.getElementById('procHint');
-  const tw=document.getElementById('teamPrevWrap');
-  const cHint=document.getElementById('commissionHint');
-  const cHintTxt=document.getElementById('commissionHintText');
+  const btn=document.getElementById('btnAddProc');
   if(!proc){
-    if(hint)hint.classList.remove('show');
-    if(tw)tw.style.display='none';
-    if(cHint)cHint.style.display='none';
-    _onPagChange(); // recalcula hint taxa (valor pode ter voltado a 0)
+    if(hint){hint.textContent='';hint.classList.remove('show');}
+    if(btn){btn.style.opacity='.45';btn.style.pointerEvents='none';}
     return;
   }
-  // Auto-fill valor from procedureConfig.patientPrice (falls back to PROC_ORC)
-  const cfg=getProcConfig(proc);
+  // Mostra preço sugerido como hint — valor só é preenchido ao clicar Adicionar
+  const cfg=proc==='Outros'?{patientPrice:0}:getProcConfig(proc);
   if(cfg.patientPrice>0){
-    const fv=document.getElementById('fValor');
-    if(fv){fv.value=fN(cfg.patientPrice);fmtMoeda(fv);}
-    if(hint)hint.classList.add('show');
+    if(hint){hint.textContent=`Preço sugerido: R$ ${fN(cfg.patientPrice)} — clique em + Adicionar`;hint.classList.add('show');}
   } else {
-    if(hint)hint.classList.remove('show');
+    if(hint){hint.textContent='Sem preço configurado — defina o valor manualmente';hint.classList.add('show');}
   }
-  // Recalcula hint de taxa com o novo valor do procedimento
-  _onPagChange();
-  // Show commission hint if active
-  if(cfg.commissionActive&&cfg.managerCommissionPct>0&&cHint&&cHintTxt){
-    cHintTxt.textContent=`Comissão gerente: ${cfg.managerCommissionPct}% sobre o valor lançado`;
-    cHint.style.display='block';
-  } else if(cHint){
-    cHint.style.display='none';
-  }
-  // Show team/commission panel
-  if(tw)tw.style.display='';
-  // Reset checkbox and preview
-  const chk=document.getElementById('chkAutoDesp');if(chk)chk.checked=false;
-  document.getElementById('teamPrevCard').style.display='none';
+  // Habilita botão Adicionar
+  if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
 }
 
 function _toggleTeamPreview(){
@@ -3937,7 +4033,7 @@ function _toggleTeamPreview(){
   const card=document.getElementById('teamPrevCard');
   if(!chk||!card)return;
   if(!chk.checked){card.style.display='none';return;}
-  const proc=document.getElementById('fProcSel')?.value;
+  const proc=_lancProcs.length?_lancProcs[0].nome:(document.getElementById('fProcSel')?.value||'');
   if(!proc){card.style.display='none';return;}
   _showTeamPreview(proc);
   card.style.display='block';
@@ -3947,7 +4043,7 @@ function _toggleTeamPreview(){
 function _onValorLancChange(){
   const chk=document.getElementById('chkAutoDesp');
   if(chk&&chk.checked){
-    const proc=document.getElementById('fProcSel')?.value;
+    const proc=_lancProcs.length?_lancProcs[0].nome:(document.getElementById('fProcSel')?.value||'');
     if(proc)_showTeamPreview(proc);
   }
   // Atualiza hint de taxa toda vez que o valor muda
@@ -5014,7 +5110,8 @@ function renderProcedureConfig(){
           </td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="number" id="${eid}_pct" value="${cfg.managerCommissionPct||''}" min="0" max="100" step="0.1"
-              placeholder="0" style="width:100%;text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;font-family:inherit">
+              placeholder="0" style="width:100%;text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;font-family:inherit"
+              oninput="(function(el){const act=document.getElementById('${eid}_act');if(act&&parseFloat(el.value)>0&&!act.checked)act.checked=true;})(this)">
           </td>
           <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
             <label class="comm-toggle">
@@ -5698,4 +5795,3 @@ function gerarPDFOrcamento(id){
 </div>
 </body>
 </html>
-          
