@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feliz Dia das Mães</title>
+
+  <!-- Open Graph / WhatsApp -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.drfelipehissacoelho.com.br/feliz-dia-das-maes" />
+  <meta property="og:title" content="Feliz Dia das Mães 💐" />
+  <meta property="og:description" content="Com amor, Lucas e papai ❤️" />
+  <meta property="og:image" content="https://www.drfelipehissacoelho.com.br/feliz-dia-das-maes/foto1.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="pt_BR" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Feliz Dia das Mães 💐" />
+  <meta name="twitter:description" content="Com amor, Lucas e papai ❤️" />
+  <meta name="twitter:image" content="https://www.drfelipehissacoelho.com.br/feliz-dia-das-maes/foto1.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Lato:wght@300;400&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 20px 56px;
+      font-family: 'Lato', sans-serif;
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='3' fill='%23f9c0d0' opacity='.35'/%3E%3Ccircle cx='40' cy='28' r='5' fill='%23f9c0d0' opacity='.2'/%3E%3Ccircle cx='40' cy='52' r='5' fill='%23f9c0d0' opacity='.2'/%3E%3Ccircle cx='28' cy='40' r='5' fill='%23f9c0d0' opacity='.2'/%3E%3Ccircle cx='52' cy='40' r='5' fill='%23f9c0d0' opacity='.2'/%3E%3C/svg%3E"),
+        linear-gradient(160deg, #fff0f5 0%, #fde8f0 30%, #fef3e8 70%, #fff8f0 100%);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 28px;
+      border: 1px solid rgba(255, 200, 220, 0.4);
+      box-shadow:
+        0 4px 24px rgba(240, 130, 160, 0.12),
+        0 1px 4px rgba(240, 130, 160, 0.08);
+      padding: 40px 28px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeUp 0.9s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .decoration {
+      font-size: 2.2rem;
+      letter-spacing: 6px;
+      margin-bottom: 16px;
+      opacity: 0.85;
+    }
+
+    .title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.7rem, 6vw, 2.4rem);
+      font-weight: 700;
+      color: #c0386a;
+      text-align: center;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle-line {
+      width: 48px;
+      height: 2px;
+      background: linear-gradient(90deg, #f4a0be, #f9c4a2);
+      border-radius: 2px;
+      margin: 14px auto 24px;
+    }
+
+    /* Grid de fotos */
+    .photos-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .photo-item {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow:
+        0 6px 24px rgba(200, 80, 120, 0.18),
+        0 2px 6px rgba(200, 80, 120, 0.10);
+      aspect-ratio: 4 / 5;
+      background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+    }
+
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .photo-item:hover img {
+      transform: scale(1.03);
+    }
+
+    /* Moldura sutil com gradiente nas bordas */
+    .photo-item::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      box-shadow: inset 0 0 0 1.5px rgba(255, 180, 210, 0.5);
+      pointer-events: none;
+    }
+
+    .message {
+      margin-top: 28px;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(1rem, 4vw, 1.2rem);
+      color: #7a3050;
+      text-align: center;
+      line-height: 1.55;
+    }
+
+    .hearts {
+      margin-top: 18px;
+      font-size: 1.3rem;
+      letter-spacing: 4px;
+      opacity: 0.75;
+    }
+
+    /* Mobile: empilha as fotos em coluna se a tela for muito pequena */
+    @media (max-width: 320px) {
+      .photos-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+
+    <div class="decoration">🌸 💐 🌸</div>
+    <h1 class="title">Feliz Dia das Mães</h1>
+    <div class="subtitle-line"></div>
+
+    <div class="photos-grid">
+
+      <div class="photo-item">
+        <img
+          src="foto1.png"
+          alt="Família — Vietnã"
+          loading="eager"
+          decoding="async"
+        />
+      </div>
+
+      <div class="photo-item">
+        <img
+          src="foto2.png"
+          alt="Família — Noite"
+          loading="eager"
+          decoding="async"
+        />
+      </div>
+
+    </div>
+
+    <p class="message">Com amor, Lucas e papai ❤️</p>
+    <div class="hearts">💗 💗 💗</div>
+
+  </div>
+
+</body>
+</html>
