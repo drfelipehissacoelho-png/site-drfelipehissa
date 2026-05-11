@@ -1392,6 +1392,16 @@ function genId(){
   return Date.now() * 100000 + _idCounter * 100 + Math.floor(Math.random() * 100);
 }
 
+// Adiciona N meses a uma string de data "YYYY-MM-DD"
+function addMeses(dataStr, meses){
+  const [y, m, d] = dataStr.split('-').map(Number);
+  let ny = y, nm = m + meses;
+  while(nm > 12){ nm -= 12; ny++; }
+  const maxDay = new Date(ny, nm, 0).getDate(); // último dia do mês destino
+  const nd = Math.min(d, maxDay);
+  return `${ny}-${String(nm).padStart(2,'0')}-${String(nd).padStart(2,'0')}`;
+}
+
 // ==================== AUTH ====================
 auth.onAuthStateChanged(user => {
   if (user) {
@@ -1713,6 +1723,49 @@ function salvarLancamento() {
   const commVal=gerarAuto&&procCfg?_calcCommission(procCfg,valor):0;
   const hasAuto=gerarAuto;
   const linked_group_id=(hasAuto||hasTaxa)?('grp_'+genId()):undefined;
+
+  // ── DESPESA PARCELADA NO CARTÃO DE CRÉDITO ──────────────────────────────
+  // Cria N lançamentos mensais individuais (valor total ÷ N por parcela)
+  if(tipo === 'despesa' && pag2 === 'Cartão de Crédito' && parseInt(parcelas) > 1){
+    const n = parseInt(parcelas);
+    const valorParc = Math.round(valor / n * 100) / 100;
+    const grpId = 'grp_desp_parc_' + genId();
+    for(let i = 0; i < n; i++){
+      const dataParc = addMeses(data, i);
+      // Última parcela absorve diferença de arredondamento
+      const valorFinal = (i === n-1)
+        ? Math.round((valor - valorParc*(n-1)) * 100) / 100
+        : valorParc;
+      const parItem = {
+        id: genId(),
+        data: dataParc,
+        valor: valorFinal,
+        categoria: cat,
+        pagamento: 'Cartão de Crédito',
+        descricao: `${desc ? desc + ' ' : ''}(parcela ${i+1}/${n})`,
+        tipo: 'despesa',
+        usuario: CU,
+        email: CUEmail,
+        criadoEm: new Date().toISOString(),
+        linked_group_id: grpId,
+        parcela_num: i+1,
+        parcelas_total: n
+      };
+      fbSalvarLanc(parItem);
+      fbAddLog('INCLUSÃO', `DESPESA PARCELADA (${i+1}/${n}) · R$ ${fN(valorFinal)} · ${cat}${desc?' · '+desc:''} · Parcela ${i+1} de ${n}`);
+    }
+    showToast(`✓ ${n} parcelas de R$ ${fN(valorParc)} lançadas (${cat})!`, '#27ae60');
+    // Reset form
+    document.getElementById('fValor').value='';
+    document.getElementById('fDesc').value='';
+    setDate();
+    const pw=document.getElementById('parcelasWrap');if(pw)pw.style.display='none';
+    const th=document.getElementById('taxaHint');if(th)th.style.display='none';
+    const fp=document.getElementById('fParcelas');if(fp)fp.value='1';
+    document.getElementById('fPag').value='Dinheiro';
+    return;
+  }
+  // ────────────────────────────────────────────────────────────────────────
 
   const item={id:genId(),data,valor,categoria:cat,pagamento:pag,descricao:desc,
     paciente:pac,procedimento:proc,tipo,usuario:CU,email:CUEmail,
@@ -3393,6 +3446,20 @@ function _onPagChange(){
   // Parcelas só faz sentido para crédito
   if(parWrap) parWrap.style.display = pag === 'Cartão de Crédito' ? '' : 'none';
 
+  // Para DESPESA parcelada no crédito: mostrar hint de lançamentos mensais
+  if(tipo === 'despesa' && pag === 'Cartão de Crédito' && parseInt(parcelas) > 1){
+    if(valor > 0){
+      const n = parseInt(parcelas);
+      const parVal = valor / n;
+      if(hintTxt) hintTxt.textContent =
+        `💳 Serão gerados ${n} lançamentos de R$ ${fN(parVal)}/mês automaticamente (parcelas 1 a ${n}).`;
+      if(hintEl) hintEl.style.display = 'flex';
+    } else {
+      if(hintEl) hintEl.style.display = 'none';
+    }
+    return;
+  }
+
   const pct = getTaxaPct(pag, parcelas);
   if(pct > 0 && valor > 0 && (pag === 'Cartão de Débito' || pag === 'Cartão de Crédito')){
     const taxaVal  = valor * pct / 100;
@@ -3400,7 +3467,7 @@ function _onPagChange(){
     const label    = pag === 'Cartão de Débito' ? 'Débito' : `Crédito ${parcelas}x`;
     if(hintTxt) hintTxt.textContent =
       `${label}: taxa ${pct.toFixed(2)}% = R$ ${fN(taxaVal)} descontado → líquido R$ ${fN(liquido)}`;
-    if(hintEl) hintEl.style.display = '';
+    if(hintEl) hintEl.style.display = 'flex';
   } else {
     if(hintEl) hintEl.style.display = 'none';
   }
