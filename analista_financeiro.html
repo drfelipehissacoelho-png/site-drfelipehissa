@@ -637,6 +637,56 @@ tr:hover td{background:#f5f8fb;}
       <div id="taxaHint" style="display:none;font-size:.76rem;padding:8px 13px;background:var(--warn-light);border:1px solid #f5d76e;border-radius:8px;color:#7d5a00;margin-bottom:8px;display:flex;align-items:center;gap:7px">
         🏧 <span id="taxaHintText" style="flex:1"></span>
       </div>
+
+      <!-- ── 2ª Forma de Pagamento (split de pagamento) ────────────────── -->
+      <div style="margin-bottom:8px">
+        <button type="button" id="btnTogglePag2"
+          onclick="_togglePag2()"
+          style="background:none;border:1.5px dashed var(--brd);border-radius:8px;padding:6px 14px;font-size:.78rem;color:var(--muted);cursor:pointer;width:100%;text-align:center">
+          💳 + Dividir em 2 formas de pagamento
+        </button>
+      </div>
+      <div id="pag2Wrap" style="display:none;background:#f7f9fb;border:1.5px solid var(--brd);border-radius:9px;padding:10px 12px;margin-bottom:8px">
+        <div style="font-size:.74rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px">
+          💳 2ª Forma de Pagamento
+        </div>
+        <div class="fr">
+          <div>
+            <label>Valor 2ª Parte (R$)</label>
+            <input type="text" id="fValor2" placeholder="0,00" class="moeda-input"
+              oninput="maskMoeda(this,event);_onPag2ValorChange()"
+              onblur="fmtMoeda(this);_onPag2ValorChange()">
+          </div>
+          <div>
+            <label>Forma de Pagamento</label>
+            <select id="fPag2" onchange="_onPag2Change()">
+              <option>Dinheiro</option><option>PIX</option><option>Cartão de Débito</option>
+              <option>Cartão de Crédito</option><option>Transferência</option>
+              <option>Convênio / Plano</option>
+            </select>
+          </div>
+        </div>
+        <!-- Parcelas do 2º pagamento — só para crédito -->
+        <div id="pag2ParcelasWrap" style="display:none;margin-top:6px">
+          <label>Parcelas</label>
+          <select id="fParcelas2">
+            <option value="1">1x (à vista)</option>
+            <option value="2">2x</option><option value="3">3x</option>
+            <option value="4">4x</option><option value="5">5x</option>
+            <option value="6">6x</option><option value="7">7x</option>
+            <option value="8">8x</option><option value="9">9x</option>
+            <option value="10">10x</option>
+          </select>
+        </div>
+        <!-- Hint: mostra quanto fica para cada parte -->
+        <div id="pag2Hint" style="display:none;font-size:.74rem;padding:6px 10px;background:#eaf3fb;border-radius:7px;color:var(--primary);margin-top:7px"></div>
+        <button type="button" onclick="_togglePag2()"
+          style="background:none;border:none;color:var(--err);font-size:.72rem;cursor:pointer;margin-top:4px;padding:0">
+          ✕ Remover 2ª forma
+        </button>
+      </div>
+      <!-- ────────────────────────────────────────────────────────────────── -->
+
       <div class="fg" style="margin-bottom:13px"><label>Observação</label><textarea id="fDesc" rows="2" placeholder="Observações..."></textarea></div>
       <button class="btn btn-ok" style="width:100%;font-size:.91rem;padding:12px;letter-spacing:.3px;border-radius:9px;box-shadow:0 4px 14px rgba(39,174,96,.25)" onclick="salvarLancamento()">✅ Registrar Lançamento</button>
     </div>
@@ -1551,6 +1601,9 @@ function iniciarApp() {
     DATA.procedures = val.procedures || {};
     DATA.config = val.config || {};
     DATA.recorrentes = val.recorrentes || {};
+    // Rebuild dropdown de procedimentos imediatamente após dados chegarem do Firebase
+    // (não depende de renderAll() para garantir que custom procs apareçam sem delay)
+    try { populateProcSel(); } catch(e){}
     // Processa recorrentes após carregar dados (gera retroativo se necessário)
     if(CU) setTimeout(_processarRecorrentes, 500);
     renderAll();
@@ -1841,6 +1894,39 @@ function salvarLancamento() {
     fbAddLog('TAXA MAQUININHA',`${parLabel} ${taxaPct}% = R$ ${fN(taxaVal)} sobre R$ ${fN(valor)}${pac?' · '+pac:''}`);
   }
 
+  // ── 2ª FORMA DE PAGAMENTO: salva lançamento adicional vinculado ──────────
+  if(_pag2Ativo){
+    const val2 = parseMoeda(document.getElementById('fValor2')?.value||'0');
+    const pag2Met = document.getElementById('fPag2')?.value || '';
+    const parc2  = parseInt(document.getElementById('fParcelas2')?.value)||1;
+    if(val2 > 0 && pag2Met){
+      const splitItem = {
+        id: String(genId()), data, valor: val2,
+        categoria: cat, pagamento: pag2Met,
+        descricao: (desc ? desc + ' ' : '') + `(2ª forma — ${pag2Met})`,
+        paciente: pac, procedimento: proc, tipo,
+        usuario: CU, email: CUEmail, criadoEm: new Date().toISOString()
+      };
+      if(pag2Met==='Cartão de Crédito'&&parc2>1) splitItem.parcelas=parc2;
+      fbSalvarLanc(splitItem);
+      fbAddLog('SPLIT PAGAMENTO',`2ª forma: ${pag2Met} R$ ${fN(val2)} · ${cat}${pac?' · '+pac:''}`);
+      // Taxa de cartão para 2ª forma
+      if(pag2Met==='Cartão de Débito'||pag2Met==='Cartão de Crédito'){
+        const pct2=getTaxaPct(pag2Met,parc2);
+        if(pct2>0){
+          const tv2=Math.round(val2*pct2/100*100)/100;
+          const lbl2=pag2Met==='Cartão de Débito'?'Débito':`Crédito ${parc2}x`;
+          fbSalvarLanc({id:String(genId()),data,valor:tv2,
+            categoria:'Taxas de Cartão',pagamento:'Transferência',
+            descricao:`Taxa maquininha ${lbl2} 2ª forma (${pct2.toFixed(2)}%)${pac?' — '+pac:''}`,
+            paciente:pac,procedimento:proc,tipo:'despesa',
+            usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),auto_generated:true});
+        }
+      }
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
     // Reset form
     document.getElementById('fValor').value='';
     document.getElementById('fDesc').value='';
@@ -1862,6 +1948,10 @@ function salvarLancamento() {
     const th=document.getElementById('taxaHint');if(th)th.style.display='none';
     const fp=document.getElementById('fParcelas');if(fp)fp.value='1';
     document.getElementById('fPag').value='Dinheiro';
+    // Reset 2ª forma de pagamento
+    if(_pag2Ativo){ _togglePag2(); } // fecha o bloco
+    const v2el=document.getElementById('fValor2');if(v2el)v2el.value='';
+    const h2el=document.getElementById('pag2Hint');if(h2el)h2el.style.display='none';
 
     // ── FIX: garantir que o lançamento salvo fica visível na lista ──────────
     // 1. Resetar filtro de tipo para "Todos" — evita despesa sumir quando
@@ -2235,14 +2325,36 @@ function soma(items,tp,cat){return items.filter(l=>l.tipo===tp&&(!cat||l.categor
 function getUsuarios(){return[...new Set(getLancs().map(l=>l.usuario).filter(Boolean))];}
 
 function renderAll(){
-  updateFilters();renderKPIs();renderProjecao();renderUserPanel();renderMetas();
-  renderLancs();renderPacientes();renderDRE();renderConciliacao();renderMargemProc();renderRelatorio();renderLog();renderOrcamentos();renderCFO();
-  renderLixeira(); // Atualiza lista da Lixeira + badge na nav
-  rChRec();rChExp();rChEvol();rChDRE();rChComp();
-  renderHeatCal();
-  populateProcSel(); // rebuild proc select whenever data changes (includes new procedures)
-  // Update tabela if currently visible
-  if(document.getElementById('page-tabela-hosp')?.classList.contains('active'))renderTabelaHosp();
+  // ── populateProcSel PRIMEIRO e independente ─────────────────────────────
+  // Motivo: estava no final — qualquer throw anterior impedia os procedimentos
+  // customizados (DATA.procedures) de aparecerem no dropdown de Lançamentos.
+  // Agora roda no início e isolado para garantir que sempre execute.
+  try { populateProcSel(); } catch(e){ console.warn('populateProcSel err:',e); }
+
+  // Cada função isolada: um erro não bloqueia as demais
+  const _r = (fn, label) => { try { fn(); } catch(e){ console.warn('renderAll['+label+']:', e); } };
+  _r(updateFilters,     'updateFilters');
+  _r(renderKPIs,        'renderKPIs');
+  _r(renderProjecao,    'renderProjecao');
+  _r(renderUserPanel,   'renderUserPanel');
+  _r(renderMetas,       'renderMetas');
+  _r(renderLancs,       'renderLancs');
+  _r(renderPacientes,   'renderPacientes');
+  _r(renderDRE,         'renderDRE');
+  _r(renderConciliacao, 'renderConciliacao');
+  _r(renderMargemProc,  'renderMargemProc');
+  _r(renderRelatorio,   'renderRelatorio');
+  _r(renderLog,         'renderLog');
+  _r(renderOrcamentos,  'renderOrcamentos');
+  _r(renderCFO,         'renderCFO');
+  _r(renderLixeira,     'renderLixeira');
+  _r(rChRec,  'rChRec'); _r(rChExp,'rChExp'); _r(rChEvol,'rChEvol');
+  _r(rChDRE,  'rChDRE'); _r(rChComp,'rChComp');
+  _r(renderHeatCal, 'renderHeatCal');
+  // Tabela só renderiza se estiver visível (Chart.js precisa de canvas visível)
+  if(document.getElementById('page-tabela-hosp')?.classList.contains('active')){
+    _r(renderTabelaHosp, 'renderTabelaHosp');
+  }
 }
 
 // ==================== CONFIG (aba ⚙️) ====================
@@ -3544,6 +3656,57 @@ function _onPagChange(){
     if(hintEl) hintEl.style.display = 'none';
   }
 }
+
+// ── 2ª FORMA DE PAGAMENTO (split de lançamento) ─────────────────────────────
+let _pag2Ativo = false;
+
+function _togglePag2(){
+  _pag2Ativo = !_pag2Ativo;
+  const wrap = document.getElementById('pag2Wrap');
+  const btn  = document.getElementById('btnTogglePag2');
+  if(!wrap) return;
+  wrap.style.display = _pag2Ativo ? 'block' : 'none';
+  if(btn) btn.style.display = _pag2Ativo ? 'none' : 'block';
+  if(_pag2Ativo){
+    // Sugere 2ª parte = saldo após 1ª parte (se valor total já preenchido)
+    _onPag2ValorChange();
+    document.getElementById('fValor2')?.focus();
+  } else {
+    // Limpa campos ao fechar
+    const v2=document.getElementById('fValor2');if(v2)v2.value='';
+    const h=document.getElementById('pag2Hint');if(h)h.style.display='none';
+  }
+}
+
+function _onPag2Change(){
+  const m = document.getElementById('fPag2')?.value || '';
+  const pw = document.getElementById('pag2ParcelasWrap');
+  if(pw) pw.style.display = m === 'Cartão de Crédito' ? 'block' : 'none';
+}
+
+function _onPag2ValorChange(){
+  if(!_pag2Ativo) return;
+  const total  = parseMoeda(document.getElementById('fValor')?.value || '0');
+  const val2   = parseMoeda(document.getElementById('fValor2')?.value || '0');
+  const hintEl = document.getElementById('pag2Hint');
+  if(!hintEl) return;
+  if(total > 0 && val2 > 0){
+    const val1 = Math.round((total - val2) * 100) / 100;
+    const pag1 = document.getElementById('fPag')?.value || '';
+    const pag2 = document.getElementById('fPag2')?.value || '';
+    if(val1 < 0){
+      hintEl.textContent = `⚠ Valor da 2ª parte (R$ ${fN(val2)}) é maior que o total (R$ ${fN(total)})`;
+      hintEl.style.cssText += ';background:#fdf0f0;color:#c0392b';
+    } else {
+      hintEl.textContent = `${pag1}: R$ ${fN(val1)}  +  ${pag2}: R$ ${fN(val2)}  =  R$ ${fN(total)} total`;
+      hintEl.style.cssText += ';background:#eaf3fb;color:var(--primary)';
+    }
+    hintEl.style.display = 'block';
+  } else {
+    hintEl.style.display = 'none';
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 function salvarTaxasMaquininha(){
   const g = id => { const v=parseFloat(document.getElementById(id)?.value); return isNaN(v)?null:v; };
