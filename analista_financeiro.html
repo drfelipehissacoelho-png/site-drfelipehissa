@@ -4787,11 +4787,23 @@ function salvarPagamento(){
   // Validação: não ultrapassar total (aviso, não bloqueio)
   const saldo=calcSaldoPendente(orc);
   if(amount>saldo+0.01){
-    // Permite pagamento acima do saldo mas avisa
-    const ok=confirm(`⚠ O valor informado (R$ ${fN(amount)}) é maior que o saldo pendente (R$ ${fN(saldo)}).\n\nDeseja continuar mesmo assim?`);
-    if(!ok)return;
+    // Permite pagamento acima do saldo mas pede confirmação com modal customizado
+    showConfirm(
+      '⚠ Valor acima do saldo',
+      `O valor informado (R$ ${fN(amount)}) é maior que o saldo pendente (R$ ${fN(saldo)}).\n\nDeseja registrar mesmo assim?`,
+      ()=>_executarSalvarPagamento(orcId,orc,amount,payment_date,method,installments,card_brand,notes),
+      null,
+      'Registrar mesmo assim',
+      '#e67e22'
+    );
+    return;
   }
+  _executarSalvarPagamento(orcId,orc,amount,payment_date,method,installments,card_brand,notes);
+}
 
+// Núcleo do salvamento de pagamento — chamado tanto pelo caminho direto quanto
+// após confirmação do modal (quando valor > saldo pendente).
+function _executarSalvarPagamento(orcId,orc,amount,payment_date,method,installments,card_brand,notes){
   const payId=String(genId());
   const now=new Date().toISOString();
 
@@ -5564,24 +5576,42 @@ function salvarNovoProc(){
   const ts=new Date().toISOString();
   const fbKey=nome.replace(/[^a-zA-Z0-9]/g,'_').replace(/_+/g,'_');
 
-  // 1. Save to procedures node (makes it appear in getAllProcs)
-  dbRef.child('procedures/'+fbKey).set({
-    nome,categoria,valor:price,custom:true,active:true,
-    createdAt:ts,createdBy:CU
-  });
+  // 1. Atualiza o estado local IMEDIATAMENTE para que o procedimento apareça
+  //    em todos os dropdowns sem esperar o listener do Firebase disparar.
+  const procEntry = {nome,categoria,valor:price,custom:true,active:true,createdAt:ts,createdBy:CU};
+  DATA.procedures[fbKey] = procEntry;
+  DATA.procedureConfig[nome] = {
+    patientPrice:price,anesthetistCost:ane,instrumenterCost:ins,
+    assistantCost:aux,extraMaterialCost:ext,
+    managerCommissionPct:pct,managerCommissionLabel:lbl,commissionActive:act,
+    updatedAt:ts,updatedBy:CU
+  };
+  // Reconstrói os dropdowns de procedimento imediatamente
+  populateProcSel();
+  try { renderProcedureConfig(); } catch(e) { /* pode falhar se aba Tabela não estiver visível */ }
 
-  // 2. Save full config to procedureConfig node
+  // 2. Persiste no Firebase (listeners vão reconfirmar depois)
+  dbRef.child('procedures/'+fbKey).set(procEntry)
+    .catch(err => {
+      // Rollback local se Firebase rejeitar (ex: regra de segurança, sem rede)
+      delete DATA.procedures[fbKey];
+      delete DATA.procedureConfig[nome];
+      populateProcSel();
+      showToast(`⚠ Erro ao salvar procedimento: ${err.message||err}`,'#e74c3c');
+    });
+
   dbRef.child('procedureConfig/'+nome).set({
     patientPrice:price,anesthetistCost:ane,instrumenterCost:ins,
     assistantCost:aux,extraMaterialCost:ext,
     managerCommissionPct:pct,managerCommissionLabel:lbl,commissionActive:act,
     updatedAt:ts,updatedBy:CU
+  }).catch(err => {
+    showToast(`⚠ Configuração do procedimento não salva: ${err.message||err}`,'#e74c3c');
   });
 
   fbAddLog('NOVO PROC',`Criado: "${nome}" | cat=${categoria} | preço=R$ ${fN(price)} | comissão=${pct}%`);
-  showToast(`✓ Procedimento "${nome}" criado com sucesso!`,'#27ae60');
+  showToast(`✓ Procedimento "${nome}" criado e disponível nos lançamentos!`,'#27ae60');
   fecharNovoProc();
-  // Firebase listener will trigger renderAll() automatically — proc will appear everywhere
 }
 
 function duplicarProc(procNome,eid){
