@@ -549,9 +549,8 @@ tr:hover td{background:#f5f8fb;}
         <button class="tb ar" id="btnRec" onclick="setTipo('receita')">💰 Receita</button>
         <button class="tb" id="btnExp" onclick="setTipo('despesa')">💸 Despesa</button>
       </div>
-      <div class="fr">
-        <div><label>Data</label><input type="date" id="fData"></div>
-        <div><label>Valor (R$)</label><input type="text" id="fValor" placeholder="0,00" class="moeda-input" oninput="maskMoeda(this,event)" onblur="fmtMoeda(this);_onValorLancChange()"></div>
+      <div class="fg">
+        <label>Data</label><input type="date" id="fData">
       </div>
       <div class="fg"><label>Categoria</label><select id="fCategoria"></select></div>
       <div id="camposPac">
@@ -614,39 +613,59 @@ tr:hover td{background:#f5f8fb;}
           </div>
         </div>
       </div>
-      <div class="fg"><label>Forma de Pagamento</label>
-        <select id="fPag" onchange="_onPagChange()">
-          <option>Dinheiro</option><option>PIX</option><option>Cartão de Débito</option>
-          <option>Cartão de Crédito</option><option>Transferência</option>
-          <option>Convênio / Plano</option><option>Parcelado</option>
-        </select>
-      </div>
-      <!-- Parcelas — aparece só para Cartão de Crédito -->
-      <div id="parcelasWrap" style="display:none" class="fg">
-        <label>Parcelas</label>
-        <select id="fParcelas" onchange="_onPagChange()">
-          <option value="1">1x (à vista)</option>
-          <option value="2">2x</option><option value="3">3x</option>
-          <option value="4">4x</option><option value="5">5x</option>
-          <option value="6">6x</option><option value="7">7x</option>
-          <option value="8">8x</option><option value="9">9x</option>
-          <option value="10">10x</option>
-        </select>
-      </div>
-      <!-- Hint taxa maquininha -->
-      <div id="taxaHint" style="display:none;font-size:.76rem;padding:8px 13px;background:var(--warn-light);border:1px solid #f5d76e;border-radius:8px;color:#7d5a00;margin-bottom:8px;display:flex;align-items:center;gap:7px">
-        🏧 <span id="taxaHintText" style="flex:1"></span>
-      </div>
+      <!-- ── Formas de Pagamento: até 3 (1ª sempre visível + 2ª/3ª opcionais) ── -->
+      <div style="margin-bottom:8px">
+        <div style="font-size:.74rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--brd)">💳 Formas de Pagamento</div>
 
-      <!-- ── Split de pagamento: até 3 formas (dinâmico) ─────────────────── -->
-      <div id="splitContainer"></div>
-      <div id="splitHint" style="display:none;font-size:.74rem;padding:7px 11px;background:#eaf3fb;border:1px solid #c0d8ef;border-radius:8px;color:var(--primary);margin-bottom:8px"></div>
-      <div id="splitAddBar" style="margin-bottom:8px">
-        <button type="button" id="btnAddSplit"
-          onclick="_addSplit()"
-          style="background:none;border:1.5px dashed var(--brd);border-radius:8px;padding:6px 14px;font-size:.78rem;color:var(--muted);cursor:pointer;width:100%;text-align:center">
-          💳 + Adicionar forma de pagamento
-        </button>
+        <!-- 1ª Forma (sempre visível) -->
+        <div style="background:#f0f6ff;border:1.5px solid var(--primary);border-radius:9px;padding:10px 12px;margin-bottom:6px">
+          <div style="font-size:.72rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.3px;margin-bottom:7px">1ª Forma de Pagamento</div>
+          <div class="fr">
+            <div>
+              <label>Valor (R$)</label>
+              <input type="text" id="fValor" placeholder="0,00" class="moeda-input"
+                oninput="maskMoeda(this,event);_onValorLancChange()"
+                onblur="fmtMoeda(this);_onValorLancChange()">
+            </div>
+            <div>
+              <label>Forma</label>
+              <select id="fPag" onchange="_onPagChange()"
+                style="width:100%;padding:5px 7px;border:1.5px solid var(--brd);border-radius:7px;font-size:.8rem;font-family:inherit">
+                <option>Dinheiro</option><option>PIX</option><option>Cartão de Débito</option>
+                <option>Cartão de Crédito</option><option>Transferência</option>
+                <option>Convênio / Plano</option><option>Parcelado</option>
+              </select>
+            </div>
+          </div>
+          <!-- Parcelas — aparece só para Cartão de Crédito -->
+          <div id="parcelasWrap" style="display:none;margin-top:6px">
+            <label style="font-size:.74rem">Parcelas</label>
+            <select id="fParcelas" onchange="_onPagChange()"
+              style="width:100%;padding:5px 7px;border:1.5px solid var(--brd);border-radius:7px;font-size:.8rem;font-family:inherit">
+              <option value="1">1x (à vista)</option>
+              <option value="2">2x</option><option value="3">3x</option>
+              <option value="4">4x</option><option value="5">5x</option>
+              <option value="6">6x</option><option value="7">7x</option>
+              <option value="8">8x</option><option value="9">9x</option>
+              <option value="10">10x</option>
+            </select>
+          </div>
+          <!-- Hint taxa maquininha -->
+          <div id="taxaHint" style="display:none;font-size:.76rem;padding:6px 10px;background:var(--warn-light);border:1px solid #f5d76e;border-radius:7px;color:#7d5a00;margin-top:6px;display:flex;align-items:center;gap:7px">
+            🏧 <span id="taxaHintText" style="flex:1"></span>
+          </div>
+        </div>
+
+        <!-- 2ª e 3ª Formas (dinâmicas) -->
+        <div id="splitContainer"></div>
+        <!-- Resumo total das formas -->
+        <div id="splitHint" style="display:none;font-size:.74rem;padding:7px 11px;background:#eaf3fb;border:1px solid #c0d8ef;border-radius:8px;color:var(--primary);margin-bottom:8px"></div>
+        <div id="splitAddBar" style="margin-bottom:8px">
+          <button type="button" id="btnAddSplit" onclick="_addSplit()"
+            style="background:none;border:1.5px dashed var(--brd);border-radius:8px;padding:6px 14px;font-size:.78rem;color:var(--muted);cursor:pointer;width:100%;text-align:center">
+            💳 + Adicionar 2ª forma de pagamento
+          </button>
+        </div>
       </div>
       <!-- ────────────────────────────────────────────────────────────────── -->
 
@@ -3698,8 +3717,15 @@ function _renderSplits(){
     </div>`;
   }).join('');
 
-  // Esconde botão "+ Adicionar" quando atingir o máximo
-  if(addBar) addBar.style.display = _lancSplits.length < _SPLIT_MAX ? 'block' : 'none';
+  // Atualiza texto e visibilidade do botão "+ Adicionar"
+  if(addBar){
+    addBar.style.display = _lancSplits.length < _SPLIT_MAX ? 'block' : 'none';
+    const btnAS = document.getElementById('btnAddSplit');
+    if(btnAS){
+      const nextNum = _lancSplits.length === 0 ? '2ª' : '3ª';
+      btnAS.textContent = `💳 + Adicionar ${nextNum} forma de pagamento`;
+    }
+  }
   _updateSplitHint();
 }
 
@@ -3720,28 +3746,19 @@ function _updateSplitHint(){
   const hintEl = document.getElementById('splitHint'); if(!hintEl) return;
   if(!_lancSplits.length){ hintEl.style.display='none'; return; }
 
-  const total   = parseMoeda(document.getElementById('fValor')?.value||'0');
+  const pag1Val = parseMoeda(document.getElementById('fValor')?.value||'0');
   const pag1Met = document.getElementById('fPag')?.value || '1ª forma';
-  const splitSum= _lancSplits.reduce((s,x)=>s+(x.valor||0), 0);
-  const resto   = Math.round((total - splitSum)*100)/100;
+  const splitSum = _lancSplits.reduce((s,x)=>s+(x.valor||0), 0);
+  const total   = Math.round((pag1Val + splitSum)*100)/100;
 
-  if(total <= 0){ hintEl.style.display='none'; return; }
-
-  const parts = [`${pag1Met}: R$ ${fN(Math.max(0,resto))}`];
+  const parts = [`1ª (${pag1Met}): R$ ${fN(pag1Val)}`];
   _lancSplits.forEach((s,i)=>{
-    parts.push(`${_SPLIT_LABELS[i+1]||`${i+2}ª`} (${s.metodo}): R$ ${fN(s.valor||0)}`);
+    const lbl = ['2ª','3ª'][i] || `${i+2}ª`;
+    parts.push(`${lbl} (${s.metodo}): R$ ${fN(s.valor||0)}`);
   });
 
-  const ok = Math.abs(total - splitSum - Math.max(0,resto)) < 0.02;
-  const somaTotal = splitSum + Math.max(0,resto);
-
-  if(resto < -0.01){
-    hintEl.innerHTML = `⚠ Soma das formas (R$ ${fN(somaTotal)}) ultrapassa o total (R$ ${fN(total)})`;
-    hintEl.style.background='#fdf0f0'; hintEl.style.color='#c0392b';
-  } else {
-    hintEl.innerHTML = parts.join('  <b>+</b>  ') + `  <b>=</b>  R$ ${fN(total)} total`;
-    hintEl.style.background='#eaf3fb'; hintEl.style.color='var(--primary)';
-  }
+  hintEl.innerHTML = parts.join('  <b>+</b>  ') + `  <b>=</b>  <b>R$ ${fN(total)}</b> total`;
+  hintEl.style.background='#eaf3fb'; hintEl.style.color='var(--primary)';
   hintEl.style.display = 'block';
 }
 
@@ -4394,8 +4411,9 @@ function _onValorLancChange(){
     const proc=_lancProcs.length?_lancProcs[0].nome:(document.getElementById('fProcSel')?.value||'');
     if(proc)_showTeamPreview(proc);
   }
-  // Atualiza hint de taxa toda vez que o valor muda
+  // Atualiza hint de taxa e resumo das formas de pagamento
   _onPagChange();
+  _updateSplitHint();
 }
 
 function _showTeamPreview(proc){
