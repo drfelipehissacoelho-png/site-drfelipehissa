@@ -638,51 +638,14 @@ tr:hover td{background:#f5f8fb;}
         🏧 <span id="taxaHintText" style="flex:1"></span>
       </div>
 
-      <!-- ── 2ª Forma de Pagamento (split de pagamento) ────────────────── -->
-      <div style="margin-bottom:8px">
-        <button type="button" id="btnTogglePag2"
-          onclick="_togglePag2()"
+      <!-- ── Split de pagamento: até 3 formas (dinâmico) ─────────────────── -->
+      <div id="splitContainer"></div>
+      <div id="splitHint" style="display:none;font-size:.74rem;padding:7px 11px;background:#eaf3fb;border:1px solid #c0d8ef;border-radius:8px;color:var(--primary);margin-bottom:8px"></div>
+      <div id="splitAddBar" style="margin-bottom:8px">
+        <button type="button" id="btnAddSplit"
+          onclick="_addSplit()"
           style="background:none;border:1.5px dashed var(--brd);border-radius:8px;padding:6px 14px;font-size:.78rem;color:var(--muted);cursor:pointer;width:100%;text-align:center">
-          💳 + Dividir em 2 formas de pagamento
-        </button>
-      </div>
-      <div id="pag2Wrap" style="display:none;background:#f7f9fb;border:1.5px solid var(--brd);border-radius:9px;padding:10px 12px;margin-bottom:8px">
-        <div style="font-size:.74rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px">
-          💳 2ª Forma de Pagamento
-        </div>
-        <div class="fr">
-          <div>
-            <label>Valor 2ª Parte (R$)</label>
-            <input type="text" id="fValor2" placeholder="0,00" class="moeda-input"
-              oninput="maskMoeda(this,event);_onPag2ValorChange()"
-              onblur="fmtMoeda(this);_onPag2ValorChange()">
-          </div>
-          <div>
-            <label>Forma de Pagamento</label>
-            <select id="fPag2" onchange="_onPag2Change()">
-              <option>Dinheiro</option><option>PIX</option><option>Cartão de Débito</option>
-              <option>Cartão de Crédito</option><option>Transferência</option>
-              <option>Convênio / Plano</option>
-            </select>
-          </div>
-        </div>
-        <!-- Parcelas do 2º pagamento — só para crédito -->
-        <div id="pag2ParcelasWrap" style="display:none;margin-top:6px">
-          <label>Parcelas</label>
-          <select id="fParcelas2">
-            <option value="1">1x (à vista)</option>
-            <option value="2">2x</option><option value="3">3x</option>
-            <option value="4">4x</option><option value="5">5x</option>
-            <option value="6">6x</option><option value="7">7x</option>
-            <option value="8">8x</option><option value="9">9x</option>
-            <option value="10">10x</option>
-          </select>
-        </div>
-        <!-- Hint: mostra quanto fica para cada parte -->
-        <div id="pag2Hint" style="display:none;font-size:.74rem;padding:6px 10px;background:#eaf3fb;border-radius:7px;color:var(--primary);margin-top:7px"></div>
-        <button type="button" onclick="_togglePag2()"
-          style="background:none;border:none;color:var(--err);font-size:.72rem;cursor:pointer;margin-top:4px;padding:0">
-          ✕ Remover 2ª forma
+          💳 + Adicionar forma de pagamento
         </button>
       </div>
       <!-- ────────────────────────────────────────────────────────────────── -->
@@ -1894,37 +1857,44 @@ function salvarLancamento() {
     fbAddLog('TAXA MAQUININHA',`${parLabel} ${taxaPct}% = R$ ${fN(taxaVal)} sobre R$ ${fN(valor)}${pac?' · '+pac:''}`);
   }
 
-  // ── 2ª FORMA DE PAGAMENTO: salva lançamento adicional vinculado ──────────
-  if(_pag2Ativo){
-    const val2 = parseMoeda(document.getElementById('fValor2')?.value||'0');
-    const pag2Met = document.getElementById('fPag2')?.value || '';
-    const parc2  = parseInt(document.getElementById('fParcelas2')?.value)||1;
-    if(val2 > 0 && pag2Met){
+  // ── FORMAS ADICIONAIS DE PAGAMENTO: itera sobre _lancSplits[] ───────────
+  // Suporta até 3 formas no total (1 principal + 2 splits adicionais)
+  const _splitLabels = ['2ª','3ª','4ª'];
+  _lancSplits.forEach((sp, idx) => {
+    const spVal = sp.valor || 0;
+    const spMet = sp.metodo || '';
+    const spParc = parseInt(sp.parcelas) || 1;
+    const spLabel = _splitLabels[idx] || `${idx+2}ª`;
+    if(spVal > 0 && spMet){
       const splitItem = {
-        id: String(genId()), data, valor: val2,
-        categoria: cat, pagamento: pag2Met,
-        descricao: (desc ? desc + ' ' : '') + `(2ª forma — ${pag2Met})`,
+        id: String(genId()), data, valor: spVal,
+        categoria: cat, pagamento: spMet,
+        descricao: (desc ? desc + ' ' : '') + `(${spLabel} forma — ${spMet})`,
         paciente: pac, procedimento: proc, tipo,
-        usuario: CU, email: CUEmail, criadoEm: new Date().toISOString()
+        usuario: CU, email: CUEmail, criadoEm: new Date().toISOString(),
+        linked_group_id
       };
-      if(pag2Met==='Cartão de Crédito'&&parc2>1) splitItem.parcelas=parc2;
+      if(spMet==='Cartão de Crédito' && spParc>1) splitItem.parcelas = spParc;
       fbSalvarLanc(splitItem);
-      fbAddLog('SPLIT PAGAMENTO',`2ª forma: ${pag2Met} R$ ${fN(val2)} · ${cat}${pac?' · '+pac:''}`);
-      // Taxa de cartão para 2ª forma
-      if(pag2Met==='Cartão de Débito'||pag2Met==='Cartão de Crédito'){
-        const pct2=getTaxaPct(pag2Met,parc2);
-        if(pct2>0){
-          const tv2=Math.round(val2*pct2/100*100)/100;
-          const lbl2=pag2Met==='Cartão de Débito'?'Débito':`Crédito ${parc2}x`;
-          fbSalvarLanc({id:String(genId()),data,valor:tv2,
-            categoria:'Taxas de Cartão',pagamento:'Transferência',
-            descricao:`Taxa maquininha ${lbl2} 2ª forma (${pct2.toFixed(2)}%)${pac?' — '+pac:''}`,
-            paciente:pac,procedimento:proc,tipo:'despesa',
-            usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),auto_generated:true});
+      fbAddLog('SPLIT PAGAMENTO',`${spLabel} forma: ${spMet} R$ ${fN(spVal)} · ${cat}${pac?' · '+pac:''}`);
+      // Taxa de cartão para forma adicional
+      if(spMet==='Cartão de Débito' || spMet==='Cartão de Crédito'){
+        const pctSp = getTaxaPct(spMet, spParc);
+        if(pctSp > 0){
+          const tvSp = Math.round(spVal * pctSp / 100 * 100) / 100;
+          const lblSp = spMet==='Cartão de Débito' ? 'Débito' : `Crédito ${spParc}x`;
+          fbSalvarLanc({
+            id: String(genId()), data, valor: tvSp,
+            categoria: 'Taxas de Cartão', pagamento: 'Transferência',
+            descricao: `Taxa maquininha ${lblSp} ${spLabel} forma (${pctSp.toFixed(2)}%)${pac?' — '+pac:''}`,
+            paciente: pac, procedimento: proc, tipo: 'despesa',
+            usuario: CU, email: CUEmail, criadoEm: new Date().toISOString(),
+            auto_generated: true
+          });
         }
       }
     }
-  }
+  });
   // ─────────────────────────────────────────────────────────────────────────
 
     // Reset form
@@ -1948,10 +1918,8 @@ function salvarLancamento() {
     const th=document.getElementById('taxaHint');if(th)th.style.display='none';
     const fp=document.getElementById('fParcelas');if(fp)fp.value='1';
     document.getElementById('fPag').value='Dinheiro';
-    // Reset 2ª forma de pagamento
-    if(_pag2Ativo){ _togglePag2(); } // fecha o bloco
-    const v2el=document.getElementById('fValor2');if(v2el)v2el.value='';
-    const h2el=document.getElementById('pag2Hint');if(h2el)h2el.style.display='none';
+    // Reset formas de pagamento adicionais
+    _resetSplits();
 
     // ── FIX: garantir que o lançamento salvo fica visível na lista ──────────
     // 1. Resetar filtro de tipo para "Todos" — evita despesa sumir quando
@@ -3657,54 +3625,131 @@ function _onPagChange(){
   }
 }
 
-// ── 2ª FORMA DE PAGAMENTO (split de lançamento) ─────────────────────────────
-let _pag2Ativo = false;
+// ── SPLIT DE PAGAMENTO — até 3 formas (dinâmico) ────────────────────────────
+// _lancSplits: array de {id, metodo, parcelas} — máximo 2 itens extras (= 3 formas total)
+let _lancSplits = [];
+const _SPLIT_MAX = 2;  // extras além da 1ª forma
+const _SPLIT_LABELS = ['','2ª','3ª'];  // índice 0 não usado
 
-function _togglePag2(){
-  _pag2Ativo = !_pag2Ativo;
-  const wrap = document.getElementById('pag2Wrap');
-  const btn  = document.getElementById('btnTogglePag2');
-  if(!wrap) return;
-  wrap.style.display = _pag2Ativo ? 'block' : 'none';
-  if(btn) btn.style.display = _pag2Ativo ? 'none' : 'block';
-  if(_pag2Ativo){
-    // Sugere 2ª parte = saldo após 1ª parte (se valor total já preenchido)
-    _onPag2ValorChange();
-    document.getElementById('fValor2')?.focus();
-  } else {
-    // Limpa campos ao fechar
-    const v2=document.getElementById('fValor2');if(v2)v2.value='';
-    const h=document.getElementById('pag2Hint');if(h)h.style.display='none';
-  }
+function _addSplit(){
+  if(_lancSplits.length >= _SPLIT_MAX){ showToast('Máximo 3 formas de pagamento.','#e8a838'); return; }
+  const sid = 'split_'+ Date.now();
+  _lancSplits.push({id: sid, metodo:'PIX', parcelas:1});
+  _renderSplits();
+  // Foca o campo de valor do item recém-adicionado
+  setTimeout(()=>document.getElementById('sv_'+sid)?.focus(), 80);
 }
 
-function _onPag2Change(){
-  const m = document.getElementById('fPag2')?.value || '';
-  const pw = document.getElementById('pag2ParcelasWrap');
-  if(pw) pw.style.display = m === 'Cartão de Crédito' ? 'block' : 'none';
+function _removeSplit(sid){
+  _lancSplits = _lancSplits.filter(s=>s.id!==sid);
+  _renderSplits();
+  _updateSplitHint();
 }
 
-function _onPag2ValorChange(){
-  if(!_pag2Ativo) return;
-  const total  = parseMoeda(document.getElementById('fValor')?.value || '0');
-  const val2   = parseMoeda(document.getElementById('fValor2')?.value || '0');
-  const hintEl = document.getElementById('pag2Hint');
-  if(!hintEl) return;
-  if(total > 0 && val2 > 0){
-    const val1 = Math.round((total - val2) * 100) / 100;
-    const pag1 = document.getElementById('fPag')?.value || '';
-    const pag2 = document.getElementById('fPag2')?.value || '';
-    if(val1 < 0){
-      hintEl.textContent = `⚠ Valor da 2ª parte (R$ ${fN(val2)}) é maior que o total (R$ ${fN(total)})`;
-      hintEl.style.cssText += ';background:#fdf0f0;color:#c0392b';
-    } else {
-      hintEl.textContent = `${pag1}: R$ ${fN(val1)}  +  ${pag2}: R$ ${fN(val2)}  =  R$ ${fN(total)} total`;
-      hintEl.style.cssText += ';background:#eaf3fb;color:var(--primary)';
-    }
-    hintEl.style.display = 'block';
-  } else {
-    hintEl.style.display = 'none';
+function _renderSplits(){
+  const container = document.getElementById('splitContainer');
+  if(!container) return;
+  const addBar = document.getElementById('splitAddBar');
+
+  if(!_lancSplits.length){
+    container.innerHTML = '';
+    if(addBar) addBar.style.display = 'block';
+    const h = document.getElementById('splitHint'); if(h) h.style.display='none';
+    return;
   }
+
+  const ordinals = ['2ª','3ª'];
+  container.innerHTML = _lancSplits.map((s, idx) => {
+    const label = ordinals[idx] || `${idx+2}ª`;
+    const isCC  = s.metodo === 'Cartão de Crédito';
+    const parcsHtml = isCC ? `
+      <div style="margin-top:6px">
+        <label style="font-size:.74rem">Parcelas</label>
+        <select id="sp_${s.id}" onchange="_onSplitMetChange('${s.id}')"
+          style="width:100%;padding:5px 7px;border:1.5px solid var(--brd);border-radius:7px;font-size:.8rem;font-family:inherit">
+          ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${s.parcelas===n?' selected':''}>${n===1?'1x (à vista)':n+'x'}</option>`).join('')}
+        </select>
+      </div>` : '';
+    return `
+    <div style="background:#f7f9fb;border:1.5px solid var(--brd);border-radius:9px;padding:10px 12px;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+        <span style="font-size:.74rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.3px">💳 ${label} Forma de Pagamento</span>
+        <button type="button" onclick="_removeSplit('${s.id}')"
+          style="background:none;border:none;color:var(--err);font-size:.78rem;cursor:pointer;padding:0 2px;line-height:1" title="Remover">✕</button>
+      </div>
+      <div class="fr">
+        <div>
+          <label>Valor (R$)</label>
+          <input type="text" id="sv_${s.id}" placeholder="0,00" class="moeda-input"
+            value="${s.valor?fN(s.valor):''}"
+            oninput="maskMoeda(this,event);_onSplitValorChange('${s.id}')"
+            onblur="fmtMoeda(this);_onSplitValorChange('${s.id}')">
+        </div>
+        <div>
+          <label>Forma</label>
+          <select id="sm_${s.id}" onchange="_onSplitMetChange('${s.id}')"
+            style="width:100%;padding:5px 7px;border:1.5px solid var(--brd);border-radius:7px;font-size:.8rem;font-family:inherit">
+            ${['Dinheiro','PIX','Cartão de Débito','Cartão de Crédito','Transferência','Convênio / Plano']
+              .map(m=>`<option${s.metodo===m?' selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      ${parcsHtml}
+    </div>`;
+  }).join('');
+
+  // Esconde botão "+ Adicionar" quando atingir o máximo
+  if(addBar) addBar.style.display = _lancSplits.length < _SPLIT_MAX ? 'block' : 'none';
+  _updateSplitHint();
+}
+
+function _onSplitMetChange(sid){
+  const s = _lancSplits.find(x=>x.id===sid); if(!s) return;
+  s.metodo   = document.getElementById('sm_'+sid)?.value || 'PIX';
+  s.parcelas = parseInt(document.getElementById('sp_'+sid)?.value||'1')||1;
+  _renderSplits(); // re-renderiza para mostrar/ocultar parcelas
+}
+
+function _onSplitValorChange(sid){
+  const s = _lancSplits.find(x=>x.id===sid); if(!s) return;
+  s.valor = parseMoeda(document.getElementById('sv_'+sid)?.value||'0');
+  _updateSplitHint();
+}
+
+function _updateSplitHint(){
+  const hintEl = document.getElementById('splitHint'); if(!hintEl) return;
+  if(!_lancSplits.length){ hintEl.style.display='none'; return; }
+
+  const total   = parseMoeda(document.getElementById('fValor')?.value||'0');
+  const pag1Met = document.getElementById('fPag')?.value || '1ª forma';
+  const splitSum= _lancSplits.reduce((s,x)=>s+(x.valor||0), 0);
+  const resto   = Math.round((total - splitSum)*100)/100;
+
+  if(total <= 0){ hintEl.style.display='none'; return; }
+
+  const parts = [`${pag1Met}: R$ ${fN(Math.max(0,resto))}`];
+  _lancSplits.forEach((s,i)=>{
+    parts.push(`${_SPLIT_LABELS[i+1]||`${i+2}ª`} (${s.metodo}): R$ ${fN(s.valor||0)}`);
+  });
+
+  const ok = Math.abs(total - splitSum - Math.max(0,resto)) < 0.02;
+  const somaTotal = splitSum + Math.max(0,resto);
+
+  if(resto < -0.01){
+    hintEl.innerHTML = `⚠ Soma das formas (R$ ${fN(somaTotal)}) ultrapassa o total (R$ ${fN(total)})`;
+    hintEl.style.background='#fdf0f0'; hintEl.style.color='#c0392b';
+  } else {
+    hintEl.innerHTML = parts.join('  <b>+</b>  ') + `  <b>=</b>  R$ ${fN(total)} total`;
+    hintEl.style.background='#eaf3fb'; hintEl.style.color='var(--primary)';
+  }
+  hintEl.style.display = 'block';
+}
+
+function _resetSplits(){
+  _lancSplits = [];
+  _renderSplits();
+  const h = document.getElementById('splitHint'); if(h) h.style.display='none';
+  const addBar = document.getElementById('splitAddBar'); if(addBar) addBar.style.display='block';
 }
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -6260,90 +6305,6 @@ function gerarPDFOrcamento(id){
   showToast('PDF gerado!','#8e44ad');
 }
 </script>
-
-<!-- MODAL PAGAMENTO ORÇAMENTO -->
-<div class="modal-overlay" id="payModal" style="display:none" onclick="if(event.target===this)fecharModalPagamento()">
-  <div class="modal-box" style="max-width:480px">
-    <h3 id="payModalTitulo">💳 Adicionar Pagamento</h3>
-    <input type="hidden" id="payModalOrcId">
-
-    <!-- Resumo financeiro do orçamento -->
-    <div style="background:#f0f4f8;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
-      <div>
-        <div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase">Total</div>
-        <div style="font-size:.88rem;font-weight:700;color:var(--txt)" id="payInfoTotal">R$ 0,00</div>
-      </div>
-      <div>
-        <div style="font-size:.68rem;color:var(--ok);font-weight:600;text-transform:uppercase">Pago</div>
-        <div style="font-size:.88rem;font-weight:700;color:var(--ok)" id="payInfoPago">R$ 0,00</div>
-      </div>
-      <div>
-        <div style="font-size:.68rem;color:var(--err);font-weight:600;text-transform:uppercase">Saldo</div>
-        <div style="font-size:.88rem;font-weight:700;color:var(--err)" id="payInfoSaldo">R$ 0,00</div>
-      </div>
-    </div>
-
-    <div style="display:grid;gap:11px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Valor (R$) *</label>
-          <input type="text" id="payValor" placeholder="0,00"
-            oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)"
-            style="width:100%;box-sizing:border-box">
-        </div>
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Data *</label>
-          <input type="date" id="payData" style="width:100%;box-sizing:border-box">
-        </div>
-      </div>
-
-      <div>
-        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Forma de Pagamento *</label>
-        <select id="payMetodo" style="width:100%;box-sizing:border-box" onchange="_payMetodoChange()">
-          <option>PIX</option>
-          <option>Dinheiro</option>
-          <option>Cartão de Débito</option>
-          <option>Cartão de Crédito</option>
-          <option>Transferência</option>
-          <option>TED</option>
-          <option>Cheque</option>
-        </select>
-      </div>
-
-      <div id="payParcelasWrap" style="display:none">
-        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Parcelas</label>
-        <select id="payParcelas" style="width:100%;box-sizing:border-box">
-          <option value="1">1x (à vista)</option>
-          <option value="2">2x</option><option value="3">3x</option><option value="4">4x</option>
-          <option value="5">5x</option><option value="6">6x</option><option value="7">7x</option>
-          <option value="8">8x</option><option value="9">9x</option><option value="10">10x</option>
-          <option value="11">11x</option><option value="12">12x</option>
-        </select>
-      </div>
-
-      <div id="payBandeiraWrap" style="display:none">
-        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Bandeira do Cartão</label>
-        <select id="payBandeira" style="width:100%;box-sizing:border-box">
-          <option value="">— selecionar —</option>
-          <option>Visa</option><option>Mastercard</option><option>Elo</option>
-          <option>Amex</option><option>Hipercard</option><option>Outra</option>
-        </select>
-      </div>
-
-      <div>
-        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Observação</label>
-        <input type="text" id="payObs" placeholder="Ex: sinal, complemento, parcela 1..."
-          style="width:100%;box-sizing:border-box">
-      </div>
-    </div>
-
-    <div class="modal-actions" style="margin-top:16px">
-      <button class="btn btn-neu" onclick="fecharModalPagamento()">Cancelar</button>
-      <button class="btn" style="background:var(--ok);color:#fff;font-weight:700" onclick="salvarPagamento()">💾 Salvar Pagamento</button>
-    </div>
-  </div>
-</div>
-
 
 <!-- ===== MODAL GENÉRICO: CONFIRM ===== -->
 <div class="modal-overlay" id="confirmModal" style="display:none" onclick="if(event.target===this)_confirmCancel()">
