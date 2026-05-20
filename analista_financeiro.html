@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analista Financeiro | Consultório Dr. Felipe</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Analista Financeiro v2.1 | Consultório Dr. Felipe</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -1764,6 +1767,9 @@ function salvarLancamento() {
     const th=document.getElementById('taxaHint');if(th)th.style.display='none';
     const fp=document.getElementById('fParcelas');if(fp)fp.value='1';
     document.getElementById('fPag').value='Dinheiro';
+    // FIX: resetar filtro de tipo para que parcelas apareçam na lista
+    const _ftParcEl=document.getElementById('ftTipo');if(_ftParcEl&&_ftParcEl.value!=='')_ftParcEl.value='';
+    _catFilter='';
     return;
   }
   // ────────────────────────────────────────────────────────────────────────
@@ -1856,6 +1862,32 @@ function salvarLancamento() {
     const th=document.getElementById('taxaHint');if(th)th.style.display='none';
     const fp=document.getElementById('fParcelas');if(fp)fp.value='1';
     document.getElementById('fPag').value='Dinheiro';
+
+    // ── FIX: garantir que o lançamento salvo fica visível na lista ──────────
+    // 1. Resetar filtro de tipo para "Todos" — evita despesa sumir quando
+    //    ftTipo estava em "Receitas", ou receita sumir quando em "Despesas"
+    const ftTipoEl=document.getElementById('ftTipo');
+    if(ftTipoEl&&ftTipoEl.value!=='')ftTipoEl.value='';
+    // 2. Resetar filtro de categoria ativo
+    _catFilter='';
+    // 3. Se a data do lançamento salvo não bate com o período atual, mudar
+    //    automaticamente o período para mostrar o novo item
+    const itemMes=data.slice(0,7); // YYYY-MM
+    if(period && itemMes && !_rangeAtivo() && itemMes!==period){
+      const sel=document.getElementById('periodSelect');
+      if(sel){
+        // Procurar a opção correspondente ao mês do lançamento
+        const opt=Array.from(sel.options).find(o=>o.value===itemMes);
+        if(opt){
+          sel.value=itemMes;
+          period=itemMes;
+          showToast(`📅 Período ajustado para ${opt.text} para mostrar o lançamento.`,'#2d7bbf');
+        } else {
+          showToast(`⚠ Lançamento salvo em ${itemMes} — selecione esse mês no seletor de período para visualizá-lo.`,'#e8a838');
+        }
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────────
   } // fim doSave
 
   if(tipo==='receita' && !_lancPat){
@@ -4916,7 +4948,7 @@ function renderOrcamentos(){
 
   const cardsHtml=filtered.length===0
     ?'<div class="empty" style="padding:14px 0"><div class="ico" style="font-size:1.2rem">📋</div>Nenhum orçamento aqui</div>'
-    :filtered.map(o=>{
+    :filtered.map(o=>{try{
       const stRaw=o.status||'aberto';
       const expired=stRaw==='aberto'&&o.validade&&o.validade<today;
       const st=expired?'expirado':stRaw;
@@ -5001,6 +5033,10 @@ function renderOrcamentos(){
   ${histHtml}
   <div style="display:flex;gap:4px;margin-top:7px;flex-wrap:wrap">${acoes.join('')}</div>
 </div>`;
+    }catch(err){
+      console.error('renderOrcamentos card error:',err,o);
+      return`<div style="border:1.5px solid #f5c6c6;border-radius:9px;padding:10px;margin-bottom:7px;background:#fff5f5;font-size:.78rem;color:#c0392b">⚠ Erro ao renderizar orçamento ${esc(o.paciente||o.id)} — verifique o console.</div>`;
+    }
     }).join('');
 
   el.innerHTML=`<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">${tabsHtml}</div>${statsHtml}${cardsHtml}`;
@@ -6195,12 +6231,6 @@ function gerarPDFOrcamento(id){
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn btn-neu" onclick="fecharRecModal()">Cancelar</button>
       <button class="btn" onclick="salvarRecorrente()">💾 Salvar</button>
-    </div>
-  </div>
-</div>
-</body>
-</html>
-</button>
     </div>
   </div>
 </div>
