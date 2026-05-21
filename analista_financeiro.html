@@ -886,9 +886,11 @@ tr:hover td{background:#f5f8fb;}
           <label>Observações / Incluso no orçamento</label>
           <textarea id="oObs" rows="3" placeholder="Ex: Inclui anestesia, material cirúrgico, consultas pós-operatórias..."></textarea>
         </div>
-        <div style="display:flex;gap:9px;margin-top:10px">
-          <button class="btn btn-ok" style="flex:1;font-size:.91rem" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
+        <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-ok" style="flex:1;min-width:140px;font-size:.91rem" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
           <button class="btn" style="flex:0 0 auto;background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;font-size:.88rem" onclick="gerarPDFOrcRapido()">📄 PDF</button>
+          <button class="btn" style="flex:0 0 auto;background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;font-size:.88rem" onclick="imprimirOrcamentoRapido()" title="Abre diálogo de impressão do navegador">🖨 Imprimir</button>
+          <button class="btn" id="btnPastaOrc" style="flex:0 0 auto;background:#f3e5f5;color:#4a148c;border:1px solid #ce93d8;font-size:.88rem" onclick="escolherPastaOrcamentos()" title="Escolher pasta para salvar PDFs automaticamente">📁 Pasta</button>
           <button class="btn" style="flex:0 0 auto;background:#f5f5f5;color:var(--muted);border:1px solid var(--brd);font-size:.88rem" onclick="novoOrcamento()">🔄 Limpar</button>
         </div>
       </div>
@@ -5250,7 +5252,8 @@ function renderOrcamentos(){
         `<button class="btn btn-sm" style="background:#f0f4f8;color:var(--muted);border:1px solid var(--brd)" onclick="mudarStatusOrc(${o.id},'aberto')">Reabrir</button>`
       );
       acoes.push(
-        `<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef" onclick="gerarPDFOrcamento(${o.id})">PDF</button>`,
+        `<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef" onclick="gerarPDFOrcamento(${o.id})">📄 PDF</button>`,
+        `<button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7" onclick="imprimirOrcamento(${o.id})" title="Imprimir">🖨</button>`,
         `<button class="btn btn-err btn-sm" onclick="excluirOrcamento(${o.id})">🗑</button>`
       );
 
@@ -6078,6 +6081,170 @@ function renderCFO(){
   </div>`;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   UTILITÁRIOS DE PDF — nome de arquivo seguro + pasta + impressão
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * sanitizeFileName(text)
+ * Converte qualquer string para um segmento seguro de nome de arquivo:
+ * minúsculas, sem acentos, sem caracteres especiais, espaços → hífen.
+ */
+function sanitizeFileName(text){
+  if(!text) return '';
+  return text
+    .normalize('NFD')                      // decompõe acentos (ã → a + ̃)
+    .replace(/[̀-ͯ]/g, '')       // remove marcas diacríticas
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')         // remove tudo que não é alfanum/espaço/hífen
+    .trim()
+    .replace(/[\s_]+/g, '-')              // espaços e underscores → hífen
+    .replace(/-{2,}/g, '-')               // hífens duplos → simples
+    .replace(/^-+|-+$/g, '');             // remove hífens nas bordas
+}
+
+/**
+ * buildQuotePdfFilename(orc)
+ * Monta o nome final do PDF:
+ * orcamento_[paciente]_[proc-principal][_mais-N]_[data]_[id-curto].pdf
+ *
+ * Exemplos:
+ *   orcamento_magda-taizes_mamoplastia-redutora_2026-05-13_4821.pdf
+ *   orcamento_ana-paula_rinoplastia_mais-2_2026-05-13_4821.pdf
+ */
+function buildQuotePdfFilename(orc){
+  const pac  = sanitizeFileName(orc.paciente || 'paciente');
+  const data = sanitizeFileName(orc.data     || 'sem-data');
+
+  // ID curto: 4 últimos dígitos do id (ou timestamp) — suficiente para deduplicar
+  const idStr = String(orc.id || Date.now());
+  const idCurto = idStr.slice(-4);
+
+  // Procedimento principal = primeiro item dos serviços
+  const servicos = orc.servicos || [];
+  let procPart = 'orcamento';
+  if(servicos.length > 0){
+    const primeiro = servicos[0].proc || servicos[0].nome || '';
+    procPart = sanitizeFileName(primeiro).slice(0, 40) || 'procedimento';
+    if(servicos.length > 1){
+      procPart += `_mais-${servicos.length - 1}`;
+    }
+  }
+
+  return `orcamento_${pac}_${procPart}_${data}_${idCurto}.pdf`;
+}
+
+/* ---- Pasta de orçamentos (File System Access API) ---- */
+
+// Handle da pasta escolhida pelo usuário — persiste enquanto a aba estiver aberta.
+// Não é salvo no Firebase (permissão de SO, não viaja pelo servidor).
+let _orcDirHandle = null;
+
+/**
+ * escolherPastaOrcamentos()
+ * Abre o seletor de diretório do browser (Chrome/Edge 86+).
+ * Armazena o handle em _orcDirHandle para uso nos próximos PDFs da sessão.
+ * Se a API não estiver disponível, mostra explicação amigável.
+ */
+async function escolherPastaOrcamentos(){
+  if(!('showDirectoryPicker' in window)){
+    showToast('⚠ Seu navegador não suporta File System Access API. Use Chrome ou Edge para essa função.', '#e8a838', 5000);
+    return;
+  }
+  try{
+    _orcDirHandle = await window.showDirectoryPicker({ mode:'readwrite', startIn:'documents' });
+    // Atualizar visual do botão para indicar pasta ativa
+    const btn = document.getElementById('btnPastaOrc');
+    if(btn){
+      btn.style.background = '#c8e6c9';
+      btn.style.color = '#1b5e20';
+      btn.title = `Pasta ativa: ${_orcDirHandle.name} — clique para trocar`;
+      btn.textContent = `📁 ${_orcDirHandle.name.slice(0,14)}`;
+    }
+    showToast(`✓ Pasta "${_orcDirHandle.name}" selecionada. Próximos PDFs serão salvos aqui.`, '#27ae60', 4000);
+    fbAddLog('CONFIG PDF','Pasta de orçamentos selecionada: '+_orcDirHandle.name);
+  } catch(e){
+    // Usuário cancelou o seletor — não é erro
+    if(e.name !== 'AbortError'){
+      showToast('Erro ao acessar pasta: '+(e.message||e), '#e74c3c');
+    }
+  }
+}
+
+/**
+ * _salvarPdfBlob(blob, filename)
+ * Tenta salvar o Blob do PDF na pasta escolhida pelo usuário (_orcDirHandle).
+ * Se a pasta não foi escolhida ou a permissão expirou, faz download normal.
+ */
+async function _salvarPdfBlob(blob, filename){
+  if(_orcDirHandle){
+    try{
+      // Verificar se a permissão ainda está ativa
+      const perm = await _orcDirHandle.queryPermission({ mode:'readwrite' });
+      if(perm !== 'granted'){
+        // Re-solicitar permissão (necessário após navegador/suspensão)
+        const req = await _orcDirHandle.requestPermission({ mode:'readwrite' });
+        if(req !== 'granted') throw new Error('Permissão negada.');
+      }
+      const fileHandle = await _orcDirHandle.getFileHandle(filename, { create:true });
+      const writable   = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      showToast(`✓ PDF salvo em "${_orcDirHandle.name}/${filename}"`, '#27ae60', 4000);
+      return; // sucesso → não faz download normal
+    } catch(e){
+      // Permissão perdida ou erro de FS — fallback silencioso para download
+      console.warn('_salvarPdfBlob: fallback para download normal.', e);
+      _orcDirHandle = null; // limpa handle inválido
+      const btn = document.getElementById('btnPastaOrc');
+      if(btn){ btn.style.background='#f3e5f5'; btn.style.color='#4a148c'; btn.textContent='📁 Pasta'; btn.title='Escolher pasta para salvar PDFs automaticamente'; }
+    }
+  }
+  // Fallback: download normal via link temporário
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 2000);
+}
+
+/**
+ * imprimirOrcamentoRapido()
+ * Imprime o orçamento que está sendo montado no formulário atual,
+ * sem precisar salvar primeiro. Usa autoPrint do jsPDF + blob URL.
+ */
+function imprimirOrcamentoRapido(){
+  if(!orcPat){showToast('Selecione um paciente antes de imprimir.','#e74c3c');return;}
+  const data=document.getElementById('oData').value;
+  if(!data){showToast('Informe a data.','#e74c3c');return;}
+  const itens=orcItems.filter(s=>s.proc);
+  if(!itens.length){showToast('Adicione ao menos um procedimento.','#e74c3c');return;}
+  const subtotal=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0);
+  const desconto=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0);
+  const hospTotal=orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0);
+  const total=subtotal-desconto+hospTotal;
+  const hospRows=orcHospRows.map(r=>({
+    hospNome:(HOSP_KEYS.find(h=>h.key===r.hospKey)||{}).nome||r.hospKey,
+    procName:r.procName, hospital_cost:r.hospitalCost||0, subtotal:_hospRowSub(r)
+  }));
+  gerarPDFOrcamento({
+    paciente:orcPat.nome, cpf:orcPat.cpf||'', rg:orcPat.rg||'',
+    data, validade:document.getElementById('oValidade').value,
+    servicos:itens, hospRows, subtotal, desconto, hospTotal, total,
+    obs:document.getElementById('oObs').value.trim(), id:Date.now()
+  }, { imprimir: true });
+}
+
+/**
+ * imprimirOrcamento(id)
+ * Imprime orçamento já salvo a partir do id Firebase.
+ */
+function imprimirOrcamento(id){
+  const orc = typeof id==='object' ? id : (DATA.orcamentos && DATA.orcamentos[id]);
+  if(!orc){ showToast('Orçamento não encontrado.','#e74c3c'); return; }
+  gerarPDFOrcamento(orc, { imprimir: true });
+}
+
 /* ---- Logo PDF ---- */
 let PDF_LOGO_DATA = null; // base64 PNG, carregado via arquivo ou URL
 
@@ -6160,7 +6327,9 @@ function _oPdfTxt(doc,s,x,y,sz,bold,cr,cg,cb,align){
   doc.text(String(s||''),x,y,{align:align||'left'});
 }
 
-function gerarPDFOrcamento(id){
+// options: { imprimir: bool } — se true, abre diálogo de impressão em vez de salvar
+function gerarPDFOrcamento(id, options){
+  const opts = options || {};
   const orc=typeof id==='object'?id:(DATA.orcamentos&&DATA.orcamentos[id]);if(!orc)return;
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'mm',format:'a4'});
@@ -6318,9 +6487,30 @@ function gerarPDFOrcamento(id){
     _oPdfTxt(doc,'Pag. '+pg+'/'+totalPags,MR,fy+15,7,false,...MUTED,'right');
   }
 
-  doc.save('orcamento_'+(orc.paciente||'paciente').replace(/\s+/g,'_')+'_'+(orc.data||'sem_data')+'.pdf');
-  fbAddLog('PDF ORCAMENTO','PDF gerado para '+(orc.paciente||'')+'  R$ '+fN(grandTotal));
-  showToast('PDF gerado!','#8e44ad');
+  const filename = buildQuotePdfFilename(orc);
+
+  if(opts.imprimir){
+    // Modo impressão: jsPDF autoPrint + abre blob URL → browser exibe diálogo de impressão
+    doc.autoPrint();
+    const blob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(blob);
+    const win = window.open(blobUrl, '_blank');
+    if(!win){
+      // Popup bloqueado — faz download e avisa
+      showToast('⚠ Popup bloqueado. Permitir pop-ups para imprimir diretamente.', '#e8a838', 5000);
+      _salvarPdfBlob(blob, filename);
+    } else {
+      setTimeout(()=> URL.revokeObjectURL(blobUrl), 30000);
+    }
+    fbAddLog('IMPRIMIR ORCAMENTO','Impressão: '+filename+'  R$ '+fN(grandTotal));
+    showToast('🖨 Abrindo impressão...','#27ae60');
+  } else {
+    // Modo download: tenta pasta escolhida (File System Access API) ou download normal
+    const blob = doc.output('blob');
+    _salvarPdfBlob(blob, filename);
+    fbAddLog('PDF ORCAMENTO','PDF gerado: '+filename+'  R$ '+fN(grandTotal));
+    showToast('📄 PDF gerado!','#8e44ad');
+  }
 }
 </script>
 
