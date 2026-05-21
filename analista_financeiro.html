@@ -1756,12 +1756,16 @@ function salvarLancamento() {
     const taxaPct=tipo==='receita'?getTaxaPct(pag2,parcelas):0;
     const taxaVal=taxaPct>0?Math.round(valor*taxaPct)/100:0;
     const hasTaxa=taxaVal>0;
+    // Soma TODAS as formas de pagamento (1ª forma + splits adicionais)
+    const _splitSoma=_lancSplits.reduce((s,x)=>s+(x.valor||0),0);
+    const valorTotal=Math.round((valor+_splitSoma)*100)/100;
     const chkAuto=document.getElementById('chkAutoDesp');
   const gerarAuto=tipo==='receita'&&chkAuto&&chkAuto.checked&&proc;
   // Para config de custos/comissão, usa sempre o PRIMEIRO procedimento da lista
   const _procCfgKey=_lancProcs.length?_lancProcs[0].nome:proc;
   const procCfg=_procCfgKey?getProcConfig(_procCfgKey):null;
-  const commVal=gerarAuto&&procCfg?_calcCommission(procCfg,valor):0;
+  // Comissão calculada sobre TOTAL recebido (todas as formas de pagamento)
+  const commVal=gerarAuto&&procCfg?_calcCommission(procCfg,valorTotal):0;
   const hasAuto=gerarAuto;
   const linked_group_id=(hasAuto||hasTaxa)?('grp_'+genId()):undefined;
 
@@ -1855,7 +1859,7 @@ function salvarLancamento() {
         usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
         linked_group_id,auto_generated:true};
       fbSalvarLanc(dc);
-      fbAddLog('COMISSÃO',`${lbl} · R$ ${fN(commVal)} (${procCfg.managerCommissionPct}% de R$ ${fN(valor)}) · ${proc}${pac?' · '+pac:''}`);
+      fbAddLog('COMISSÃO',`${lbl} · R$ ${fN(commVal)} (${procCfg.managerCommissionPct}% de R$ ${fN(valorTotal)}) · ${proc}${pac?' · '+pac:''}`);
       desp_count++;
     }
     if(desp_count>0)showToast(`✓ Receita + ${desp_count} despesa(s) automática(s) lançada(s)!`,'#27ae60');
@@ -4421,7 +4425,9 @@ function _onValorLancChange(){
 function _showTeamPreview(proc){
   const rows=document.getElementById('teamPrevRows');if(!rows)return;
   const cfg=getProcConfig(proc);
-  const valorAtual=parseMoeda(document.getElementById('fValor')?.value||'0');
+  // Considera TODAS as formas de pagamento no preview (1ª + splits adicionais)
+  const _previewSplitSoma=_lancSplits.reduce((s,x)=>s+(x.valor||0),0);
+  const valorAtual=Math.round((parseMoeda(document.getElementById('fValor')?.value||'0')+_previewSplitSoma)*100)/100;
   const membros=[
     {campo:'anesthetistCost',label:'Anestesista',icon:'💉'},
     {campo:'instrumenterCost',label:'Instrumentadora',icon:'🔧'},
