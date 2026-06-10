@@ -511,7 +511,7 @@ tr:hover td{background:#f5f8fb;}
   <div class="tab" onclick="showPage('dre',this)">📋 DRE</div>
   <div class="tab" onclick="showPage('relatorio',this)">📈 Relatórios</div>
   <div class="tab" onclick="showPage('cfo',this)">🧠 CFO</div>
-  <div class="tab" onclick="showPage('orcamento',this);initOrcamento()">💰 Orçamentos</div>
+  <div class="tab" onclick="showPage('orcamento',this);initOrcamentoSeguro()">💰 Orçamentos</div>
   <div class="tab" onclick="showPage('tabela-hosp',this);renderTabelaHosp()">🏥 Tabela</div>
   <div class="tab" onclick="showPage('auditoria',this)">🔒 Auditoria</div>
   <div class="tab" onclick="showPage('recorrentes',this);renderRecorrentes()">🔁 Recorrentes</div>
@@ -761,7 +761,7 @@ tr:hover td{background:#f5f8fb;}
   <div class="orc-layout">
 
     <!-- COLUNA ESQUERDA: steps -->
-    <div>
+    <div id="orcFormArea">
 
       <!-- STEP 1 – PACIENTE -->
       <div class="orc-step">
@@ -887,11 +887,20 @@ tr:hover td{background:#f5f8fb;}
           <textarea id="oObs" rows="3" placeholder="Ex: Inclui anestesia, material cirúrgico, consultas pós-operatórias..."></textarea>
         </div>
         <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
-          <button class="btn btn-ok" style="flex:1;min-width:140px;font-size:.91rem" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
-          <button class="btn" style="flex:0 0 auto;background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;font-size:.88rem" onclick="gerarPDFOrcRapido()">📄 PDF</button>
-          <button class="btn" style="flex:0 0 auto;background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;font-size:.88rem" onclick="imprimirOrcamentoRapido()" title="Abre diálogo de impressão do navegador">🖨 Imprimir</button>
+          <button class="btn btn-ok" style="flex:1;min-width:170px;font-size:.91rem" onclick="salvarEImprimir()">💾🖨 Salvar e Imprimir</button>
+          <button class="btn btn-ok" style="flex:0 0 auto;font-size:.91rem" id="btnSalvarOrc" onclick="salvarOrcamento()">💾 Salvar</button>
+          <button class="btn" style="flex:0 0 auto;background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;font-size:.88rem" onclick="salvarEPDF()">📄 Salvar e PDF</button>
+          <button class="btn" style="flex:0 0 auto;background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;font-size:.88rem" onclick="salvarEPagar()">💳 Salvar e Pagar</button>
           <button class="btn" id="btnPastaOrc" style="flex:0 0 auto;background:#f3e5f5;color:#4a148c;border:1px solid #ce93d8;font-size:.88rem" onclick="escolherPastaOrcamentos()" title="Escolher pasta para salvar PDFs automaticamente">📁 Pasta</button>
-          <button class="btn" style="flex:0 0 auto;background:#f5f5f5;color:var(--muted);border:1px solid var(--brd);font-size:.88rem" onclick="novoOrcamento()">🔄 Limpar</button>
+          <button class="btn" style="flex:0 0 auto;background:#f5f5f5;color:var(--muted);border:1px solid var(--brd);font-size:.88rem" onclick="(function(){
+  const temPac=!!orcPat;
+  const temItens=(orcItems||[]).some(s=>s.proc);
+  if(temPac||temItens){
+    showConfirm('Limpar orçamento','Há dados não salvos no formulário. Limpar mesmo assim?',()=>novoOrcamento());
+  } else {
+    novoOrcamento();
+  }
+})()">🔄 Limpar</button>
         </div>
       </div>
 
@@ -932,7 +941,7 @@ tr:hover td{background:#f5f8fb;}
         <!-- Orçamentos salvos -->
         <div class="sum-card" style="margin-top:14px">
           <div style="font-weight:700;font-size:.88rem;color:var(--primary);margin-bottom:10px">📋 Orçamentos Salvos</div>
-          <input type="text" id="searchOrc" placeholder="Buscar paciente..." oninput="renderOrcamentos()"
+          <input type="text" id="searchOrc" placeholder="Buscar paciente, CPF ou procedimento..." oninput="renderOrcamentos()"
             style="margin-bottom:10px;font-size:.8rem">
           <div id="orcList"><div class="empty" style="padding:20px 0"><div class="ico" style="font-size:1.6rem">📋</div>Nenhum orçamento</div></div>
         </div>
@@ -2305,6 +2314,8 @@ function calcStatusFinanceiro(orc){
 
 // Estado do modal de pagamento
 let _payModalOrcId=null;
+let _orcSalvoId=null;   // id do último orçamento salvo (banner pós-save)
+let _savingOrc=false;   // anti duplo-clique em salvarOrcamento
 // ────────────────────────────────────────────────────────────────────────────
 function getLog(){return Object.values(DATA.log||{}).sort((a,b)=>b.id-a.id);}
 function getLP(){
@@ -3552,7 +3563,7 @@ function setSS(st,msg){const b=document.getElementById('sbar'),t=document.getEle
 function fN(v){return(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fD(d){if(!d)return'—';const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
 function pct(v,t){if(!t)return'0%';return(v/t*100).toFixed(0)+'%';}
-function showToast(msg, color){
+function showToast(msg, color, duration){
   const t = document.getElementById('toast');
   // Map semantic strings to CSS variables or hex
   const map = {ok:'#1e8449',err:'#c0392b',warn:'#7d5a00',info:null};
@@ -3563,7 +3574,7 @@ function showToast(msg, color){
   void t.offsetWidth; // reflow to restart animation
   t.classList.add('show');
   clearTimeout(t._tid);
-  t._tid = setTimeout(()=>t.classList.remove('show'), 3400);
+  t._tid = setTimeout(()=>t.classList.remove('show'), duration||3400);
 }
 // Anti-XSS: escapa & < > " ' para uso seguro em innerHTML.
 // Usar em TODOS os lugares que injetam strings do banco via innerHTML.
@@ -3802,9 +3813,12 @@ function salvarTaxasMaquininha(){
 // em alguns ambientes (ex: iframes, PWA). Callbacks assíncronos.
 let _confirmCb = null, _confirmCancelCb = null;
 
-function showConfirm(titulo, msg, cbOk, cbCancel, okLabel, okStyle) {
+function showConfirm(titulo, msg, cbOk, cbCancel, okLabel, okStyle, extraHtml) {
   document.getElementById('confirmModalTitulo').textContent = titulo;
   document.getElementById('confirmModalMsg').textContent = msg;
+  // fix 1.6b: suporte a extraHtml (ex: checkbox cascata)
+  const extraEl = document.getElementById('confirmModalExtra');
+  if(extraEl) extraEl.innerHTML = extraHtml || '';
   const btn = document.getElementById('confirmModalOkBtn');
   btn.textContent = okLabel || 'Confirmar';
   btn.style.background = okStyle || '';
@@ -3815,12 +3829,14 @@ function showConfirm(titulo, msg, cbOk, cbCancel, okLabel, okStyle) {
 }
 function _confirmOk() {
   document.getElementById('confirmModal').style.display = 'none';
+  const extraEl=document.getElementById('confirmModalExtra');if(extraEl)extraEl.innerHTML='';
   const cb = _confirmCb;
   _confirmCb = _confirmCancelCb = null;
   if(cb) cb();
 }
 function _confirmCancel() {
   document.getElementById('confirmModal').style.display = 'none';
+  const extraEl=document.getElementById('confirmModalExtra');if(extraEl)extraEl.innerHTML='';
   const cb = _confirmCancelCb;
   _confirmCb = _confirmCancelCb = null;
   if(cb) cb();
@@ -4779,17 +4795,90 @@ function novoOrcamento(){
   if(oDataEl)oDataEl.value=today;
   if(oValEl)oValEl.value=v30.toISOString().split('T')[0];
   const det=document.getElementById('sumHospDetail');if(det)det.innerHTML='';
+  // fix 1.1: limpa banner e estado salvo ao criar novo orçamento
+  _esconderBannerOrcSalvo&&_esconderBannerOrcSalvo();
+  window._orcSalvoId=null;
 }
 
-function initOrcamento(){novoOrcamento();}
+function initOrcamento(){novoOrcamento();_setupBannerDismiss();} // fix D5
+
+// fix 1.2: troca de aba segura — só reseta se formulário vazio
+async function initOrcamentoSeguro(){
+  _setupBannerDismiss(); // fix D5: instala listener
+  await _orcInitPasta();
+  const temPaciente=!!orcPat;
+  const temItens=(orcItems||[]).some(s=>s.proc);
+  if(!temPaciente&&!temItens){
+    novoOrcamento();
+  }
+  // Se houver dados, mantém o formulário; apenas garante que a lista seja renderizada
+  renderOrcamentos();
+}
+
+async function _orcInitPasta(){
+  const btn=document.getElementById('btnPastaOrc');
+  if(!('showDirectoryPicker' in window)){
+    if(btn) btn.style.display='none';
+    return;
+  }
+  if(!_orcDirHandle){
+    await _orcRestaurarHandleIDB();
+  }
+  _orcAtualizarBtnPasta();
+}
+// ── Banner pós-salvamento (fix 1.1) ──────────────────────────────────────────
+function _mostrarBannerOrcSalvo(orcId, nomePac, total){
+  // Remove banner anterior se existir
+  const prev=document.getElementById('orcSaveBanner');if(prev)prev.remove();
+  const formEl=document.getElementById('orcFormArea')||document.querySelector('#page-orcamento .orc-form-card');
+  if(!formEl)return;
+  const banner=document.createElement('div');
+  banner.id='orcSaveBanner';
+  banner.style.cssText='background:#eafaf1;border:1.5px solid #a9dfbf;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;animation:fadeUp .3s ease';
+  banner.innerHTML=`
+    <span style="font-size:1.1rem">✅</span>
+    <span style="font-weight:700;color:#1e8449;flex:1;min-width:160px">Orçamento salvo — ${esc(nomePac)} — R$ ${fN(total)}</span>
+    <button class="btn" style="background:#27ae60;color:#fff;border:none;padding:7px 13px;font-size:.82rem;cursor:pointer;border-radius:7px" onclick="imprimirOrcamento(window._orcSalvoId)">🖨 Imprimir</button>
+    <button class="btn" style="background:#2d7bbf;color:#fff;border:none;padding:7px 13px;font-size:.82rem;cursor:pointer;border-radius:7px" onclick="gerarPDFOrcamento(window._orcSalvoId)">📄 PDF</button>
+    <button class="btn" style="background:#8e44ad;color:#fff;border:none;padding:7px 13px;font-size:.82rem;cursor:pointer;border-radius:7px" onclick="abrirModalPagamento(window._orcSalvoId)">💳 Registrar pagamento</button>
+    <button class="btn" style="background:#f5f5f5;color:#555;border:1px solid var(--brd);padding:7px 13px;font-size:.82rem;cursor:pointer;border-radius:7px" onclick="showConfirm('Novo orçamento','Deseja limpar o formulário para um novo orçamento?',()=>{novoOrcamento();})">➕ Novo orçamento</button>
+  `;
+  formEl.insertBefore(banner, formEl.firstChild);
+}
+
+function _esconderBannerOrcSalvo(){
+  const b=document.getElementById('orcSaveBanner');if(b)b.remove();
+  window._orcSalvoId=null;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+// fix D5: listener delegado que esconde banner ao editar qualquer campo do formulário
+function _setupBannerDismiss(){
+  const area=document.getElementById('orcFormArea');
+  if(!area||area._bannerDismissInstalled)return;
+  area._bannerDismissInstalled=true;
+  area.addEventListener('input',()=>{ if(window._orcSalvoId) _esconderBannerOrcSalvo(); });
+  area.addEventListener('change',()=>{ if(window._orcSalvoId) _esconderBannerOrcSalvo(); });
+}
+
+
 
 // ==================== SALVAR ====================
 function salvarOrcamento(){
-  if(!orcPat){showToast('Selecione um paciente.','#e74c3c');return;}
+  if(_savingOrc){return;}
+  _savingOrc=true;
+  const _bsBtn=document.getElementById('btnSalvarOrc');
+  if(_bsBtn){_bsBtn.disabled=true;_bsBtn.textContent='⏳ Salvando…';}
+  // fix D3: helper para abortar com reset do botão
+  const _abortSave=(msg)=>{
+    _savingOrc=false;
+    if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='💾 Salvar Orçamento';}
+    showToast(msg,'#e74c3c');
+  };
+  if(!orcPat){_abortSave('Selecione um paciente.');return null;}
   const data=document.getElementById('oData').value;
-  if(!data){showToast('Informe a data.','#e74c3c');return;}
+  if(!data){_abortSave('Informe a data.');return null;}
   const itens=orcItems.filter(s=>s.proc);
-  if(!itens.length){showToast('Adicione ao menos um procedimento.','#e74c3c');return;}
+  if(!itens.length){_abortSave('Adicione ao menos um procedimento.');return null;}
 
   const subtotal=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0);
   const desconto=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0);
@@ -4817,10 +4906,27 @@ function salvarOrcamento(){
   };
   dbRef.child('orcamentos/'+orc.id).set(orc);
   fbAddLog('ORCAMENTO',`Orcamento gerado para ${orcPat.nome} - Total R$ ${fN(total)}`);
-  novoOrcamento();
-  showToast('Orcamento salvo!','#27ae60');
+  window._orcSalvoId = orc.id;
+  _mostrarBannerOrcSalvo(orc.id, orcPat.nome, total);
+  showToast('Orçamento salvo!','#27ae60');
+  _savingOrc=false;
+  if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='💾 Salvar Orçamento';}
+  return orc;
 }
 
+
+function salvarEImprimir(){
+  const o=salvarOrcamento();
+  if(o) imprimirOrcamento(o.id);
+}
+function salvarEPDF(){
+  const o=salvarOrcamento();
+  if(o) gerarPDFOrcamento(o.id);
+}
+function salvarEPagar(){
+  const o=salvarOrcamento();
+  if(o) abrirModalPagamento(o.id);
+}
 function gerarPDFOrcRapido(){
   if(!orcPat){showToast('Selecione um paciente.','#e74c3c');return;}
   const data=document.getElementById('oData').value;
@@ -4880,14 +4986,13 @@ function mudarStatusOrc(id,novoStatus){
 // Gera receita (e despesas automáticas de equipe) a partir de um orçamento aceito.
 // Usa a configuração do PRIMEIRO procedimento do orçamento para as auto-despesas.
 // Se houver múltiplos procedimentos, avisa no toast — o médico pode ajustar manualmente.
+let _savingReceita=false; // fix 1.4c anti duplo-clique gerarReceita
 function gerarReceitaDeOrcamento(id){
+  if(_savingReceita){return;}
   const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
   if(orc.receitaGeradaId){
-    showConfirm(
-      'Receita já gerada',
-      `Este orçamento já gerou a receita #${orc.receitaGeradaId}.\n\nGerar novamente (não duplica se feito por engano)?`,
-      () => _gerarReceitaOrcCore(id)
-    );
+    // fix 1.5: bloqueio — não permite receita duplicada
+    showToast(`🚫 Este orçamento já gerou a receita #${orc.receitaGeradaId}. Use "💳 + Pagar" para pagamentos adicionais.`,'#e67e22',5000);
     return;
   }
   const data=new Date().toISOString().split('T')[0]; // hoje
@@ -4910,6 +5015,7 @@ function gerarReceitaDeOrcamento(id){
     'Confirmar lançamento',
     `Lançar receita de R$ ${fN(valor)} para ${pac}?\nProcedimento base: ${primeiroProc||'—'}\nAuto-despesas: ${temAutoDesp?'sim (equipe + comissão)':'não configuradas'}\nData: ${fD(data)}${aviso}`,
     () => {
+  _savingReceita=true; // fix D4: ativa guard anti-duplo-clique
   const linked_group_id=temAutoDesp?('grp_'+genId()):undefined;
   const lancId=genId();
   // Receita principal
@@ -4956,9 +5062,12 @@ function gerarReceitaDeOrcamento(id){
     ?`✓ Receita + ${desp_count} despesa(s) automática(s) lançada(s)!${nProcs>1?' (ajuste despesas se necessário)':''}`
     :'✓ Receita lançada! Nenhuma despesa configurada para o procedimento.';
   showToast(msg,'#27ae60');
+  _savingReceita=false;
   // Muda status para aceito se ainda não estiver
   if((orc.status||'aberto')!=='aceito')mudarStatusOrc(id,'aceito');
-  }); // fim showConfirm gerarReceita
+  },
+  ()=>{ _savingReceita=false; } // fix D4: reset guard se cancelar
+  ); // fim showConfirm gerarReceita
 } // fim gerarReceitaDeOrcamento
 
 function _gerarReceitaOrcCore(id){ gerarReceitaDeOrcamento(id); }
@@ -5002,7 +5111,13 @@ function _payMetodoChange(){
   document.getElementById('payBandeiraWrap').style.display=isCard?'':'none';
 }
 
+let _savingPag=false; // fix 1.4b anti duplo-clique salvarPagamento
 function salvarPagamento(){
+  if(_savingPag){return;}
+  _savingPag=true;
+  const _bpBtn=document.getElementById('btnSalvarPag');
+  if(_bpBtn){_bpBtn.disabled=true;_bpBtn.textContent='⏳ Salvando…';}
+  setTimeout(()=>{_savingPag=false;if(_bpBtn){_bpBtn.disabled=false;_bpBtn.textContent='💳 Registrar Pagamento';}},1800);
   const orcId=document.getElementById('payModalOrcId').value;
   const orc=DATA.orcamentos&&DATA.orcamentos[orcId];
   if(!orc){showToast('Orçamento não encontrado.','#e74c3c');return;}
@@ -5119,17 +5234,44 @@ function _executarSalvarPagamento(orcId,orc,amount,payment_date,method,installme
 }
 
 function excluirPagamento(payId){
+  // fix 1.6: exclusão em cascata com checkbox
   const pay=DATA.quote_payments&&DATA.quote_payments[payId];if(!pay)return;
   const orc=DATA.orcamentos&&DATA.orcamentos[pay.quote_id];
+
+  // Monta modal customizado com checkbox
+  const chkId='chkCascadeDel_'+payId;
+  const msg=`Excluir pagamento de R$ ${fN(pay.amount)} (${pay.payment_method}) de ${orc?orc.paciente:'?'}?`;
+  const extraHtml=`<label style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;font-size:.86rem;cursor:pointer">
+    <input type="checkbox" id="${chkId}" checked style="margin-top:2px;accent-color:var(--err)">
+    <span>Excluir também a receita e a taxa de cartão vinculadas (soft-delete)</span>
+  </label>`;
+
   showConfirm(
     'Excluir Pagamento',
-    `Excluir pagamento de R$ ${fN(pay.amount)} (${pay.payment_method}) de ${orc?orc.paciente:'?'}?\n\nO lançamento de receita vinculado será mantido — exclua-o manualmente se necessário.`,
+    msg,
     ()=>{
       const now=new Date().toISOString();
-      fbAddLog('EXCLUSÃO PAGAMENTO',`Pagamento #${payId} R$ ${fN(pay.amount)} excluído por ${CU}`);
+      const cascade=document.getElementById(chkId)?document.getElementById(chkId).checked:true;
+      // Log ANTES da operação
+      fbAddLog('EXCLUSÃO PAGAMENTO',`Pagamento #${payId} R$ ${fN(pay.amount)} excluído por ${CU}${cascade?' (cascata: receita+taxa)':''}`);
       dbRef.child('quote_payments/'+payId).update({deletedAt:now,deletedBy:CU});
-      showToast('Pagamento excluído.','#e67e22');
-    }
+      if(cascade){
+        // Soft-delete de todos os lançamentos vinculados a este payId
+        const lancs=DATA.lancamentos||{};
+        Object.keys(lancs).forEach(lid=>{
+          const l=lancs[lid];
+          if(l&&l.linked_pay_id===payId&&!l.deletedAt){
+            fbAddLog('EXCLUSÃO CASCATA',`Lançamento #${lid} (${l.tipo} R$ ${fN(l.valor)}) excluído por cascata do pagamento #${payId} por ${CU}`);
+            dbRef.child('lancamentos/'+lid).update({deletedAt:now,deletedBy:CU});
+          }
+        });
+      }
+      showToast(cascade?'Pagamento e lançamentos vinculados excluídos.':'Pagamento excluído.','#e67e22');
+    },
+    null,
+    'Excluir',
+    '#e74c3c',
+    extraHtml
   );
 }
 
@@ -5140,7 +5282,7 @@ function renderOrcamentos(){
   const sq=(document.getElementById('searchOrc')?.value||'').toLowerCase();
   const today=new Date().toISOString().split('T')[0];
   let all=getOrcamentos();
-  if(sq)all=all.filter(o=>(o.paciente||'').toLowerCase().includes(sq)||(o.cpf||'').includes(sq));
+  if(sq)all=all.filter(o=>(o.paciente||'').toLowerCase().includes(sq)||(o.cpf||'').includes(sq)||(o.servicos||[]).some(s=>(s.proc||'').toLowerCase().includes(sq)));
 
   // Métricas de conversão
   const total=all.length;
@@ -6159,22 +6301,70 @@ async function escolherPastaOrcamentos(){
   }
   try{
     _orcDirHandle = await window.showDirectoryPicker({ mode:'readwrite', startIn:'documents' });
-    // Atualizar visual do botão para indicar pasta ativa
-    const btn = document.getElementById('btnPastaOrc');
-    if(btn){
-      btn.style.background = '#c8e6c9';
-      btn.style.color = '#1b5e20';
-      btn.title = `Pasta ativa: ${_orcDirHandle.name} — clique para trocar`;
-      btn.textContent = `📁 ${_orcDirHandle.name.slice(0,14)}`;
-    }
+    await _orcSalvarHandleIDB(_orcDirHandle);
+    _orcAtualizarBtnPasta();
     showToast(`✓ Pasta "${_orcDirHandle.name}" selecionada. Próximos PDFs serão salvos aqui.`, '#27ae60', 4000);
     fbAddLog('CONFIG PDF','Pasta de orçamentos selecionada: '+_orcDirHandle.name);
   } catch(e){
-    // Usuário cancelou o seletor — não é erro
     if(e.name !== 'AbortError'){
       showToast('Erro ao acessar pasta: '+(e.message||e), '#e74c3c');
     }
   }
+}
+
+function _orcAtualizarBtnPasta(){
+  const btn = document.getElementById('btnPastaOrc');
+  if(!btn) return;
+  if(_orcDirHandle){
+    btn.style.background = '#c8e6c9';
+    btn.style.color = '#1b5e20';
+    btn.title = `Pasta ativa: ${_orcDirHandle.name} — clique para trocar`;
+    btn.textContent = `📁 ${_orcDirHandle.name.slice(0,14)}`;
+  } else {
+    btn.style.background = '#f3e5f5';
+    btn.style.color = '#4a148c';
+    btn.title = 'Escolher pasta para salvar PDFs automaticamente';
+    btn.textContent = '📁 Pasta';
+  }
+}
+
+function _orcSalvarHandleIDB(handle){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open('analistaFinanceiro',1);
+    req.onupgradeneeded=e=>e.target.result.createObjectStore('config');
+    req.onsuccess=e=>{
+      const db=e.target.result;
+      const tx=db.transaction('config','readwrite');
+      tx.objectStore('config').put(handle,'orcDirHandle');
+      tx.oncomplete=()=>{db.close();res();};
+      tx.onerror=()=>{db.close();rej(tx.error);};
+    };
+    req.onerror=()=>rej(req.error);
+  });
+}
+
+async function _orcRestaurarHandleIDB(){
+  return new Promise((res)=>{
+    const req=indexedDB.open('analistaFinanceiro',1);
+    req.onupgradeneeded=e=>e.target.result.createObjectStore('config');
+    req.onsuccess=e=>{
+      const db=e.target.result;
+      const tx=db.transaction('config','readonly');
+      const get=tx.objectStore('config').get('orcDirHandle');
+      get.onsuccess=async()=>{
+        db.close();
+        const h=get.result;
+        if(!h){res(null);return;}
+        try{
+          const perm=await h.queryPermission({mode:'readwrite'});
+          _orcDirHandle = (perm==='granted') ? h : null;
+        } catch(e){ _orcDirHandle=null; }
+        res(_orcDirHandle);
+      };
+      get.onerror=()=>{db.close();res(null);};
+    };
+    req.onerror=()=>res(null);
+  });
 }
 
 /**
@@ -6202,8 +6392,8 @@ async function _salvarPdfBlob(blob, filename){
       // Permissão perdida ou erro de FS — fallback silencioso para download
       console.warn('_salvarPdfBlob: fallback para download normal.', e);
       _orcDirHandle = null; // limpa handle inválido
-      const btn = document.getElementById('btnPastaOrc');
-      if(btn){ btn.style.background='#f3e5f5'; btn.style.color='#4a148c'; btn.textContent='📁 Pasta'; btn.title='Escolher pasta para salvar PDFs automaticamente'; }
+      _orcSalvarHandleIDB(null).catch(()=>{});
+      _orcAtualizarBtnPasta();
     }
   }
   // Fallback: download normal via link temporário
@@ -6503,7 +6693,7 @@ function gerarPDFOrcamento(id, options){
     const win = window.open(blobUrl, '_blank');
     if(!win){
       // Popup bloqueado — faz download e avisa
-      showToast('⚠ Popup bloqueado. Permitir pop-ups para imprimir diretamente.', '#e8a838', 5000);
+      showToast('⚠ Popup bloqueado — o PDF foi baixado; abra o arquivo para imprimir, ou permita pop-ups neste site.', '#e8a838', 6000);
       _salvarPdfBlob(blob, filename);
     } else {
       setTimeout(()=> URL.revokeObjectURL(blobUrl), 30000);
@@ -6520,11 +6710,95 @@ function gerarPDFOrcamento(id, options){
 }
 </script>
 
+
+<!-- ===== MODAL: PAGAMENTO DE ORÇAMENTO ===== -->
+<div class="modal-overlay" id="payModal" style="display:none" onclick="if(event.target===this)fecharModalPagamento()">
+  <div class="modal-box" style="max-width:480px">
+    <h3 id="payModalTitulo">💳 Adicionar Pagamento</h3>
+    <input type="hidden" id="payModalOrcId">
+
+    <!-- Resumo financeiro do orçamento -->
+    <div style="background:#f0f4f8;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
+      <div>
+        <div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase">Total</div>
+        <div style="font-size:.88rem;font-weight:700;color:var(--txt)" id="payInfoTotal">R$ 0,00</div>
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--ok);font-weight:600;text-transform:uppercase">Pago</div>
+        <div style="font-size:.88rem;font-weight:700;color:var(--ok)" id="payInfoPago">R$ 0,00</div>
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--err);font-weight:600;text-transform:uppercase">Saldo</div>
+        <div style="font-size:.88rem;font-weight:700;color:var(--err)" id="payInfoSaldo">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div style="display:grid;gap:11px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Valor (R$) *</label>
+          <input type="text" id="payValor" placeholder="0,00"
+            oninput="maskMoeda(this,event)" onblur="fmtMoeda(this)"
+            style="width:100%;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Data *</label>
+          <input type="date" id="payData" style="width:100%;box-sizing:border-box">
+        </div>
+      </div>
+
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Forma de Pagamento *</label>
+        <select id="payMetodo" style="width:100%;box-sizing:border-box" onchange="_payMetodoChange()">
+          <option>PIX</option>
+          <option>Dinheiro</option>
+          <option>Cartão de Débito</option>
+          <option>Cartão de Crédito</option>
+          <option>Transferência</option>
+          <option>TED</option>
+          <option>Cheque</option>
+        </select>
+      </div>
+
+      <div id="payParcelasWrap" style="display:none">
+        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Parcelas</label>
+        <select id="payParcelas" style="width:100%;box-sizing:border-box">
+          <option value="1">1x (à vista)</option>
+          <option value="2">2x</option><option value="3">3x</option><option value="4">4x</option>
+          <option value="5">5x</option><option value="6">6x</option><option value="7">7x</option>
+          <option value="8">8x</option><option value="9">9x</option><option value="10">10x</option>
+          <option value="11">11x</option><option value="12">12x</option>
+        </select>
+      </div>
+
+      <div id="payBandeiraWrap" style="display:none">
+        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Bandeira do Cartão</label>
+        <select id="payBandeira" style="width:100%;box-sizing:border-box">
+          <option value="">— selecionar —</option>
+          <option>Visa</option><option>Mastercard</option><option>Elo</option>
+          <option>Amex</option><option>Hipercard</option><option>Outra</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Observação</label>
+        <input type="text" id="payObs" placeholder="Ex: sinal, complemento, parcela 1..."
+          style="width:100%;box-sizing:border-box">
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-neu" onclick="fecharModalPagamento()">Cancelar</button>
+      <button id="btnSalvarPag" class="btn" style="background:var(--ok);color:#fff;font-weight:700" onclick="salvarPagamento()">💳 Registrar Pagamento</button>
+    </div>
+  </div>
+</div>
 <!-- ===== MODAL GENÉRICO: CONFIRM ===== -->
 <div class="modal-overlay" id="confirmModal" style="display:none" onclick="if(event.target===this)_confirmCancel()">
   <div class="modal-box" style="max-width:500px">
     <h3 id="confirmModalTitulo" style="margin-bottom:10px"></h3>
     <div id="confirmModalMsg" style="white-space:pre-wrap;font-size:.93rem;color:var(--text);line-height:1.6;margin-bottom:4px"></div>
+    <div id="confirmModalExtra"></div>
     <div class="modal-actions" style="margin-top:20px">
       <button class="btn btn-neu" onclick="_confirmCancel()" id="confirmModalCancelBtn">Cancelar</button>
       <button class="btn" id="confirmModalOkBtn" onclick="_confirmOk()">Confirmar</button>
