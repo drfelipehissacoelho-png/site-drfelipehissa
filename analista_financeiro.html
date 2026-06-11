@@ -4905,6 +4905,9 @@ function salvarOrcamento(){
     usuario:CU,email:CUEmail,criadoEm:new Date().toISOString()
   };
   dbRef.child('orcamentos/'+orc.id).set(orc);
+  // Atualização otimista do cache local — o listener on('value') confirmará em seguida.
+  if(!DATA.orcamentos) DATA.orcamentos = {};
+  DATA.orcamentos[orc.id] = orc;
   fbAddLog('ORCAMENTO',`Orcamento gerado para ${orcPat.nome} - Total R$ ${fN(total)}`);
   window._orcSalvoId = orc.id;
   _mostrarBannerOrcSalvo(orc.id, orcPat.nome, total);
@@ -5074,8 +5077,12 @@ function _gerarReceitaOrcCore(id){ gerarReceitaDeOrcamento(id); }
 
 // ── MULTIPAGAMENTO: funções principais ──────────────────────────────────────
 
-function abrirModalPagamento(orcId){
-  const orc=DATA.orcamentos&&DATA.orcamentos[orcId];if(!orc)return;
+function abrirModalPagamento(orcIdOrObj){
+  const orc = (orcIdOrObj && typeof orcIdOrObj === 'object')
+    ? orcIdOrObj
+    : (DATA.orcamentos && DATA.orcamentos[orcIdOrObj]);
+  if(!orc){ showToast('Orçamento não encontrado — tente novamente em instantes.','#e74c3c'); return; }
+  const orcId = orc.id;
   _payModalOrcId=String(orcId);
   const saldo=calcSaldoPendente(orc);
   document.getElementById('payModalTitulo').textContent=`💳 Adicionar Pagamento — ${esc(orc.paciente)}`;
@@ -6643,11 +6650,12 @@ function gerarPDFOrcamento(id, options){
 
   // ======================== TOTAL GERAL (caixa destaque) ========================
   const grandTotal=orc.total||0;
-  // Caixa azul
-  doc.setFillColor(...NAVY);
-  doc.roundedRect(ML,y,MR-ML,13,2,2,'F');
-  _oPdfTxt(doc,'TOTAL GERAL',ML+6,y+8.5,9,true,...WHITE);
-  _oPdfTxt(doc,'R$ '+fN(grandTotal),MR-4,y+8.5,12,true,...WHITE,'right');
+  // Caixa contornada (sem fill sólido — economiza tinta)
+  doc.setDrawColor(...NAVY);
+  doc.setLineWidth(0.8);
+  doc.roundedRect(ML,y,MR-ML,13,2,2,'S');   // 'S' = stroke, sem preenchimento
+  _oPdfTxt(doc,'TOTAL GERAL',ML+6,y+8.5,9,true,...NAVY);
+  _oPdfTxt(doc,'R$ '+fN(grandTotal),MR-4,y+8.5,12,true,...NAVY,'right');
   y+=20;
 
   // ======================== OBSERVAÇÕES ========================
