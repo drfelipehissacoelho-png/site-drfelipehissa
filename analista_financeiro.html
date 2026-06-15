@@ -917,9 +917,7 @@ tr:hover td{background:#f5f8fb;}
         <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
           <button class="btn btn-ok" style="flex:1;min-width:170px;font-size:.91rem" onclick="salvarEImprimir()">💾🖨 Salvar e Imprimir</button>
           <button class="btn btn-ok" style="flex:0 0 auto;font-size:.91rem" id="btnSalvarOrc" onclick="salvarOrcamento()">💾 Salvar</button>
-          <button class="btn" style="flex:0 0 auto;background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;font-size:.88rem" onclick="salvarEPDF()">📄 Salvar e PDF</button>
           <button class="btn" style="flex:0 0 auto;background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;font-size:.88rem" onclick="salvarEPagar()">💳 Salvar e Pagar</button>
-          <button class="btn" id="btnPastaOrc" style="flex:0 0 auto;background:#f3e5f5;color:#4a148c;border:1px solid #ce93d8;font-size:.88rem" onclick="escolherPastaOrcamentos()" title="Escolher pasta para salvar PDFs automaticamente">📁 Pasta</button>
           <button class="btn" style="flex:0 0 auto;background:#f5f5f5;color:var(--muted);border:1px solid var(--brd);font-size:.88rem" onclick="(function(){
   const temPac=!!orcPat;
   const temItens=(orcItems||[]).some(s=>s.proc);
@@ -6883,17 +6881,26 @@ function gerarPDFOrcamento(id, options){
   const filename = buildQuotePdfFilename(orc);
 
   if(opts.imprimir){
-    // Modo impressão: jsPDF autoPrint + abre blob URL → browser exibe diálogo de impressão
-    doc.autoPrint();
+    // Modo impressão: abre uma janela HTML com TÍTULO legível (= nome do arquivo)
+    // e o PDF embutido num iframe. Assim o diálogo "Salvar como PDF" do navegador
+    // sugere o mesmo nome dos downloads (orcamento_paciente_...), e não o UUID do blob.
     const blob = doc.output('blob');
     const blobUrl = URL.createObjectURL(blob);
-    const win = window.open(blobUrl, '_blank');
+    const tituloArq = filename.replace(/\.pdf$/i,'');
+    const win = window.open('', '_blank');
     if(!win){
       // Popup bloqueado — faz download e avisa
       showToast('⚠ Popup bloqueado — o PDF foi baixado; abra o arquivo para imprimir, ou permita pop-ups neste site.', '#e8a838', 6000);
       _salvarPdfBlob(blob, filename);
     } else {
-      setTimeout(()=> URL.revokeObjectURL(blobUrl), 30000);
+      win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+tituloArq+'</title></head>'
+        +'<body style="margin:0;height:100vh">'
+        +'<iframe id="pdfFrame" src="'+blobUrl+'" style="border:0;width:100%;height:100%"></iframe>'
+        +'<scr'+'ipt>var f=document.getElementById("pdfFrame");'
+        +'f.onload=function(){setTimeout(function(){try{f.contentWindow.focus();f.contentWindow.print();}catch(e){window.print();}},500);};'
+        +'</scr'+'ipt></body></html>');
+      win.document.close();
+      setTimeout(()=> URL.revokeObjectURL(blobUrl), 60000);
     }
     fbAddLog('IMPRIMIR ORCAMENTO','Impressão: '+filename+'  R$ '+fN(grandTotal));
     showToast('🖨 Abrindo impressão...','#27ae60');
