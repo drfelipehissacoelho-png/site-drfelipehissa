@@ -323,8 +323,20 @@ tr:hover td{background:#f5f8fb;}
 .ptag{display:inline-block;background:var(--pl-light);color:var(--primary);border-radius:5px;padding:2px 8px;font-size:.69rem;font-weight:700;margin-top:2px;}
 
 /* ── Orçamento ──────────────────────────────── */
-.orc-layout{display:grid;grid-template-columns:1fr 310px;gap:16px;align-items:start;}
-@media(max-width:980px){.orc-layout{grid-template-columns:1fr;}}
+/* Fase 4A: layout em coluna única, formulário em largura total centralizado */
+.orc-layout{max-width:1100px;margin:0 auto;}
+.orc-sumbar{position:sticky;top:70px;z-index:50;background:var(--surface);border:1.5px solid #b8d1e8;border-radius:12px;box-shadow:var(--shadow-sm);margin-bottom:14px;overflow:hidden;}
+.orc-sumbar-row{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;background:linear-gradient(135deg,var(--pl-light),#f3f8fd);}
+.osb-pat{font-size:.86rem;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%;}
+.osb-pat b{font-weight:700;}
+.osb-tot{font-size:.92rem;color:var(--primary);font-weight:700;white-space:nowrap;}
+.osb-tot b{font-size:1.15rem;font-weight:900;}
+.osb-caret{font-size:.78rem;color:var(--muted);transition:transform .2s;flex:0 0 auto;}
+.orc-sumbar.open .osb-caret{transform:rotate(180deg);}
+.orc-sumbar-detail{display:none;padding:10px 16px 12px;border-top:1px solid var(--brd);}
+.orc-sumbar.open .orc-sumbar-detail{display:block;}
+.osb-line{display:flex;justify-content:space-between;font-size:.8rem;padding:4px 0;border-bottom:1px solid var(--brd);color:var(--muted);}
+.osb-line span:last-child{font-weight:600;color:var(--txt);}
 .orc-step{
   background:var(--surface);border-radius:var(--radius-lg);padding:20px 22px;
   box-shadow:var(--shadow-sm);margin-bottom:14px;border:1.5px solid var(--brd);
@@ -760,8 +772,24 @@ tr:hover td{background:#f5f8fb;}
 <div id="page-orcamento" class="page">
   <div class="orc-layout">
 
-    <!-- COLUNA ESQUERDA: steps -->
+    <!-- FORMULÁRIO (largura total) -->
     <div id="orcFormArea">
+
+      <!-- Resumo financeiro: barra sticky compacta (Fase 4A) -->
+      <div class="orc-sumbar" id="orcSumBar">
+        <div class="orc-sumbar-row" onclick="_toggleSumDetail()" title="Clique para ver/ocultar o detalhamento">
+          <span class="osb-pat">👤 <b id="sumPatNome">—</b></span>
+          <span style="flex:1"></span>
+          <span class="osb-tot">TOTAL&nbsp;&nbsp;<b id="oTotal">R$ 0,00</b></span>
+          <span class="osb-caret" id="osbCaret">▾</span>
+        </div>
+        <div class="orc-sumbar-detail" id="orcSumDetail">
+          <div class="osb-line"><span>Subtotal serviços</span><span id="oSubtotal">R$ 0,00</span></div>
+          <div class="osb-line"><span>Descontos</span><span id="oDesconto" style="color:var(--err)">- R$ 0,00</span></div>
+          <div class="osb-line"><span>Custo hospital</span><span id="oHospTotal">R$ 0,00</span></div>
+          <div id="sumHospDetail" style="margin-top:4px"></div>
+        </div>
+      </div>
 
       <!-- STEP 1 – PACIENTE -->
       <div class="orc-step">
@@ -904,50 +932,18 @@ tr:hover td{background:#f5f8fb;}
         </div>
       </div>
 
-    </div><!-- /left column -->
+    </div><!-- /orcFormArea -->
 
-    <!-- COLUNA DIREITA: sumário + lista -->
-    <div>
-
-      <!-- Resumo financeiro (sticky) -->
-      <div class="sum-sticky">
-        <div class="sum-card">
-          <div style="font-weight:700;font-size:.88rem;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:6px">
-            <span style="background:var(--primary);color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800">R$</span>
-            Resumo Financeiro
-          </div>
-          <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">Paciente</div>
-          <div style="font-size:.88rem;font-weight:600;color:var(--txt);margin-bottom:12px;min-height:18px" id="sumPatNome">—</div>
-
-          <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:4px 0;border-bottom:1px solid var(--brd)">
-            <span style="color:var(--muted)">Subtotal serviços</span>
-            <span id="oSubtotal" style="font-weight:600">R$ 0,00</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:4px 0;border-bottom:1px solid var(--brd)">
-            <span style="color:var(--muted)">Descontos</span>
-            <span id="oDesconto" style="color:var(--err);font-weight:600">- R$ 0,00</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:4px 0;border-bottom:1px solid var(--brd)">
-            <span style="color:var(--muted)">Custo hospital</span>
-            <span id="oHospTotal" style="font-weight:600">R$ 0,00</span>
-          </div>
-          <div id="sumHospDetail" style="margin-bottom:4px"></div>
-          <div class="sum-tot">
-            <span style="font-size:.78rem;opacity:.85">TOTAL GERAL</span>
-            <span style="font-size:1.25rem;font-weight:800" id="oTotal">R$ 0,00</span>
-          </div>
-        </div>
-
-        <!-- Orçamentos salvos -->
-        <div class="sum-card" style="margin-top:14px">
-          <div style="font-weight:700;font-size:.88rem;color:var(--primary);margin-bottom:10px">📋 Orçamentos Salvos</div>
-          <input type="text" id="searchOrc" placeholder="Buscar paciente, CPF ou procedimento..." oninput="renderOrcamentos()"
-            style="margin-bottom:10px;font-size:.8rem">
-          <div id="orcList"><div class="empty" style="padding:20px 0"><div class="ico" style="font-size:1.6rem">📋</div>Nenhum orçamento</div></div>
-        </div>
+    <!-- Orçamentos salvos (Fase 4A: largura total abaixo do form; vira drawer na 4B) -->
+    <div class="sum-card" id="orcSavedSection" style="margin-top:4px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;flex-wrap:wrap">
+        <div style="font-weight:700;font-size:.9rem;color:var(--primary)">📋 Orçamentos Salvos</div>
+        <span style="flex:1"></span>
+        <input type="text" id="searchOrc" placeholder="Buscar paciente, CPF ou procedimento..." oninput="renderOrcamentos()"
+          style="font-size:.8rem;flex:1;min-width:200px;max-width:360px;margin:0">
       </div>
-
-    </div><!-- /right column -->
+      <div id="orcList"><div class="empty" style="padding:20px 0"><div class="ico" style="font-size:1.6rem">📋</div>Nenhum orçamento</div></div>
+    </div>
 
   </div>
 </div>
@@ -4115,6 +4111,8 @@ function _setSortLix(col)  { _setSort(_lixSort, col); renderLixeira(); }
 let orcItems=[];     // [{id,proc,qty,valorUnit,descPct}]
 let orcPat=null;     // {id,nome,cpf,rg,tel,email}
 let orcHospRows=[];  // [{id,hospKey,procName,hospitalCost,manual}]
+let _editingOrcId=null;   // id do orçamento em edição (null = novo)
+let _duplicandoDe=null;   // id de origem quando duplicando
 let _pacDebTimer=null;
 // Lançamentos patient state
 let _lancPat=null;   // {id,nome,cpf,rg,tel,email}
@@ -4201,6 +4199,7 @@ function highlightAc(nome,q){
 
 function selectPacOrc(p){
   if(typeof p==='string')try{p=JSON.parse(p.replace(/&quot;/g,'"'));}catch(e){return;}
+  if(window._orcSalvoId)_esconderBannerOrcSalvo();
   orcPat=p;
   const res=document.getElementById('pacOrcResults');if(res)res.style.display='none';
   document.getElementById('pacOrcWrap').style.display='none';
@@ -4576,6 +4575,7 @@ function salvarNovoPatOrc(){
 
 // ==================== PROCEDIMENTOS ====================
 function addItemOrc(){
+  if(window._orcSalvoId)_esconderBannerOrcSalvo();
   orcItems.push({id:genId(),proc:'',qty:1,valorUnit:0,descPct:0});
   renderItemsOrc();
 }
@@ -4664,6 +4664,7 @@ function renderItemsOrc(){
 
 // ==================== HOSPITAL ROWS ====================
 function addHospRow(){
+  if(window._orcSalvoId)_esconderBannerOrcSalvo();
   orcHospRows.push({id:genId(),hospKey:'',procName:'',hospitalCost:0,manual:false});
   renderHospRows();
 }
@@ -4798,6 +4799,12 @@ function novoOrcamento(){
   // fix 1.1: limpa banner e estado salvo ao criar novo orçamento
   _esconderBannerOrcSalvo&&_esconderBannerOrcSalvo();
   window._orcSalvoId=null;
+  // Limpar modo edição e duplicação
+  _editingOrcId=null;
+  _duplicandoDe=null;
+  const eb=document.getElementById('orcEditBanner');if(eb)eb.remove();
+  const btnSalv=document.getElementById('btnSalvarOrc');
+  if(btnSalv)btnSalv.textContent='💾 Salvar';
 }
 
 function initOrcamento(){novoOrcamento();_setupBannerDismiss();} // fix D5
@@ -4827,7 +4834,7 @@ async function _orcInitPasta(){
   _orcAtualizarBtnPasta();
 }
 // ── Banner pós-salvamento (fix 1.1) ──────────────────────────────────────────
-function _mostrarBannerOrcSalvo(orcId, nomePac, total){
+function _mostrarBannerOrcSalvo(orcId, nomePac, total, label){
   // Remove banner anterior se existir
   const prev=document.getElementById('orcSaveBanner');if(prev)prev.remove();
   const formEl=document.getElementById('orcFormArea')||document.querySelector('#page-orcamento .orc-form-card');
@@ -4837,10 +4844,11 @@ function _mostrarBannerOrcSalvo(orcId, nomePac, total){
   banner.style.cssText='background:#eafaf1;border:1.5px solid #a9dfbf;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;animation:fadeUp .3s ease';
   banner.innerHTML=`
     <span style="font-size:1.1rem">✅</span>
-    <span style="font-weight:700;color:#1e8449;flex:1;min-width:160px">Orçamento salvo — ${esc(nomePac)} — R$ ${fN(total)}</span>
+    <span style="font-weight:700;color:#1e8449;flex:1;min-width:160px">${label==='atualizado'?'✏️ Orçamento atualizado':'✅ Orçamento salvo'} — ${esc(nomePac)} — R$ ${fN(total)}</span>
     <button class="btn" style="background:#27ae60;color:#fff;border:none;padding:7px 13px;font-size:.82rem;cursor:pointer;border-radius:7px" onclick="imprimirOrcamento(window._orcSalvoId)">🖨 Imprimir</button>
     <button class="btn" style="background:#2d7bbf;color:#fff;border:none;padding:7px 13px;font-size:.82rem;cursor:pointer;border-radius:7px" onclick="gerarPDFOrcamento(window._orcSalvoId)">📄 PDF</button>
     <button class="btn" style="background:#8e44ad;color:#fff;border:none;padding:7px 13px;font-size:.82rem;cursor:pointer;border-radius:7px" onclick="abrirModalPagamento(window._orcSalvoId)">💳 Registrar pagamento</button>
+    <button class="btn" style="background:#e8f0fb;color:#1a56af;border:1px solid #b8cff5;padding:7px 13px;font-size:.82rem;cursor:pointer;border-radius:7px" onclick="duplicarOrcamento(window._orcSalvoId)">📑 Duplicar</button>
     <button class="btn" style="background:#f5f5f5;color:#555;border:1px solid var(--brd);padding:7px 13px;font-size:.82rem;cursor:pointer;border-radius:7px" onclick="showConfirm('Novo orçamento','Deseja limpar o formulário para um novo orçamento?',()=>{novoOrcamento();})">➕ Novo orçamento</button>
   `;
   formEl.insertBefore(banner, formEl.firstChild);
@@ -4849,6 +4857,11 @@ function _mostrarBannerOrcSalvo(orcId, nomePac, total){
 function _esconderBannerOrcSalvo(){
   const b=document.getElementById('orcSaveBanner');if(b)b.remove();
   window._orcSalvoId=null;
+}
+// Fase 4A: expande/recolhe o detalhamento da barra de resumo
+function _toggleSumDetail(){
+  const b=document.getElementById('orcSumBar');
+  if(b)b.classList.toggle('open');
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // fix D5: listener delegado que esconde banner ao editar qualquer campo do formulário
@@ -4871,7 +4884,7 @@ function salvarOrcamento(){
   // fix D3: helper para abortar com reset do botão
   const _abortSave=(msg)=>{
     _savingOrc=false;
-    if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='💾 Salvar Orçamento';}
+    if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent=_editingOrcId?'💾 Atualizar Orçamento':'💾 Salvar';}
     showToast(msg,'#e74c3c');
   };
   if(!orcPat){_abortSave('Selecione um paciente.');return null;}
@@ -4904,17 +4917,186 @@ function salvarOrcamento(){
     status:'aberto',
     usuario:CU,email:CUEmail,criadoEm:new Date().toISOString()
   };
+  // Se em modo edição, preservar campos imutáveis e usar update()
+  if(_editingOrcId){
+    const orcAntigo=DATA.orcamentos&&DATA.orcamentos[_editingOrcId];
+    const totalAntigo=orcAntigo?orcAntigo.total:null;
+    // Proteção: novo total não pode ser menor que valor já pago
+    const valorPago=calcValorPago({id:_editingOrcId,total:orcAntigo?.total||0});
+    if(total < valorPago){
+      _abortSave(`Não é possível: total R$ ${fN(total)} é menor que o valor já pago R$ ${fN(valorPago)}.`);
+      return null;
+    }
+    const updateFields={
+      paciente:orc.paciente,cpf:orc.cpf,rg:orc.rg,tel:orc.tel,
+      data:orc.data,validade:orc.validade,
+      servicos:orc.servicos,hospRows:orc.hospRows,
+      subtotal:orc.subtotal,desconto:orc.desconto,hospTotal:orc.hospTotal,total:orc.total,
+      obs:orc.obs,
+      editadoEm:new Date().toISOString(),editadoPor:CU
+    };
+    fbAddLog('EDIÇÃO ORÇAMENTO',`Orç #${_editingOrcId} (${orcPat.nome}) · total R$ ${fN(totalAntigo||0)} → R$ ${fN(total)} · por ${CU}`);
+    dbRef.child('orcamentos/'+_editingOrcId).update(updateFields);
+    // Atualizar cache local (merge)
+    if(!DATA.orcamentos) DATA.orcamentos={};
+    DATA.orcamentos[_editingOrcId]=Object.assign({},orcAntigo||{},updateFields,{id:_editingOrcId});
+    const orcEditado=DATA.orcamentos[_editingOrcId];
+    // ── C.1: sincronizar receita vinculada quando o total muda ──────────────────
+    // Se este orçamento já gerou receita (receitaGeradaId), o lançamento de
+    // receita em Lançamentos precisa acompanhar o novo total — senão o
+    // faturamento fica inconsistente (orçamento diz X, receita diz Y).
+    let _avisoReceita='';
+    const _recId=orcAntigo&&orcAntigo.receitaGeradaId;
+    const _rec=(_recId&&DATA.lancamentos)?DATA.lancamentos[_recId]:null;
+    if(_rec&&!_rec.deletedAt&&(_rec.valor||0)!==total){
+      // Log ANTES da gravação (regra do projeto)
+      fbAddLog('AJUSTE RECEITA EDIÇÃO',`Receita #${_recId} do orç #${_editingOrcId} (${orcPat.nome}) ajustada R$ ${fN(_rec.valor||0)} → R$ ${fN(total)} por ${CU}`);
+      dbRef.child('lancamentos/'+_recId+'/valor').set(total);
+      DATA.lancamentos[_recId].valor=total;
+      // Auto-despesas (equipe/comissão) no mesmo grupo NÃO são recalculadas —
+      // o usuário precisa revisá-las manualmente.
+      const _grp=_rec.linked_group_id;
+      const _temAutoDesp=_grp&&Object.keys(DATA.lancamentos).some(k=>{const l=DATA.lancamentos[k];return l&&l.linked_group_id===_grp&&l.tipo==='despesa'&&!l.deletedAt;});
+      _avisoReceita=_temAutoDesp
+        ?'⚠ Receita ajustada ao novo total. As auto-despesas (equipe/comissão) NÃO foram recalculadas — revise-as na aba Lançamentos.'
+        :'Receita vinculada ajustada ao novo total.';
+    }
+    window._orcSalvoId=_editingOrcId;
+    _editingOrcId=null;
+    _duplicandoDe=null;
+    const eb=document.getElementById('orcEditBanner');if(eb)eb.remove();
+    if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='💾 Salvar';}
+    _savingOrc=false;
+    _mostrarBannerOrcSalvo(orcEditado.id,orcPat.nome,total,'atualizado');
+    showToast('Orçamento atualizado!','#27ae60');
+    if(_avisoReceita) setTimeout(()=>showToast(_avisoReceita, _avisoReceita.startsWith('⚠')?'#e8a838':'#27ae60', 6000), 700);
+    return orcEditado;
+  }
+
+  // Modo novo: gravar orçamento completo
+  if(_duplicandoDe){ orc.duplicadoDe=_duplicandoDe; _duplicandoDe=null; }
   dbRef.child('orcamentos/'+orc.id).set(orc);
   // Atualização otimista do cache local — o listener on('value') confirmará em seguida.
   if(!DATA.orcamentos) DATA.orcamentos = {};
   DATA.orcamentos[orc.id] = orc;
-  fbAddLog('ORCAMENTO',`Orcamento gerado para ${orcPat.nome} - Total R$ ${fN(total)}`);
+  fbAddLog('ORCAMENTO',`Orcamento gerado para ${orcPat.nome} - Total R$ ${fN(total)}${orc.duplicadoDe?' (duplicado do #'+orc.duplicadoDe+')':''}`);
   window._orcSalvoId = orc.id;
   _mostrarBannerOrcSalvo(orc.id, orcPat.nome, total);
   showToast('Orçamento salvo!','#27ae60');
   _savingOrc=false;
-  if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='💾 Salvar Orçamento';}
+  if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='💾 Salvar';}
   return orc;
+}
+
+
+// ── Verificar se formulário tem dados não salvos ──────────────────────────────
+function _orcFormSujo(){
+  return !!orcPat || (orcItems||[]).some(s=>s.proc);
+}
+
+// ── 3.4 Guard: pede confirmação se form sujo ─────────────────────────────────
+function _orcGuard(cb){
+  if(_orcFormSujo()){
+    showConfirm('Formulário com dados','Há dados não salvos no formulário. Descartar e continuar?',cb);
+  } else {
+    cb();
+  }
+}
+
+// ── 3.1 Editar orçamento ─────────────────────────────────────────────────────
+function editarOrcamento(id){
+  _orcGuard(()=>_editarOrcamentoInterno(id));
+}
+
+function _editarOrcamentoInterno(id){
+  const orc=DATA.orcamentos&&DATA.orcamentos[id];
+  if(!orc){showToast('Orçamento não encontrado.','#e74c3c');return;}
+
+  // Aviso se há pagamentos
+  const pagamentos=getQuotePayments(id);
+  const valorPago=pagamentos.reduce((s,p)=>s+(p.amount||0),0);
+  const abrirEdicao=()=>{
+    _carregarOrcNoForm(orc);
+    _editingOrcId=id;
+    _duplicandoDe=null;
+    // Banner azul de edição
+    const prev=document.getElementById('orcEditBanner');if(prev)prev.remove();
+    const formEl=document.getElementById('orcFormArea')||document.querySelector('#page-orcamento .orc-form-card');
+    if(formEl){
+      const b=document.createElement('div');
+      b.id='orcEditBanner';
+      b.style.cssText='background:#eaf3fb;border:1.5px solid #90b8e8;border-radius:10px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+      b.innerHTML=`<span style="font-size:1rem">✏️</span><span style="font-weight:700;color:#1a4a8c;flex:1">Editando orçamento de ${esc(orc.paciente)}</span><button class="btn" style="background:#e8f0fb;color:#1a4a8c;border:1px solid #90b8e8;padding:5px 11px;font-size:.8rem;cursor:pointer;border-radius:7px" onclick="showConfirm('Cancelar edição','Descartar alterações e sair do modo edição?',()=>{novoOrcamento();})">✕ Cancelar edição</button>`;
+      formEl.insertBefore(b,formEl.firstChild);
+    }
+    const btn=document.getElementById('btnSalvarOrc');
+    if(btn)btn.textContent='💾 Atualizar Orçamento';
+    showPage('orcamento',null);
+    window.scrollTo(0,0);
+    showToast('Orçamento carregado para edição.','#2d7bbf');
+  };
+
+  if(pagamentos.length>0){
+    showConfirm('Orçamento com pagamentos',
+      `Este orçamento já tem R$ ${fN(valorPago)} pagos. Edite com atenção para não conflitar com os pagamentos existentes.`,
+      abrirEdicao, null, 'Entendido — editar', '#e8a838');
+  } else {
+    abrirEdicao();
+  }
+}
+
+// ── 3.2 Duplicar orçamento ───────────────────────────────────────────────────
+function duplicarOrcamento(id){
+  _orcGuard(()=>_duplicarOrcamentoInterno(id));
+}
+
+function _duplicarOrcamentoInterno(id){
+  const orc=DATA.orcamentos&&DATA.orcamentos[id];
+  if(!orc){showToast('Orçamento não encontrado.','#e74c3c');return;}
+  _carregarOrcNoForm(orc);
+  // Sobrepor datas para hoje/+30d
+  const today=new Date().toISOString().split('T')[0];
+  const v30=new Date();v30.setDate(v30.getDate()+30);
+  const oDataEl=document.getElementById('oData');
+  const oValEl=document.getElementById('oValidade');
+  if(oDataEl)oDataEl.value=today;
+  if(oValEl)oValEl.value=v30.toISOString().split('T')[0];
+  // Modo novo (não edição), mas guarda origem para fbAddLog
+  _editingOrcId=null;
+  _duplicandoDe=id;
+  showPage('orcamento',null);
+  window.scrollTo(0,0);
+  showToast('Orçamento duplicado — revise e salve.','#2d7bbf',5000);
+}
+
+// ── Helper: carrega um orc salvo no formulário ────────────────────────────────
+function _carregarOrcNoForm(orc){
+  novoOrcamento(); // limpa tudo primeiro
+  // Paciente
+  const pacKey=Object.keys(DATA.patients||{}).find(k=>{
+    const p=DATA.patients[k];
+    return p&&(p.nome===orc.paciente||(orc.cpf&&p.cpf===orc.cpf));
+  });
+  const pat=pacKey?DATA.patients[pacKey]:{nome:orc.paciente,cpf:orc.cpf||'',rg:orc.rg||'',tel:orc.tel||''};
+  selectPacOrc(pat);
+  // Itens
+  orcItems=(orc.servicos||[]).map(s=>({
+    id:genId(),proc:s.proc||'',qty:s.qty||1,valorUnit:s.valorUnit||0,descPct:s.descPct||0
+  }));
+  renderItemsOrc();
+  // Linhas hospitalares
+  orcHospRows=(orc.hospRows||[]).map(r=>({
+    id:genId(),hospKey:r.hospKey||'',procName:r.procName||r.hospNome||'',
+    hospitalCost:r.hospital_cost||r.hospitalCost||0,manual:r.manual||false
+  }));
+  renderHospRows();
+  // Datas e obs
+  const oDataEl=document.getElementById('oData');
+  const oValEl=document.getElementById('oValidade');
+  if(oDataEl)oDataEl.value=orc.data||'';
+  if(oValEl)oValEl.value=orc.validade||'';
+  document.getElementById('oObs').value=orc.obs||'';
+  calcTotaisOrc();
 }
 
 
@@ -5386,6 +5568,11 @@ function renderOrcamentos(){
 
       // Ações do orçamento
       const acoes=[];
+      // Editar e Duplicar — sempre disponíveis
+      acoes.push(
+        `<button class="btn btn-sm" style="background:#eaf3fb;color:#1a4a8c;border:1px solid #90b8e8" onclick="editarOrcamento('${o.id}')">✏️ Abrir</button>`,
+        `<button class="btn btn-sm" style="background:#e8f0fb;color:#1a56af;border:1px solid #b8cff5" onclick="duplicarOrcamento('${o.id}')">📑 Duplicar</button>`
+      );
       if(st==='aberto')acoes.push(
         `<button class="btn btn-ok btn-sm" onclick="mudarStatusOrc(${o.id},'aceito')">✓ Aceitar</button>`,
         `<button class="btn btn-err btn-sm" onclick="mudarStatusOrc(${o.id},'recusado')">✗ Recusar</button>`
@@ -6364,7 +6551,9 @@ async function _orcRestaurarHandleIDB(){
         if(!h){res(null);return;}
         try{
           const perm=await h.queryPermission({mode:'readwrite'});
-          _orcDirHandle = (perm==='granted') ? h : null;
+          // Manter handle com 'granted' OU 'prompt' — 'prompt' = Chrome reaberto.
+          // requestPermission em _salvarPdfBlob pedirá permissão no primeiro uso.
+          _orcDirHandle = (perm==='denied') ? null : h;
         } catch(e){ _orcDirHandle=null; }
         res(_orcDirHandle);
       };
