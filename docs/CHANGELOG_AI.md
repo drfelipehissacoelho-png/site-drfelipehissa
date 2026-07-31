@@ -97,3 +97,45 @@ Este arquivo registra mudanças efetivamente realizadas por IA neste repositóri
 ### Deliberadamente pendente
 
 - Regras RTDB, validação no servidor, transação concorrente de saldo, política de crédito e migração integral de valores para centavos inteiros continuam fora deste lote.
+## 2026-07-31 — Fase 2: integridade de recorrências e falhas visíveis
+
+### Alterado
+
+- `analista_financeiro.html`: cada recorrência passou a usar chave determinística por recorrência/período e um único `dbRef.update()` para lançamento, `ultimoPeriodoGerado` e evento de auditoria.
+- `analista_financeiro.html`: lançamentos recorrentes soft-deleted continuam sendo reconhecidos, impedindo recriação automática silenciosa.
+- `analista_financeiro.html`: geração de recorrências é sequencial por período e protegida contra reentrada no mesmo cliente; sucesso só é informado após confirmação Firebase.
+- `analista_financeiro.html`: `renderAll()` exibe erro ao operador na primeira falha por área e volta a permitir aviso se a área se recuperar e falhar novamente.
+- `analista_financeiro.html`: `TOLERANCIA_CENTAVO` substitui os literais financeiros duplicados; `arredondarCentavos()` foi corrigido para casos como R$ 1.250,995.
+- `docs/architecture/FIREBASE_RTD_RULES_GAP.md`: registrada a ausência de regras RTDB versionadas e o limite de não presumir controles remotos.
+
+### Validado
+
+- 10/10 testes de recorrência e arredondamento, com RTDB simulado.
+- 3/3 testes de falha visível em `renderAll()`.
+- 9/9 testes de datas legadas e ordenação mista de logs.
+- Sintaxe do script inline e `git diff --check` aprovados.
+
+### Deliberadamente pendente
+
+- Regras RTDB remotas, append-only garantido no servidor, concorrência de pagamentos entre operadores, entidade de crédito e política de comissão/equipe exigem decisão de produto ou acesso ao ambiente Firebase.
+
+## 2026-07-31 - Correcoes do parecer independente da Fase 2
+
+### Alterado
+
+- `analista_financeiro.html`: `arredondarCentavos()` passou a proteger a saida contra `NaN` em notacao exponencial, preservando o comportamento normal para valores financeiros usuais.
+- `analista_financeiro.html`: o log de recorrencia voltou a usar `criarEventoLog()` com chave `push()`; a chave deterministica permanece exclusivamente no lancamento financeiro idempotente.
+- `analista_financeiro.html`: `renderAll()` agrega falhas novas em um unico aviso com nomes de tela e isola falha do proprio `showToast()`.
+- `analista_financeiro.html`: alterar a frequencia de uma recorrencia zera `ultimoPeriodoGerado`; validacao de chave RTDB cobre controles ASCII e o limite de 768 bytes.
+- `docs/architecture/README.md`: registrada a limitacao de arredondamento para futuros valores negativos.
+- `docs/architecture/FIREBASE_RTD_RULES_GAP.md`: explicitado que atomicidade no cliente nao equivale a obrigatoriedade no servidor e que auditoria sem append-only nao e evidencia confiavel.
+
+### Validado
+
+- Compilacao do unico script inline com `new Function()`.
+- Suite local de cenarios para arredondamento, chaves RTDB, escrita atomica recorrente, troca de frequencia e falhas agregadas de renderizacao.
+- `git diff --check` para os arquivos alterados.
+
+### Deliberadamente pendente
+
+- Politica de arredondamento assinado e migracao para centavos inteiros; regras RTDB publicadas, autorizacao, validacao de schema e concorrencia de pagamentos permanecem fora deste lote.

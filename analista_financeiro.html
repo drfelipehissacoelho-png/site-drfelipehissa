@@ -1413,6 +1413,7 @@ const UCORS = ['#2d7bbf','#27ae60','#9b59b6','#e8a838','#e74c3c','#1abc9c'];
 // ==================== ESTADO ====================
 let CU = '', CUEmail = '', tipo = 'receita', period = '';
 let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, quote_payments:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{}, procedureCommissionRules:{}, procedureConfig:{}, procedures:{}, config:{}, recorrentes:{} };
+const _renderFalhasNotificadas=new Set();
 
 function nomeDoUsuario(email) {
   const us = getUsuariosConfig();
@@ -1433,8 +1434,13 @@ function dataLocalISO(data=new Date()){
   return `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,'0')}-${String(data.getDate()).padStart(2,'0')}`;
 }
 // Monetary records are persisted with two decimal places until a cents-integer migration.
+const TOLERANCIA_CENTAVO=0.01;
 function arredondarCentavos(valor){
-  return Math.round(((Number(valor)||0)+Number.EPSILON)*100)/100;
+  const numero=Number(valor);
+  if(!Number.isFinite(numero))return 0;
+  const deslocado=Math.round(Number(`${numero}e2`));
+  if(!Number.isFinite(deslocado))return Math.round(numero*100)/100;
+  return Number(`${deslocado}e-2`);
 }
 
 // Adiciona N meses a uma string de data "YYYY-MM-DD"
@@ -2324,7 +2330,7 @@ function calcStatusFinanceiro(orc){
   if(total<=0)return'quitado';
   const pago=calcValorPago(orc);
   if(pago<=0)return'pendente';
-  if(pago>=total-0.01)return'quitado'; // tolerância centavo
+  if(pago>=total-TOLERANCIA_CENTAVO)return'quitado';
   return'parcial';
 }
 
@@ -2375,14 +2381,32 @@ function soma(items,tp,cat){return items.filter(l=>l.tipo===tp&&(!cat||l.categor
 function getUsuarios(){return[...new Set(getLancs().map(l=>l.usuario).filter(Boolean))];}
 
 function renderAll(){
-  // ── populateProcSel PRIMEIRO e independente ─────────────────────────────
-  // Motivo: estava no final — qualquer throw anterior impedia os procedimentos
-  // customizados (DATA.procedures) de aparecerem no dropdown de Lançamentos.
-  // Agora roda no início e isolado para garantir que sempre execute.
+  // populateProcSel roda primeiro e isolado para manter o seletor de procedimentos disponivel.
   try { populateProcSel(); } catch(e){ console.warn('populateProcSel err:',e); }
 
-  // Cada função isolada: um erro não bloqueia as demais
-  const _r = (fn, label) => { try { fn(); } catch(e){ console.warn('renderAll['+label+']:', e); } };
+  const nomesRender={
+    updateFilters:'filtros',renderKPIs:'indicadores',renderProjecao:'projecao',renderUserPanel:'usuarios',
+    renderMetas:'metas',renderLancs:'lancamentos',renderPacientes:'pacientes',renderDRE:'DRE',
+    renderConciliacao:'conciliacao',renderMargemProc:'margens por procedimento',renderRelatorio:'relatorio',
+    renderLog:'auditoria',renderOrcamentos:'orcamentos',renderCFO:'analise CFO',renderLixeira:'lixeira',
+    rChRec:'grafico de receitas',rChExp:'grafico de despesas',rChEvol:'grafico de evolucao',
+    rChDRE:'grafico DRE',rChComp:'grafico de composicao',renderHeatCal:'calendario financeiro',
+    renderTabelaHosp:'tabela hospitalar'
+  };
+  const novasFalhas=[];
+  // Cada funcao isolada: uma falha nao bloqueia as demais areas da tela.
+  const _r = (fn, label) => {
+    try {
+      fn();
+      _renderFalhasNotificadas.delete(label);
+    } catch(e){
+      console.warn('renderAll['+label+']:', e);
+      if(!_renderFalhasNotificadas.has(label)){
+        _renderFalhasNotificadas.add(label);
+        novasFalhas.push(label);
+      }
+    }
+  };
   _r(updateFilters,     'updateFilters');
   _r(renderKPIs,        'renderKPIs');
   _r(renderProjecao,    'renderProjecao');
@@ -2401,12 +2425,19 @@ function renderAll(){
   _r(rChRec,  'rChRec'); _r(rChExp,'rChExp'); _r(rChEvol,'rChEvol');
   _r(rChDRE,  'rChDRE'); _r(rChComp,'rChComp');
   _r(renderHeatCal, 'renderHeatCal');
-  // Tabela só renderiza se estiver visível (Chart.js precisa de canvas visível)
+  // Tabela so renderiza se estiver visivel (Chart.js precisa de canvas visivel).
   if(document.getElementById('page-tabela-hosp')?.classList.contains('active')){
     _r(renderTabelaHosp, 'renderTabelaHosp');
   }
+  if(novasFalhas.length){
+    const areas=novasFalhas.map(label=>nomesRender[label]||label).join(', ');
+    try{
+      showToast(`Erro ao atualizar ${novasFalhas.length} area(s): ${areas}. Os demais dados continuam disponiveis.`, '#e74c3c', 6000);
+    }catch(toastError){
+      console.warn('renderAll[toast]:',toastError);
+    }
+  }
 }
-
 // ==================== CONFIG (aba ⚙️) ====================
 // Renderiza a aba Config preenchendo os campos com os valores ATUAIS
 // (do Firebase se houver, senao defaults). Usuario edita e clica salvar.
@@ -5381,7 +5412,7 @@ function salvarPagamento(){
   const card_brand=document.getElementById('payBandeira').value.trim();
   const notes=document.getElementById('payObs').value.trim();
   const saldo=calcSaldoPendente(orc);
-  if(amount>saldo+0.01){
+  if(amount>saldo+TOLERANCIA_CENTAVO){
     showToast(`Valor acima do saldo pendente de R$ ${fN(saldo)}. Registre credito por fluxo proprio.`, '#e74c3c', 5000);
     return;
   }
@@ -5463,7 +5494,7 @@ async function _executarSalvarPagamento(orcId,orc,amount,payment_date,method,ins
   try{
     await dbRef.update(updates);
     const totalPago=calcValorPago(orc)+amount;
-    const quitado=totalPago>=(orc.total||0)-0.01;
+    const quitado=totalPago>=(orc.total||0)-TOLERANCIA_CENTAVO;
     fecharModalPagamento();
     showToast(quitado?'Pagamento salvo - orcamento quitado.':'Pagamento salvo. Saldo atualizado.','#27ae60');
   }catch(err){
@@ -5714,6 +5745,7 @@ function salvarRecorrente(){
   if(isNaN(valor)||valor<=0){ showToast('Informe um valor válido.','#e74c3c'); return; }
   const isNew = !document.getElementById('recModalId').value;
   const existing = DATA.recorrentes && DATA.recorrentes[id];
+  const frequenciaMudou=!!existing&&existing.frequencia!==frequencia;
   const obj = {
     descricao, valor, categoria, frequencia, obs,
     diaVencimento: frequencia==='quinzenal' ? 1 : Math.min(Math.max(diaVencimento,1),28),
@@ -5721,7 +5753,7 @@ function salvarRecorrente(){
     ativo: existing?.ativo !== undefined ? existing.ativo : true,
     criadoEm: existing?.criadoEm || new Date().toISOString(),
     criadoPor: existing?.criadoPor || CU,
-    ultimoPeriodoGerado: existing?.ultimoPeriodoGerado || null,
+    ultimoPeriodoGerado: frequenciaMudou ? null : (existing?.ultimoPeriodoGerado || null),
   };
   fbAddLog(isNew?'NOVA RECORRENTE':'EDITAR RECORRENTE',
     `${descricao} · R$ ${fN(valor)} · ${frequencia} · ${isNew?'criada':'editada'} por ${CU}`);
@@ -5812,90 +5844,120 @@ function renderRecorrentes(){
 // Chamado após carregar DATA. Verifica períodos faltantes (até 3 meses)
 // e gera lançamentos. Idempotente: checa recorrente_id+periodo antes de criar.
 
-function _processarRecorrentes(){
-  const recs = DATA.recorrentes || {};
-  let totalGerado = 0;
-  const hoje = new Date();
-  Object.entries(recs).forEach(([id, rec]) => {
-    if(!rec || !rec.ativo) return;
-    const periodos = _periodosFaltando(id, rec, hoje);
-    periodos.forEach(p => {
-      if(_lancRecorrenteExiste(id, p.chave)) return; // idempotente
-      _gerarLancRecorrente(id, rec, p);
-      totalGerado++;
-    });
+let _processandoRecorrentes=false;
+
+// A mesma recorrencia e o mesmo periodo sempre apontam para as mesmas chaves RTDB.
+// Isso impede que duas abas ou uma reconexao criem duas despesas para o mesmo periodo.
+function chaveRecorrenciaValida(chave){
+  const texto=String(chave);
+  const tamanhoBytes=new TextEncoder().encode(texto).length;
+  if(tamanhoBytes>768)return false;
+  if(['.','#','$','[',']','/'].some(caractere=>texto.includes(caractere)))return false;
+  return !Array.from(texto).some(caractere=>{
+    const codigo=caractere.charCodeAt(0);
+    return codigo<=31||codigo===127;
   });
-  if(totalGerado > 0)
-    showToast(`🔁 ${totalGerado} lançamento(s) recorrente(s) gerado(s).`, '#27ae60');
+}
+function chaveLancamentoRecorrente(recId,periodoChave){
+  const chave=`recorrente_${String(recId)}_${String(periodoChave)}`;
+  if(!chaveRecorrenciaValida(chave))throw new Error('Chave invalida de recorrencia.');
+  return chave;
+}
+async function _processarRecorrentes(){
+  if(_processandoRecorrentes)return;
+  _processandoRecorrentes=true;
+  const recs=DATA.recorrentes||{};
+  let totalGerado=0;
+  let totalFalhas=0;
+  const hoje=new Date();
+  try{
+    for(const [id,rec] of Object.entries(recs)){
+      if(!rec||!rec.ativo)continue;
+      const periodos=_periodosFaltando(id,rec,hoje);
+      for(const periodo of periodos){
+        if(_lancRecorrenteExiste(id,periodo.chave))continue;
+        try{
+          await _gerarLancRecorrente(id,rec,periodo);
+          totalGerado++;
+        }catch(err){
+          totalFalhas++;
+          console.error('recorrencia '+id+' '+periodo.chave+':',err);
+        }
+      }
+    }
+    if(totalGerado>0)showToast(`🔁 ${totalGerado} lancamento(s) recorrente(s) gerado(s).`,'#27ae60');
+    if(totalFalhas>0)showToast(`Falha ao gerar ${totalFalhas} recorrencia(s). Nenhuma confirmacao foi exibida para esses itens.`,'#e74c3c',6000);
+  }finally{
+    _processandoRecorrentes=false;
+  }
 }
 
-function _lancRecorrenteExiste(recId, periodoChave){
+// Inclui lancamentos soft-deleted: apagar um lancamento gerado nao deve recria-lo sozinho.
+function _lancRecorrenteExiste(recId,periodoChave){
   return Object.values(DATA.lancamentos||{}).some(
-    l => l && l.recorrente_id === recId && l.recorrente_periodo === periodoChave && !l.deletedAt
+    l=>l&&l.recorrente_id===recId&&l.recorrente_periodo===periodoChave
   );
 }
 
-function _periodosFaltando(recId, rec, hoje){
-  const MAX = 3; // meses máximos de retroativo
-  const result = [];
-  const freq = rec.frequencia || 'mensal';
-  const dia = Math.min(Math.max(rec.diaVencimento||1, 1), 28);
-  const ultimo = rec.ultimoPeriodoGerado;
-
-  if(freq === 'mensal'){
-    for(let i = MAX; i >= 0; i--){
-      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      const chave = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      if(ultimo && chave <= ultimo) continue; // já gerado
-      const venc = new Date(d.getFullYear(), d.getMonth(), dia);
-      if(venc > hoje) continue; // dia ainda não chegou
-      const dataStr = `${chave}-${String(dia).padStart(2,'0')}`;
-      result.push({chave, data: dataStr});
+function _periodosFaltando(recId,rec,hoje){
+  const MAX=3;
+  const result=[];
+  const freq=rec.frequencia||'mensal';
+  const dia=Math.min(Math.max(rec.diaVencimento||1,1),28);
+  const ultimo=rec.ultimoPeriodoGerado;
+  if(freq==='mensal'){
+    for(let i=MAX;i>=0;i--){
+      const d=new Date(hoje.getFullYear(),hoje.getMonth()-i,1);
+      const chave=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if(ultimo&&chave<=ultimo)continue;
+      const venc=new Date(d.getFullYear(),d.getMonth(),dia);
+      if(venc>hoje)continue;
+      result.push({chave,data:`${chave}-${String(dia).padStart(2,'0')}`});
     }
-  } else if(freq === 'quinzenal'){
-    for(let i = MAX; i >= 0; i--){
-      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      const ano = d.getFullYear();
-      const mes = d.getMonth()+1;
-      const mesStr = String(mes).padStart(2,'0');
-      const chQ1 = `${ano}-${mesStr}-Q1`;
-      const chQ2 = `${ano}-${mesStr}-Q2`;
-      if(new Date(ano, mes-1, 1) <= hoje && (!ultimo || chQ1 > ultimo))
-        result.push({chave: chQ1, data: `${ano}-${mesStr}-01`});
-      if(new Date(ano, mes-1, 15) <= hoje && (!ultimo || chQ2 > ultimo))
-        result.push({chave: chQ2, data: `${ano}-${mesStr}-15`});
+  }else if(freq==='quinzenal'){
+    for(let i=MAX;i>=0;i--){
+      const d=new Date(hoje.getFullYear(),hoje.getMonth()-i,1);
+      const ano=d.getFullYear();
+      const mes=d.getMonth()+1;
+      const mesStr=String(mes).padStart(2,'0');
+      const chQ1=`${ano}-${mesStr}-Q1`;
+      const chQ2=`${ano}-${mesStr}-Q2`;
+      if(new Date(ano,mes-1,1)<=hoje&&(!ultimo||chQ1>ultimo))result.push({chave:chQ1,data:`${ano}-${mesStr}-01`});
+      if(new Date(ano,mes-1,15)<=hoje&&(!ultimo||chQ2>ultimo))result.push({chave:chQ2,data:`${ano}-${mesStr}-15`});
     }
-  } else if(freq === 'anual'){
-    const mes = rec.mes || '01';
-    for(const ano of [hoje.getFullYear()-1, hoje.getFullYear()]){
-      const chave = `${ano}`;
-      if(ultimo && chave <= ultimo) continue;
-      const dataStr = `${ano}-${mes}-${String(dia).padStart(2,'0')}`;
-      if(new Date(dataStr) <= hoje) result.push({chave, data: dataStr});
+  }else if(freq==='anual'){
+    const mes=rec.mes||'01';
+    for(const ano of [hoje.getFullYear()-1,hoje.getFullYear()]){
+      const chave=`${ano}`;
+      if(ultimo&&chave<=ultimo)continue;
+      const data=`${ano}-${mes}-${String(dia).padStart(2,'0')}`;
+      if(new Date(data)<=hoje)result.push({chave,data});
     }
   }
   return result;
 }
 
-function _gerarLancRecorrente(recId, rec, periodo){
-  const id = genId();
-  const item = {
-    id, data: periodo.data, valor: rec.valor, categoria: rec.categoria,
-    pagamento: 'Transferência', descricao: `🔁 ${rec.descricao}`,
-    tipo: 'despesa', usuario: CU, email: CUEmail,
-    criadoEm: new Date().toISOString(),
-    recorrente_id: recId, recorrente_periodo: periodo.chave,
-    auto_generated: true
+async function _gerarLancRecorrente(recId,rec,periodo){
+  const id=chaveLancamentoRecorrente(recId,periodo.chave);
+  const item={
+    id,data:periodo.data,valor:arredondarCentavos(rec.valor),categoria:rec.categoria,
+    pagamento:'Transferência',descricao:`🔁 ${rec.descricao}`,
+    tipo:'despesa',usuario:CU,email:CUEmail,
+    criadoEm:new Date().toISOString(),
+    recorrente_id:recId,recorrente_periodo:periodo.chave,
+    auto_generated:true
   };
-  // Log ANTES da operação (regra do projeto)
-  fbAddLog('LANÇAMENTO RECORRENTE',
-    `${rec.descricao} · R$ ${fN(rec.valor)} · período ${periodo.chave} gerado por ${CU}`);
-  dbRef.child('lancamentos/'+id).set(item).then(() => {
-    // Atualiza ultimoPeriodoGerado para otimizar próximas verificações
-    dbRef.child('recorrentes/'+recId+'/ultimoPeriodoGerado').set(periodo.chave);
-  });
+  const evento=criarEventoLog(
+    'LANCAMENTO RECORRENTE',
+    `${rec.descricao} | R$ ${fN(rec.valor)} | periodo ${periodo.chave} gerado por ${CU}`
+  );
+  const updates={};
+  updates['lancamentos/'+id]=item;
+  updates['recorrentes/'+recId+'/ultimoPeriodoGerado']=periodo.chave;
+  updates['log/'+evento.id]=evento;
+  await dbRef.update(updates);
+  return item;
 }
-
 // ==================== TABELA HOSPITALAR (ADMIN) ====================
 let _thHospSel='';
 
