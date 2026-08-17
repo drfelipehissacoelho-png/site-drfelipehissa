@@ -1412,24 +1412,35 @@ const UCORS = ['#2d7bbf','#27ae60','#9b59b6','#e8a838','#e74c3c','#1abc9c'];
 
 // ==================== ESTADO ====================
 let CU = '', CUEmail = '', tipo = 'receita', period = '';
-let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, quote_payments:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{}, procedureCommissionRules:{}, procedureConfig:{}, procedures:{}, config:{} };
+let CI = {}, DATA = { lancamentos:{}, log:{}, orcamentos:{}, quote_payments:{}, patients:{}, hospitalPrices:{}, procedureTeamCosts:{}, procedureCommissionRules:{}, procedureConfig:{}, procedures:{}, config:{}, recorrentes:{} };
+const _renderFalhasNotificadas=new Set();
 
 function nomeDoUsuario(email) {
   const us = getUsuariosConfig();
   return us[email] || email.split('@')[0];
 }
 
-// ==================== ID GENERATOR (collision-resistant) ====================
-// Substitui Date.now() para evitar colisao silenciosa quando dois lancamentos
-// sao salvos no mesmo milissegundo (ex: secretaria + medico simultaneos, ou
-// laco de auto-despesas). Mantem tipo numerico para preservar ordenacao
-// cronologica e nao quebrar onclick handlers existentes.
-let _idCounter = 0;
+// ==================== IDS E DATAS LOCAIS ====================
+// A chave push do RTDB e gerada localmente, inclusive offline, e evita a
+// perda de precisao de inteiros causada por Date.now() multiplicado.
 function genId(){
-  _idCounter = (_idCounter + 1) % 1000;
-  // Date.now() em ms x 100000 + contador local x 100 + random 0-99
-  // -> mesmo se dois cliques cairem no mesmo ms, contador + random divergem
-  return Date.now() * 100000 + _idCounter * 100 + Math.floor(Math.random() * 100);
+  const key = dbRef.push().key;
+  if(!key) throw new Error('Nao foi possivel gerar identificador Firebase.');
+  return key;
+}
+
+// Campos <input type="date"> representam o dia local, nunca uma data UTC.
+function dataLocalISO(data=new Date()){
+  return `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,'0')}-${String(data.getDate()).padStart(2,'0')}`;
+}
+// Monetary records are persisted with two decimal places until a cents-integer migration.
+const TOLERANCIA_CENTAVO=0.01;
+function arredondarCentavos(valor){
+  const numero=Number(valor);
+  if(!Number.isFinite(numero))return 0;
+  const deslocado=Math.round(Number(`${numero}e2`));
+  if(!Number.isFinite(deslocado))return Math.round(numero*100)/100;
+  return Number(`${deslocado}e-2`);
 }
 
 // Adiciona N meses a uma string de data "YYYY-MM-DD"
@@ -1614,11 +1625,23 @@ function pararListeners() {
 }
 
 // ==================== FIREBASE CRUD ====================
-function fbSalvarLanc(item) { dbRef.child('lancamentos/'+item.id).set(item); }
-function fbExcluirLanc(id)  { dbRef.child('lancamentos/'+id).remove(); }
+function criarEventoLog(acao, detalhe){
+  return {
+    id:genId(), data:new Date().toISOString(),
+    dataServidor:firebase.database.ServerValue.TIMESTAMP,
+    usuario:CU, email:CUEmail, acao, detalhe
+  };
+}
+function anexarLogAtualizacao(updates, acao, detalhe){
+  const evento=criarEventoLog(acao, detalhe);
+  updates['log/'+evento.id]=evento;
+  return evento;
+}
+function fbSalvarLanc(item) { return dbRef.child('lancamentos/'+item.id).set(item); }
+function fbExcluirLanc(id)  { return dbRef.child('lancamentos/'+id).remove(); }
 function fbAddLog(acao, detalhe) {
-  const e = { id: genId(), data: new Date().toISOString(), usuario: CU, email: CUEmail, acao, detalhe };
-  dbRef.child('log/'+e.id).set(e);
+  const evento=criarEventoLog(acao, detalhe);
+  return dbRef.child('log/'+evento.id).set(evento);
 }
 
 // ==================== PERÍODO ====================
@@ -1714,7 +1737,7 @@ function _clearRangeLog(){
   if(bar) bar.style.display = 'none';
   renderLog();
 }
-function setDate() { document.getElementById('fData').value = new Date().toISOString().split('T')[0]; }
+function setDate() { document.getElementById('fData').value = dataLocalISO(); }
 
 // ==================== TIPO ====================
 function setTipo(t) {
@@ -2141,7 +2164,7 @@ function editarLancamento(id){
 }
 function fecharEdicao(){document.getElementById('editModal').style.display='none';}
 function salvarEdicao(){
-  const id = +document.getElementById('eId').value;
+  const id = document.getElementById('eId').value;
   const original = DATA.lancamentos[id];
   if(!original){ showToast('Lancamento nao encontrado.', '#e74c3c'); return; }
   const novoValor = parseMoeda(document.getElementById('eValor').value);
@@ -2247,7 +2270,8 @@ function salvarEdicao(){
 function showPage(p,tab) {
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.getElementById('page-'+p).classList.add('active'); tab.classList.add('active');
+  document.getElementById('page-'+p).classList.add('active');
+  if(tab)tab.classList.add('active');
   renderAll();
   // Chart.js não consegue medir canvas em display:none — re-renderiza
   // após dois frames (browser precisa recalcular layout da página recém-visível)
@@ -2278,6 +2302,10 @@ function getQuotePayments(orcId){
     .filter(p=>p && p.quote_id===String(orcId) && !p.deletedAt)
     .sort((a,b)=>a.payment_date>b.payment_date?1:-1);
 }
+// Includes soft-deleted payments so quote removal cannot leave audit references dangling.
+function temPagamentosVinculadosAoOrcamento(orcId){
+  return Object.values(DATA.quote_payments||{}).some(p=>p&&p.quote_id===String(orcId));
+}
 
 // Soma total pago em quote_payments + lança receita legado (receitaGeradaId antigo)
 function calcValorPago(orc){
@@ -2302,7 +2330,7 @@ function calcStatusFinanceiro(orc){
   if(total<=0)return'quitado';
   const pago=calcValorPago(orc);
   if(pago<=0)return'pendente';
-  if(pago>=total-0.01)return'quitado'; // tolerância centavo
+  if(pago>=total-TOLERANCIA_CENTAVO)return'quitado';
   return'parcial';
 }
 
@@ -2311,7 +2339,37 @@ let _payModalOrcId=null;
 let _orcSalvoId=null;   // id do último orçamento salvo (banner pós-save)
 let _savingOrc=false;   // anti duplo-clique em salvarOrcamento
 // ────────────────────────────────────────────────────────────────────────────
-function getLog(){return Object.values(DATA.log||{}).sort((a,b)=>b.id-a.id);}
+function dataParaTimestamp(valor){
+  if(typeof valor==='number'&&Number.isFinite(valor))return valor;
+  if(typeof valor!=='string')return 0;
+  // Formato pt-BR explicito PRIMEIRO: Date.parse aceita MM/DD/YYYY pelo parser
+  // legado do V8, entao '06/07/2026' seria lido como 7 de junho, nao 6 de julho.
+  // A heuristica do runtime so entra como ultimo recurso.
+  const br=valor.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[ ,]+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if(br)return new Date(Number(br[3]),Number(br[2])-1,Number(br[1]),Number(br[4]||0),Number(br[5]||0),Number(br[6]||0)).getTime();
+  const iso=Date.parse(valor);
+  return Number.isFinite(iso)?iso:0;
+}
+function timestampLog(evento){
+  const servidor=Number(evento&&evento.dataServidor);
+  return Number.isFinite(servidor)&&servidor>0?servidor:dataParaTimestamp(evento&&evento.data);
+}
+function compararLogsRecentes(a,b){
+  const ordem=timestampLog(b)-timestampLog(a);
+  return ordem||String(b&&b.id||'').localeCompare(String(a&&a.id||''));
+}
+function timestampOrcamento(orcamento){
+  const criadoEm=dataParaTimestamp(orcamento&&orcamento.criadoEm);
+  if(criadoEm)return criadoEm;
+  const data=String(orcamento&&orcamento.data||'');
+  const m=data.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?new Date(Number(m[1]),Number(m[2])-1,Number(m[3])).getTime():0;
+}
+function compararOrcamentosRecentes(a,b){
+  const ordem=timestampOrcamento(b)-timestampOrcamento(a);
+  return ordem||String(b&&b.id||'').localeCompare(String(a&&a.id||''));
+}
+function getLog(){return Object.values(DATA.log||{}).sort(compararLogsRecentes);}
 function getLP(){
   if(_rangeAtivo()){
     // Range livre: filtra entre _rangeDE e _rangeATE (comparação ISO YYYY-MM-DD)
@@ -2323,14 +2381,32 @@ function soma(items,tp,cat){return items.filter(l=>l.tipo===tp&&(!cat||l.categor
 function getUsuarios(){return[...new Set(getLancs().map(l=>l.usuario).filter(Boolean))];}
 
 function renderAll(){
-  // ── populateProcSel PRIMEIRO e independente ─────────────────────────────
-  // Motivo: estava no final — qualquer throw anterior impedia os procedimentos
-  // customizados (DATA.procedures) de aparecerem no dropdown de Lançamentos.
-  // Agora roda no início e isolado para garantir que sempre execute.
+  // populateProcSel roda primeiro e isolado para manter o seletor de procedimentos disponivel.
   try { populateProcSel(); } catch(e){ console.warn('populateProcSel err:',e); }
 
-  // Cada função isolada: um erro não bloqueia as demais
-  const _r = (fn, label) => { try { fn(); } catch(e){ console.warn('renderAll['+label+']:', e); } };
+  const nomesRender={
+    updateFilters:'filtros',renderKPIs:'indicadores',renderProjecao:'projecao',renderUserPanel:'usuarios',
+    renderMetas:'metas',renderLancs:'lancamentos',renderPacientes:'pacientes',renderDRE:'DRE',
+    renderConciliacao:'conciliacao',renderMargemProc:'margens por procedimento',renderRelatorio:'relatorio',
+    renderLog:'auditoria',renderOrcamentos:'orcamentos',renderCFO:'analise CFO',renderLixeira:'lixeira',
+    rChRec:'grafico de receitas',rChExp:'grafico de despesas',rChEvol:'grafico de evolucao',
+    rChDRE:'grafico DRE',rChComp:'grafico de composicao',renderHeatCal:'calendario financeiro',
+    renderTabelaHosp:'tabela hospitalar'
+  };
+  const novasFalhas=[];
+  // Cada funcao isolada: uma falha nao bloqueia as demais areas da tela.
+  const _r = (fn, label) => {
+    try {
+      fn();
+      _renderFalhasNotificadas.delete(label);
+    } catch(e){
+      console.warn('renderAll['+label+']:', e);
+      if(!_renderFalhasNotificadas.has(label)){
+        _renderFalhasNotificadas.add(label);
+        novasFalhas.push(label);
+      }
+    }
+  };
   _r(updateFilters,     'updateFilters');
   _r(renderKPIs,        'renderKPIs');
   _r(renderProjecao,    'renderProjecao');
@@ -2349,12 +2425,19 @@ function renderAll(){
   _r(rChRec,  'rChRec'); _r(rChExp,'rChExp'); _r(rChEvol,'rChEvol');
   _r(rChDRE,  'rChDRE'); _r(rChComp,'rChComp');
   _r(renderHeatCal, 'renderHeatCal');
-  // Tabela só renderiza se estiver visível (Chart.js precisa de canvas visível)
+  // Tabela so renderiza se estiver visivel (Chart.js precisa de canvas visivel).
   if(document.getElementById('page-tabela-hosp')?.classList.contains('active')){
     _r(renderTabelaHosp, 'renderTabelaHosp');
   }
+  if(novasFalhas.length){
+    const areas=novasFalhas.map(label=>nomesRender[label]||label).join(', ');
+    try{
+      showToast(`Erro ao atualizar ${novasFalhas.length} area(s): ${areas}. Os demais dados continuam disponiveis.`, '#e74c3c', 6000);
+    }catch(toastError){
+      console.warn('renderAll[toast]:',toastError);
+    }
+  }
 }
-
 // ==================== CONFIG (aba ⚙️) ====================
 // Renderiza a aba Config preenchendo os campos com os valores ATUAIS
 // (do Firebase se houver, senao defaults). Usuario edita e clica salvar.
@@ -2525,8 +2608,8 @@ function renderLixeira(){
               ${isGrupo?`<div style="font-size:.74rem;margin-top:5px;color:var(--muted)">Receita: R$ ${fN(totalRec)} | Despesas: R$ ${fN(totalDesp)}</div>`:''}
             </div>
             <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
-              <button class="btn btn-ok btn-sm" onclick="restaurarLancamento(${first.id})" style="white-space:nowrap">↩️ Restaurar</button>
-              <button class="btn btn-err btn-sm" onclick="purgarLancamento(${first.id})" style="white-space:nowrap;background:#7b241c">💀 Apagar</button>
+              <button class="btn btn-ok btn-sm" onclick="restaurarLancamento(${jsArg(first.id)})" style="white-space:nowrap">↩️ Restaurar</button>
+              <button class="btn btn-err btn-sm" onclick="purgarLancamento(${jsArg(first.id)})" style="white-space:nowrap;background:#7b241c">💀 Apagar</button>
             </div>
           </div>
         </div>`;
@@ -2562,8 +2645,8 @@ function renderLixeira(){
               <div style="font-size:.74rem;color:var(--err);margin-top:1px">🗑️ Excluido em ${dt} por ${esc(by)}</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
-              <button class="btn btn-ok btn-sm" onclick="restaurarOrcamento(${o.id})" style="white-space:nowrap">↩️ Restaurar</button>
-              <button class="btn btn-err btn-sm" onclick="purgarOrcamento(${o.id})" style="white-space:nowrap;background:#7b241c">💀 Apagar</button>
+              <button class="btn btn-ok btn-sm" onclick="restaurarOrcamento(${jsArg(o.id)})" style="white-space:nowrap">↩️ Restaurar</button>
+              <button class="btn btn-err btn-sm" onclick="purgarOrcamento(${jsArg(o.id)})" style="white-space:nowrap;background:#7b241c">💀 Apagar</button>
             </div>
           </div>
         </div>`;
@@ -2981,8 +3064,8 @@ function renderLancs(){
          <div style="font-size:.68rem;color:var(--muted);margin-top:1px">${_pagIcon(x.pagamento)} ${esc(x.pagamento||'')}${x.parcelas&&x.parcelas>1?' · '+x.parcelas+'x':''}</div>
        </td>`
       +`<td style="white-space:nowrap;text-align:right">
-         <button class="btn btn-sm" style="background:var(--pl-light);color:var(--primary);border:1px solid #c0d8ef;margin-right:4px;border-radius:6px" title="Editar" onclick="editarLancamento(${x.id})">✏️</button>
-         <button class="btn btn-err btn-sm" style="border-radius:6px" title="Excluir" onclick="excluir(${x.id})">🗑</button>
+         <button class="btn btn-sm" style="background:var(--pl-light);color:var(--primary);border:1px solid #c0d8ef;margin-right:4px;border-radius:6px" title="Editar" onclick="editarLancamento(${jsArg(x.id)})">✏️</button>
+         <button class="btn btn-err btn-sm" style="border-radius:6px" title="Excluir" onclick="excluir(${jsArg(x.id)})">🗑</button>
        </td>`
       +`</tr>`;
   }).join('');
@@ -3467,25 +3550,32 @@ function gerarPDF(){
 // ==================== EXPORT/IMPORT ====================
 // Lista de TODOS os nos persistidos no Firebase. Mantenha sincronizada com
 // a estrutura DATA. Ao adicionar novo no, inclua aqui para o backup pegar.
-const BACKUP_NODES = [
+// Explicit export and restore contracts prevent audit logs from being imported.
+const BACKUP_EXPORT_NODES = [
   'lancamentos','log','orcamentos','quote_payments','patients',
   'hospitalPrices','procedureConfig','procedures',
   'procedureTeamCosts','procedureCommissionRules',
-  'config'
+  'config','recorrentes'
+];
+const BACKUP_RESTORE_NODES = [
+  'lancamentos','orcamentos','quote_payments','patients',
+  'hospitalPrices','procedureConfig','procedures',
+  'procedureTeamCosts','procedureCommissionRules',
+  'config','recorrentes'
 ];
 
 function exportarJSON(){
   // Inclui TODOS os nos (antes so salvava lancamentos+log e a restauracao
   // apagava o resto). Versao 2 do backup.
   const payload = { exportado: new Date().toISOString(), por: CU, versao: 2 };
-  BACKUP_NODES.forEach(k => { payload[k] = DATA[k] || {}; });
+  BACKUP_EXPORT_NODES.forEach(k => { payload[k] = DATA[k] || {}; });
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   // Resumo do que foi exportado, para auditoria
-  const resumo = BACKUP_NODES.map(k => `${k}:${Object.keys(payload[k]||{}).length}`).join(' | ');
+  const resumo = BACKUP_EXPORT_NODES.map(k => `${k}:${Object.keys(payload[k]||{}).length}`).join(' | ');
   fbAddLog('BACKUP', `Backup completo exportado (v2) | ${resumo}`);
   showToast('⬇ Backup completo baixado!', '#1a4f7a');
 }
@@ -3508,12 +3598,13 @@ function importarJSON(inp){
     };
     const nodes = {};
     let totals = [];
-    BACKUP_NODES.forEach(k => {
+    BACKUP_RESTORE_NODES.forEach(k => {
       if(p[k] !== undefined){
         nodes[k] = norm(p[k]);
         totals.push(`${k}: ${Object.keys(nodes[k]).length}`);
       }
     });
+    if(p.log !== undefined)totals.push(`log: ${Object.keys(norm(p.log)).length} (preservado; nao restaurado)`);
     const versao = p.versao || 1;
     const aviso = versao < 2
       ? '\n\n⚠ ATENCAO: backup ANTIGO (v1) — contem apenas lancamentos+log.\nPacientes, orcamentos, tabela hospitalar e config de procedimentos NAO serao alterados (ficam como estao).'
@@ -3573,6 +3664,16 @@ function showToast(msg, color, duration){
 // Anti-XSS: escapa & < > " ' para uso seguro em innerHTML.
 // Usar em TODOS os lugares que injetam strings do banco via innerHTML.
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// Serialize a required value only for JavaScript inside a double-quoted on* attribute.
+// Do not use this helper for HTML text, HTML attributes, or single-quoted handlers.
+function jsArg(v){
+  if(v==null)throw new Error('ID ausente em handler inline.');
+  return JSON.stringify(v)
+    .replace(/&/g,'\\u0026')
+    .replace(/</g,'\\u003c')
+    .replace(/>/g,'\\u003e')
+    .replace(/"/g,'&quot;');
+}
 // fDT: formata data/hora para exibição no fuso America/Recife (UTC-3).
 // Compatível com o formato ISO (novo) e o legado pt-BR (dados antigos).
 // LGPD: mascara CPF e RG para exibição padrão.
@@ -4627,32 +4728,32 @@ function renderItemsOrc(){
   tbody.innerHTML=orcItems.map(s=>`
     <tr>
       <td>
-        <select class="itbl" onchange="updateItemField(${s.id},'proc',this.value)"
+        <select class="itbl" onchange="updateItemField(${jsArg(s.id)},'proc',this.value)"
           style="width:100%;padding:5px 6px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px">
           <option value="">Selecione...</option>
-          ${getAllProcs().map(p=>`<option value="${p.nome}"${s.proc===p.nome?' selected':''}>${p.nome}</option>`).join('')}
+          ${getAllProcs().map(p=>`<option value="${esc(p.nome)}"${s.proc===p.nome?' selected':''}>${esc(p.nome)}</option>`).join('')}
         </select>
       </td>
       <td style="text-align:center">
         <input type="number" min="1" value="${s.qty||1}"
           style="width:50px;text-align:center;padding:5px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px"
-          oninput="updateItemField(${s.id},'qty',+this.value)">
+          oninput="updateItemField(${jsArg(s.id)},'qty',+this.value)">
       </td>
       <td style="text-align:right">
         <input type="text" class="moeda-input" value="${s.valorUnit?fN(s.valorUnit):''}"
           style="width:105px;text-align:right;padding:5px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px"
           placeholder="0,00"
           oninput="maskMoeda(this,event)"
-          onblur="updateItemValor(${s.id},this.value);fmtMoeda(this)">
+          onblur="updateItemValor(${jsArg(s.id)},this.value);fmtMoeda(this)">
       </td>
       <td style="text-align:center">
         <input type="number" min="0" max="100" value="${s.descPct||0}"
           style="width:52px;text-align:center;padding:5px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px"
-          oninput="updateItemDisc(${s.id},this.value)">
+          oninput="updateItemDisc(${jsArg(s.id)},this.value)">
       </td>
       <td class="sub" id="sub_${s.id}">R$ ${fN(_itemSub(s))}</td>
       <td style="text-align:center">
-        <button onclick="removeItemOrc(${s.id})"
+        <button onclick="removeItemOrc(${jsArg(s.id)})"
           style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:1rem;line-height:1" title="Remover">✕</button>
       </td>
     </tr>
@@ -4700,6 +4801,18 @@ function updateHospValor(id,field,rawVal){
 function _hospRowSub(row){
   return row.hospitalCost||0;
 }
+function validarHospitaisDoOrcamento(itens, linhas){
+  const procedimentos=new Set(itens.map(item=>item.proc).filter(Boolean));
+  const incompletas=linhas.filter(row=>(row.hospKey||row.procName||row.hospitalCost)&&(!row.hospKey||!row.procName));
+  if(incompletas.length){
+    return {ok:false,mensagem:'Cada custo hospitalar precisa ter hospital e procedimento.'};
+  }
+  const incompativeis=linhas.filter(row=>row.procName&&!procedimentos.has(row.procName));
+  if(incompativeis.length){
+    return {ok:false,mensagem:'O procedimento hospitalar precisa fazer parte do orcamento.'};
+  }
+  return {ok:true};
+}
 
 function _updateHospRowSub(id){
   const row=orcHospRows.find(x=>x.id===id);if(!row)return;
@@ -4731,18 +4844,20 @@ function renderHospRows(){
     const noPrice=hasPriceResult===false&&!row.manual;
     const borderC=noPrice?'#f39c12':row.manual?'#3498db':'var(--brd)';
     const hSel=()=>`<option value="">Selecione...</option>${HOSP_KEYS.map(h=>`<option value="${h.key}"${row.hospKey===h.key?' selected':''}>${h.nome}</option>`).join('')}`;
-    const pSel=`<option value="">Selecione...</option>${getAllProcs().map(p=>`<option value="${p.nome}"${row.procName===p.nome?' selected':''}>${p.nome}</option>`).join('')}`;
+    const procedimentosOrcamento=new Set(orcItems.map(item=>item.proc).filter(Boolean));
+    const procsPermitidos=getAllProcs().filter(proc=>procedimentosOrcamento.has(proc.nome));
+    const pSel=`<option value="">Selecione...</option>${procsPermitidos.map(p=>`<option value="${esc(p.nome)}"${row.procName===p.nome?' selected':''}>${esc(p.nome)}</option>`).join('')}`;
     return `<tr>
       <td><select style="width:100%;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
-          onchange="updateHospSelect(${row.id},'hospKey',this.value)">${hSel()}</select></td>
+          onchange="updateHospSelect(${jsArg(row.id)},'hospKey',this.value)">${hSel()}</select></td>
       <td><select style="width:100%;padding:4px 5px;font-size:.79rem;border:1.5px solid var(--brd);border-radius:6px"
-          onchange="updateHospSelect(${row.id},'procName',this.value)">${pSel}</select></td>
+          onchange="updateHospSelect(${jsArg(row.id)},'procName',this.value)">${pSel}</select></td>
       <td>${noPrice?`<div class="no-price-warn">⚠ sem preço — cadastre na aba Tabela</div>`:`<input type="text" class="moeda-input" value="${row.hospitalCost?fN(row.hospitalCost):''}"
           style="width:110px;text-align:right;padding:4px 5px;font-size:.79rem;border:1.5px solid ${borderC};border-radius:6px"
           placeholder="0,00" oninput="maskMoeda(this,event)"
-          onblur="updateHospValor(${row.id},'hospitalCost',this.value);fmtMoeda(this)">`}</td>
+          onblur="updateHospValor(${jsArg(row.id)},'hospitalCost',this.value);fmtMoeda(this)">`}</td>
       <td class="sub" id="hsub_${row.id}">${sub>0?'R$ '+fN(sub):'—'}</td>
-      <td><button onclick="removeHospRow(${row.id})"
+      <td><button onclick="removeHospRow(${jsArg(row.id)})"
           style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:1rem" title="Remover">✕</button></td>
     </tr>`;
   }).join('');
@@ -4753,12 +4868,12 @@ function renderHospRows(){
 // SINGLE SOURCE OF TRUTH — chamado sempre que qualquer campo muda
 function calcTotaisOrc(){
   // Serviços
-  const subtotal=orcItems.reduce((s,x)=>(x.valorUnit||0)*(x.qty||1)+s,0);
-  const desconto=orcItems.reduce((s,x)=>(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100+s,0);
-  const servFinal=subtotal-desconto;
+  const subtotal=arredondarCentavos(orcItems.reduce((s,x)=>(x.valorUnit||0)*(x.qty||1)+s,0));
+  const desconto=arredondarCentavos(orcItems.reduce((s,x)=>(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100+s,0));
+  const servFinal=arredondarCentavos(subtotal-desconto);
   // Hospital
-  const hospTotal=orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0);
-  const grandTotal=servFinal+hospTotal;
+  const hospTotal=arredondarCentavos(orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0));
+  const grandTotal=arredondarCentavos(servFinal+hospTotal);
 
   setEl('oSubtotal','R$ '+fN(subtotal));
   setEl('oDesconto','- R$ '+fN(desconto));
@@ -4787,12 +4902,12 @@ function novoOrcamento(){
   renderHospRows();
   calcTotaisOrc();
   document.getElementById('oObs').value='';
-  const today=new Date().toISOString().split('T')[0];
+  const today=dataLocalISO();
   const v30=new Date();v30.setDate(v30.getDate()+30);
   const oDataEl=document.getElementById('oData');
   const oValEl=document.getElementById('oValidade');
   if(oDataEl)oDataEl.value=today;
-  if(oValEl)oValEl.value=v30.toISOString().split('T')[0];
+  if(oValEl)oValEl.value=dataLocalISO(v30);
   const det=document.getElementById('sumHospDetail');if(det)det.innerHTML='';
   // fix 1.1: limpa banner e estado salvo ao criar novo orçamento
   _esconderBannerOrcSalvo&&_esconderBannerOrcSalvo();
@@ -4874,7 +4989,7 @@ function _setupBannerDismiss(){
 
 
 // ==================== SALVAR ====================
-function salvarOrcamento(){
+async function salvarOrcamento(){
   if(_savingOrc){return;}
   _savingOrc=true;
   const _bsBtn=document.getElementById('btnSalvarOrc');
@@ -4890,18 +5005,23 @@ function salvarOrcamento(){
   if(!data){_abortSave('Informe a data.');return null;}
   const itens=orcItems.filter(s=>s.proc);
   if(!itens.length){_abortSave('Adicione ao menos um procedimento.');return null;}
+  const validacaoHospital=validarHospitaisDoOrcamento(itens,orcHospRows);
+  if(!validacaoHospital.ok){
+    _abortSave(validacaoHospital.mensagem);
+    return null;
+  }
 
-  const subtotal=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0);
-  const desconto=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0);
-  const hospTotal=orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0);
-  const total=subtotal-desconto+hospTotal;
+  const subtotal=arredondarCentavos(itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0));
+  const desconto=arredondarCentavos(itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0));
+  const hospTotal=arredondarCentavos(orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0));
+  const total=arredondarCentavos(subtotal-desconto+hospTotal);
 
   const hospRows=orcHospRows.map(r=>({
     hospKey:r.hospKey,
     hospNome:(HOSP_KEYS.find(h=>h.key===r.hospKey)||{}).nome||r.hospKey,
     procName:r.procName,
-    hospital_cost:r.hospitalCost||0,
-    subtotal:_hospRowSub(r),
+    hospital_cost:arredondarCentavos(r.hospitalCost||0),
+    subtotal:arredondarCentavos(_hospRowSub(r)),
     manual:r.manual||false
   }));
 
@@ -4909,7 +5029,7 @@ function salvarOrcamento(){
     id:genId(),
     paciente:orcPat.nome,cpf:orcPat.cpf||'',rg:orcPat.rg||'',tel:orcPat.tel||'',
     data,validade:document.getElementById('oValidade').value,
-    servicos:itens.map(x=>({proc:x.proc,qty:x.qty,valorUnit:x.valorUnit,descPct:x.descPct,subtotal:_itemSub(x)})),
+    servicos:itens.map(x=>({proc:x.proc,qty:x.qty,valorUnit:x.valorUnit,descPct:x.descPct,subtotal:arredondarCentavos(_itemSub(x))})),
     hospRows,subtotal,desconto,hospTotal,total,
     obs:document.getElementById('oObs').value.trim(),
     status:'aberto',
@@ -4933,56 +5053,68 @@ function salvarOrcamento(){
       obs:orc.obs,
       editadoEm:new Date().toISOString(),editadoPor:CU
     };
-    fbAddLog('EDIÇÃO ORÇAMENTO',`Orç #${_editingOrcId} (${orcPat.nome}) · total R$ ${fN(totalAntigo||0)} → R$ ${fN(total)} · por ${CU}`);
-    dbRef.child('orcamentos/'+_editingOrcId).update(updateFields);
-    // Atualizar cache local (merge)
-    if(!DATA.orcamentos) DATA.orcamentos={};
-    DATA.orcamentos[_editingOrcId]=Object.assign({},orcAntigo||{},updateFields,{id:_editingOrcId});
-    const orcEditado=DATA.orcamentos[_editingOrcId];
-    // ── C.1: sincronizar receita vinculada quando o total muda ──────────────────
-    // Se este orçamento já gerou receita (receitaGeradaId), o lançamento de
-    // receita em Lançamentos precisa acompanhar o novo total — senão o
-    // faturamento fica inconsistente (orçamento diz X, receita diz Y).
+    const updates={};
+    Object.entries(updateFields).forEach(([campo,valor])=>{
+      updates['orcamentos/'+_editingOrcId+'/'+campo]=valor;
+    });
+
     let _avisoReceita='';
     const _recId=orcAntigo&&orcAntigo.receitaGeradaId;
     const _rec=(_recId&&DATA.lancamentos)?DATA.lancamentos[_recId]:null;
-    if(_rec&&!_rec.deletedAt&&(_rec.valor||0)!==total){
-      // Log ANTES da gravação (regra do projeto)
-      fbAddLog('AJUSTE RECEITA EDIÇÃO',`Receita #${_recId} do orç #${_editingOrcId} (${orcPat.nome}) ajustada R$ ${fN(_rec.valor||0)} → R$ ${fN(total)} por ${CU}`);
-      dbRef.child('lancamentos/'+_recId+'/valor').set(total);
-      DATA.lancamentos[_recId].valor=total;
-      // Auto-despesas (equipe/comissão) no mesmo grupo NÃO são recalculadas —
-      // o usuário precisa revisá-las manualmente.
+    const deveAjustarReceita=!!(_rec&&!_rec.deletedAt&&(_rec.valor||0)!==total);
+    if(deveAjustarReceita){
+      updates['lancamentos/'+_recId+'/valor']=total;
       const _grp=_rec.linked_group_id;
       const _temAutoDesp=_grp&&Object.keys(DATA.lancamentos).some(k=>{const l=DATA.lancamentos[k];return l&&l.linked_group_id===_grp&&l.tipo==='despesa'&&!l.deletedAt;});
       _avisoReceita=_temAutoDesp
-        ?'⚠ Receita ajustada ao novo total. As auto-despesas (equipe/comissão) NÃO foram recalculadas — revise-as na aba Lançamentos.'
+        ?'Receita ajustada. As auto-despesas nao foram recalculadas; revise-as em Lancamentos.'
         :'Receita vinculada ajustada ao novo total.';
     }
+    const detalheReceita=deveAjustarReceita?' | receita vinculada ajustada':'';
+    anexarLogAtualizacao(updates,'EDICAO ORCAMENTO',`Orc #${_editingOrcId} (${orcPat.nome}) | total R$ ${fN(totalAntigo||0)} -> R$ ${fN(total)} | por ${CU}${detalheReceita}`);
+
+    try{
+      await dbRef.update(updates);
+    }catch(err){
+      _abortSave('Erro ao atualizar orcamento: '+(err.message||err));
+      return null;
+    }
+    if(!DATA.orcamentos) DATA.orcamentos={};
+    DATA.orcamentos[_editingOrcId]=Object.assign({},orcAntigo||{},updateFields,{id:_editingOrcId});
+    if(deveAjustarReceita)DATA.lancamentos[_recId].valor=total;
+    const orcEditado=DATA.orcamentos[_editingOrcId];
     window._orcSalvoId=_editingOrcId;
     _editingOrcId=null;
     _duplicandoDe=null;
     const eb=document.getElementById('orcEditBanner');if(eb)eb.remove();
-    if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='💾 Salvar';}
+    if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='Salvar';}
     _savingOrc=false;
     _mostrarBannerOrcSalvo(orcEditado.id,orcPat.nome,total,'atualizado');
-    showToast('Orçamento atualizado!','#27ae60');
-    if(_avisoReceita) setTimeout(()=>showToast(_avisoReceita, _avisoReceita.startsWith('⚠')?'#e8a838':'#27ae60', 6000), 700);
+    showToast('Orcamento atualizado!','#27ae60');
+    if(_avisoReceita) setTimeout(()=>showToast(_avisoReceita,'#e8a838',6000),700);
     return orcEditado;
   }
 
-  // Modo novo: gravar orçamento completo
-  if(_duplicandoDe){ orc.duplicadoDe=_duplicandoDe; _duplicandoDe=null; }
-  dbRef.child('orcamentos/'+orc.id).set(orc);
-  // Atualização otimista do cache local — o listener on('value') confirmará em seguida.
+  // Modo novo: gravar orcamento e auditoria no mesmo commit Firebase.
+  const duplicadoDe=_duplicandoDe;
+  if(duplicadoDe)orc.duplicadoDe=duplicadoDe;
+  const updates={};
+  updates['orcamentos/'+orc.id]=orc;
+  anexarLogAtualizacao(updates,'ORCAMENTO',`Orcamento gerado para ${orcPat.nome} - Total R$ ${fN(total)}${duplicadoDe?' (duplicado do #'+duplicadoDe+')':''}`);
+  try{
+    await dbRef.update(updates);
+  }catch(err){
+    _abortSave('Erro ao salvar orcamento: '+(err.message||err));
+    return null;
+  }
   if(!DATA.orcamentos) DATA.orcamentos = {};
   DATA.orcamentos[orc.id] = orc;
-  fbAddLog('ORCAMENTO',`Orcamento gerado para ${orcPat.nome} - Total R$ ${fN(total)}${orc.duplicadoDe?' (duplicado do #'+orc.duplicadoDe+')':''}`);
+  _duplicandoDe=null;
   window._orcSalvoId = orc.id;
   _mostrarBannerOrcSalvo(orc.id, orcPat.nome, total);
-  showToast('Orçamento salvo!','#27ae60');
+  showToast('Orcamento salvo!','#27ae60');
   _savingOrc=false;
-  if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='💾 Salvar';}
+  if(_bsBtn){_bsBtn.disabled=false;_bsBtn.textContent='Salvar';}
   return orc;
 }
 
@@ -5053,12 +5185,12 @@ function _duplicarOrcamentoInterno(id){
   if(!orc){showToast('Orçamento não encontrado.','#e74c3c');return;}
   _carregarOrcNoForm(orc);
   // Sobrepor datas para hoje/+30d
-  const today=new Date().toISOString().split('T')[0];
+  const today=dataLocalISO();
   const v30=new Date();v30.setDate(v30.getDate()+30);
   const oDataEl=document.getElementById('oData');
   const oValEl=document.getElementById('oValidade');
   if(oDataEl)oDataEl.value=today;
-  if(oValEl)oValEl.value=v30.toISOString().split('T')[0];
+  if(oValEl)oValEl.value=dataLocalISO(v30);
   // Modo novo (não edição), mas guarda origem para fbAddLog
   _editingOrcId=null;
   _duplicandoDe=id;
@@ -5098,16 +5230,16 @@ function _carregarOrcNoForm(orc){
 }
 
 
-function salvarEImprimir(){
-  const o=salvarOrcamento();
+async function salvarEImprimir(){
+  const o=await salvarOrcamento();
   if(o) imprimirOrcamento(o.id);
 }
-function salvarEPDF(){
-  const o=salvarOrcamento();
+async function salvarEPDF(){
+  const o=await salvarOrcamento();
   if(o) gerarPDFOrcamento(o.id);
 }
-function salvarEPagar(){
-  const o=salvarOrcamento();
+async function salvarEPagar(){
+  const o=await salvarOrcamento();
   if(o) abrirModalPagamento(o.id);
 }
 function gerarPDFOrcRapido(){
@@ -5116,15 +5248,20 @@ function gerarPDFOrcRapido(){
   if(!data){showToast('Informe a data.','#e74c3c');return;}
   const itens=orcItems.filter(s=>s.proc);
   if(!itens.length){showToast('Adicione ao menos um procedimento.','#e74c3c');return;}
-  const subtotal=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0);
-  const desconto=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0);
-  const hospTotal=orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0);
-  const total=subtotal-desconto+hospTotal;
+  const validacaoHospital=validarHospitaisDoOrcamento(itens,orcHospRows);
+  if(!validacaoHospital.ok){
+    showToast(validacaoHospital.mensagem,'#e74c3c');
+    return;
+  }
+  const subtotal=arredondarCentavos(itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0));
+  const desconto=arredondarCentavos(itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0));
+  const hospTotal=arredondarCentavos(orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0));
+  const total=arredondarCentavos(subtotal-desconto+hospTotal);
   const hospRows=orcHospRows.map(r=>({
     hospNome:(HOSP_KEYS.find(h=>h.key===r.hospKey)||{}).nome||r.hospKey,
     procName:r.procName,
-    hospital_cost:r.hospitalCost||0,
-    subtotal:_hospRowSub(r)
+    hospital_cost:arredondarCentavos(r.hospitalCost||0),
+    subtotal:arredondarCentavos(_hospRowSub(r))
   }));
   gerarPDFOrcamento({
     paciente:orcPat.nome,cpf:orcPat.cpf||'',rg:orcPat.rg||'',
@@ -5136,16 +5273,64 @@ function gerarPDFOrcRapido(){
 
 function excluirOrcamento(id){
   const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
+  const temPagamentos=temPagamentosVinculadosAoOrcamento(id);
+  if(temPagamentos){
+    showToast('Este orcamento possui pagamentos. Exclua ou estorne os pagamentos antes de move-lo para a lixeira.','#e74c3c',5000);
+    return;
+  }
   showConfirm(
     'Mover para Lixeira',
-    `Mover orçamento de ${orc.paciente} (R$ ${fN(orc.total)}) para a Lixeira?\n\nPoderá ser restaurado pela aba Lixeira.`,
-    () => {
-  const ts=new Date().toISOString();
-  // Log ANTES da operação (regra do projeto)
-  fbAddLog('EXCLUSÃO ORÇAMENTO',`Orçamento de ${orc.paciente} R$ ${fN(orc.total)} movido para lixeira por ${CU}`);
-  dbRef.child('orcamentos/'+id).update({deletedAt:ts,deletedBy:CU});
-  showToast('Orçamento movido para a lixeira.','#e67e22');
-  }); // fim showConfirm excluirOrcamento
+    `Mover orcamento de ${orc.paciente} (R$ ${fN(orc.total)}) para a Lixeira?`,
+    async()=>{
+      const ts=new Date().toISOString();
+      const updates={};
+      updates['orcamentos/'+id+'/deletedAt']=ts;
+      updates['orcamentos/'+id+'/deletedBy']=CU;
+      anexarLogAtualizacao(updates,'EXCLUSAO ORCAMENTO',`Orcamento de ${orc.paciente} R$ ${fN(orc.total)} movido para lixeira por ${CU}`);
+      try{
+        await dbRef.update(updates);
+        showToast('Orcamento movido para a lixeira.','#e67e22');
+      }catch(err){
+        showToast('Erro ao mover orcamento: '+(err.message||err),'#e74c3c');
+      }
+    }
+  );
+}
+function restaurarOrcamento(id){
+  const orc=DATA.orcamentos&&DATA.orcamentos[id];
+  if(!orc||!orc.deletedAt){showToast('Orcamento nao encontrado na lixeira.','#e74c3c');return;}
+  showConfirm('Restaurar orcamento',`Restaurar o orcamento de ${orc.paciente}?`,async()=>{
+    const updates={};
+    updates['orcamentos/'+id+'/deletedAt']=null;
+    updates['orcamentos/'+id+'/deletedBy']=null;
+    anexarLogAtualizacao(updates,'RESTAURAR ORCAMENTO',`Orcamento de ${orc.paciente} restaurado por ${CU}`);
+    try{
+      await dbRef.update(updates);
+      showToast('Orcamento restaurado.','#27ae60');
+    }catch(err){
+      showToast('Erro ao restaurar orcamento: '+(err.message||err),'#e74c3c');
+    }
+  });
+}
+function purgarOrcamento(id){
+  const orc=DATA.orcamentos&&DATA.orcamentos[id];
+  if(!orc||!orc.deletedAt){showToast('Orcamento precisa estar na lixeira para ser apagado.','#e74c3c');return;}
+  const temPagamentos=temPagamentosVinculadosAoOrcamento(id);
+  if(temPagamentos){
+    showToast('Nao e seguro apagar permanentemente um orcamento com pagamentos vinculados.','#e74c3c',5000);
+    return;
+  }
+  showPrompt('Apagar orcamento permanentemente',`Orcamento de ${orc.paciente}. Esta acao nao pode ser desfeita.\n\nDigite APAGAR para confirmar.`, 'APAGAR','APAGAR',async()=>{
+    const updates={};
+    updates['orcamentos/'+id]=null;
+    anexarLogAtualizacao(updates,'PURGA ORCAMENTO',`Orcamento de ${orc.paciente} apagado permanentemente por ${CU}`);
+    try{
+      await dbRef.update(updates);
+      showToast('Orcamento apagado permanentemente.','#7b241c');
+    }catch(err){
+      showToast('Erro ao apagar orcamento: '+(err.message||err),'#e74c3c');
+    }
+  });
 }
 
 // Estado do filtro de status na aba Orçamentos
@@ -5159,103 +5344,15 @@ function mudarStatusOrc(id,novoStatus){
   const antigo=orc.status||'aberto';
   if(antigo===novoStatus)return;
   const LABELS={aberto:'Aberto',aceito:'Aceito',recusado:'Recusado',expirado:'Expirado'};
-  fbAddLog('STATUS ORÇAMENTO',
-    `Orçamento ${id} (${orc.paciente}) · ${LABELS[antigo]||antigo} → ${LABELS[novoStatus]||novoStatus} por ${CU}`);
-  dbRef.child('orcamentos/'+id+'/status').set(novoStatus)
+  const updates={};
+  updates['orcamentos/'+id+'/status']=novoStatus;
+  anexarLogAtualizacao(updates,'STATUS ORCAMENTO',`Orcamento ${id} (${orc.paciente}) | ${LABELS[antigo]||antigo} -> ${LABELS[novoStatus]||novoStatus} por ${CU}`);
+  dbRef.update(updates)
     .then(()=>showToast(`Status atualizado: ${LABELS[novoStatus]||novoStatus}`,'#27ae60'))
     .catch(e=>showToast('Erro: '+(e.message||e),'#e74c3c'));
 }
 
-// Gera receita (e despesas automáticas de equipe) a partir de um orçamento aceito.
-// Usa a configuração do PRIMEIRO procedimento do orçamento para as auto-despesas.
-// Se houver múltiplos procedimentos, avisa no toast — o médico pode ajustar manualmente.
-let _savingReceita=false; // fix 1.4c anti duplo-clique gerarReceita
-function gerarReceitaDeOrcamento(id){
-  if(_savingReceita){return;}
-  const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
-  if(orc.receitaGeradaId){
-    // fix 1.5: bloqueio — não permite receita duplicada
-    showToast(`🚫 Este orçamento já gerou a receita #${orc.receitaGeradaId}. Use "💳 + Pagar" para pagamentos adicionais.`,'#e67e22',5000);
-    return;
-  }
-  const data=new Date().toISOString().split('T')[0]; // hoje
-  const valor=orc.total;
-  const pac=orc.paciente;
-  const primeiroProc=(orc.servicos||[])[0]?.proc||'';
-  const nProcs=(orc.servicos||[]).filter(s=>s.proc).length;
-  const procCfg=primeiroProc?getProcConfig(primeiroProc):null;
-  const membros=[
-    {campo:'anesthetistCost',label:'Anestesista'},
-    {campo:'instrumenterCost',label:'Instrumentadora'},
-    {campo:'assistantCost',label:'Auxiliar'},
-    {campo:'extraMaterialCost',label:'Material Extra'},
-  ];
-  const temEquipe=procCfg&&membros.some(m=>(procCfg[m.campo]||0)>0);
-  const commVal=procCfg?_calcCommission(procCfg,valor):0;
-  const temAutoDesp=temEquipe||commVal>0;
-  const aviso=nProcs>1?`\n\n⚠ Orçamento tem ${nProcs} procedimentos. Auto-despesas usam config de "${primeiroProc}" (primeiro).`:'';
-  showConfirm(
-    'Confirmar lançamento',
-    `Lançar receita de R$ ${fN(valor)} para ${pac}?\nProcedimento base: ${primeiroProc||'—'}\nAuto-despesas: ${temAutoDesp?'sim (equipe + comissão)':'não configuradas'}\nData: ${fD(data)}${aviso}`,
-    () => {
-  _savingReceita=true; // fix D4: ativa guard anti-duplo-clique
-  const linked_group_id=temAutoDesp?('grp_'+genId()):undefined;
-  const lancId=genId();
-  // Receita principal
-  const item={
-    id:lancId,data,valor,categoria:'Cirurgias Particulares',
-    pagamento:'Pendente',descricao:'',paciente:pac,
-    procedimento:primeiroProc,tipo:'receita',
-    usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
-    linked_orc_id:id
-  };
-  if(linked_group_id)item.linked_group_id=linked_group_id;
-  fbSalvarLanc(item);
-  fbAddLog('RECEITA DE ORÇAMENTO',`Receita R$ ${fN(valor)} para ${pac} · orçamento #${id}`);
-  // Auto-despesas equipe
-  let desp_count=0;
-  if(temAutoDesp&&procCfg){
-    membros.forEach(m=>{
-      const v=procCfg[m.campo]||0;
-      if(v>0){
-        fbSalvarLanc({id:genId(),data,valor:v,categoria:'Equipe Cirúrgica',
-          pagamento:'Transferência',descricao:`${m.label} — ${primeiroProc}`,
-          paciente:pac,procedimento:primeiroProc,tipo:'despesa',
-          usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
-          linked_group_id,auto_generated:true});
-        fbAddLog('AUTO-DESPESA',`Equipe: ${m.label} · R$ ${fN(v)} · ${primeiroProc}`);
-        desp_count++;
-      }
-    });
-    if(commVal>0){
-      const lbl=procCfg.managerCommissionLabel||'Comissão gerente';
-      fbSalvarLanc({id:genId(),data,valor:commVal,categoria:'Comissões',
-        pagamento:'Transferência',descricao:`Comissão gerente — ${primeiroProc}`,
-        paciente:pac,procedimento:primeiroProc,tipo:'despesa',
-        commission:true,commission_rate:procCfg.managerCommissionPct,
-        usuario:CU,email:CUEmail,criadoEm:new Date().toISOString(),
-        linked_group_id,auto_generated:true});
-      fbAddLog('COMISSÃO',`${lbl} · R$ ${fN(commVal)} (${procCfg.managerCommissionPct}%) · ${primeiroProc}`);
-      desp_count++;
-    }
-  }
-  // Marca orçamento para evitar lançamento duplo
-  dbRef.child('orcamentos/'+id+'/receitaGeradaId').set(String(lancId));
-  const msg=desp_count>0
-    ?`✓ Receita + ${desp_count} despesa(s) automática(s) lançada(s)!${nProcs>1?' (ajuste despesas se necessário)':''}`
-    :'✓ Receita lançada! Nenhuma despesa configurada para o procedimento.';
-  showToast(msg,'#27ae60');
-  _savingReceita=false;
-  // Muda status para aceito se ainda não estiver
-  if((orc.status||'aberto')!=='aceito')mudarStatusOrc(id,'aceito');
-  },
-  ()=>{ _savingReceita=false; } // fix D4: reset guard se cancelar
-  ); // fim showConfirm gerarReceita
-} // fim gerarReceitaDeOrcamento
-
-function _gerarReceitaOrcCore(id){ gerarReceitaDeOrcamento(id); }
-
-// ── MULTIPAGAMENTO: funções principais ──────────────────────────────────────
+// Payment workflow
 
 function abrirModalPagamento(orcIdOrObj){
   const orc = (orcIdOrObj && typeof orcIdOrObj === 'object')
@@ -5270,7 +5367,7 @@ function abrirModalPagamento(orcIdOrObj){
   // Preenche valor sugerido = saldo pendente
   const valEl=document.getElementById('payValor');
   valEl.value=saldo>0?fN(saldo):'';
-  document.getElementById('payData').value=new Date().toISOString().split('T')[0];
+  document.getElementById('payData').value=dataLocalISO();
   document.getElementById('payMetodo').value='PIX';
   document.getElementById('payParcelas').value='1';
   document.getElementById('payBandeira').value='';
@@ -5301,17 +5398,12 @@ function _payMetodoChange(){
 let _savingPag=false; // fix 1.4b anti duplo-clique salvarPagamento
 function salvarPagamento(){
   if(_savingPag){return;}
-  _savingPag=true;
-  const _bpBtn=document.getElementById('btnSalvarPag');
-  if(_bpBtn){_bpBtn.disabled=true;_bpBtn.textContent='⏳ Salvando…';}
-  setTimeout(()=>{_savingPag=false;if(_bpBtn){_bpBtn.disabled=false;_bpBtn.textContent='💳 Registrar Pagamento';}},1800);
   const orcId=document.getElementById('payModalOrcId').value;
   const orc=DATA.orcamentos&&DATA.orcamentos[orcId];
-  if(!orc){showToast('Orçamento não encontrado.','#e74c3c');return;}
+  if(!orc){showToast('Orcamento nao encontrado.','#e74c3c');return;}
 
   const amount=parseMoeda(document.getElementById('payValor').value);
-  if(!amount||amount<=0){showToast('Informe um valor válido.','#e74c3c');return;}
-
+  if(!amount||amount<=0){showToast('Informe um valor valido.','#e74c3c');return;}
   const payment_date=document.getElementById('payData').value;
   if(!payment_date){showToast('Informe a data do pagamento.','#e74c3c');return;}
 
@@ -5319,19 +5411,9 @@ function salvarPagamento(){
   const installments=parseInt(document.getElementById('payParcelas').value)||1;
   const card_brand=document.getElementById('payBandeira').value.trim();
   const notes=document.getElementById('payObs').value.trim();
-
-  // Validação: não ultrapassar total (aviso, não bloqueio)
   const saldo=calcSaldoPendente(orc);
-  if(amount>saldo+0.01){
-    // Permite pagamento acima do saldo mas pede confirmação com modal customizado
-    showConfirm(
-      '⚠ Valor acima do saldo',
-      `O valor informado (R$ ${fN(amount)}) é maior que o saldo pendente (R$ ${fN(saldo)}).\n\nDeseja registrar mesmo assim?`,
-      ()=>_executarSalvarPagamento(orcId,orc,amount,payment_date,method,installments,card_brand,notes),
-      null,
-      'Registrar mesmo assim',
-      '#e67e22'
-    );
+  if(amount>saldo+TOLERANCIA_CENTAVO){
+    showToast(`Valor acima do saldo pendente de R$ ${fN(saldo)}. Registre credito por fluxo proprio.`, '#e74c3c', 5000);
     return;
   }
   _executarSalvarPagamento(orcId,orc,amount,payment_date,method,installments,card_brand,notes);
@@ -5339,19 +5421,22 @@ function salvarPagamento(){
 
 // Núcleo do salvamento de pagamento — chamado tanto pelo caminho direto quanto
 // após confirmação do modal (quando valor > saldo pendente).
-function _executarSalvarPagamento(orcId,orc,amount,payment_date,method,installments,card_brand,notes){
-  const payId=String(genId());
-  const now=new Date().toISOString();
+async function _executarSalvarPagamento(orcId,orc,amount,payment_date,method,installments,card_brand,notes){
+  if(_savingPag){return;}
+  _savingPag=true;
+  const btn=document.getElementById('btnSalvarPag');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
 
-  // 1. Salvar em quote_payments
+  const payId=genId();
+  const now=new Date().toISOString();
   const payObj={
     id:payId,
     quote_id:String(orcId),
     payment_date,
     amount,
     payment_method:method,
-    installments: method==='Cartão de Crédito'?installments:1,
-    card_brand: (method==='Cartão de Crédito'||method==='Cartão de Débito')?card_brand:'',
+    installments:method==='Cartão de Crédito'?installments:1,
+    card_brand:(method==='Cartão de Crédito'||method==='Cartão de Débito')?card_brand:'',
     status:'confirmado',
     notes,
     created_by:CU,
@@ -5359,13 +5444,10 @@ function _executarSalvarPagamento(orcId,orc,amount,payment_date,method,installme
     created_at:now,
     updated_at:now
   };
-  dbRef.child('quote_payments/'+payId).set(payObj);
 
-  // 2. Criar lançamento de receita vinculado ao orçamento
   const primeiroProc=(orc.servicos||[])[0]?.proc||'';
-  const parLabel=method==='Cartão de Débito'?'Débito'
-    :(method==='Cartão de Crédito'?`Crédito ${installments}x`:method);
-  const lancId=String(genId());
+  const parLabel=method==='Cartão de Débito'?'Débito':(method==='Cartão de Crédito'?`Crédito ${installments}x`:method);
+  const lancId=genId();
   const lancObj={
     id:lancId,
     data:payment_date,
@@ -5383,83 +5465,71 @@ function _executarSalvarPagamento(orcId,orc,amount,payment_date,method,installme
     linked_pay_id:payId
   };
   if(method==='Cartão de Crédito'&&installments>1)lancObj.parcelas=installments;
-  fbSalvarLanc(lancObj);
 
-  // 3. Calcular taxa de cartão (se aplicável) e gerar taxa automática
+  const updates={};
+  updates['quote_payments/'+payId]=payObj;
+  updates['lancamentos/'+lancId]=lancObj;
+
   if(method==='Cartão de Débito'||method==='Cartão de Crédito'){
     const pct=getTaxaPct(method,installments);
     if(pct>0){
-      const taxaVal=Math.round(amount*pct/100*100)/100;
-      fbSalvarLanc({
-        id:String(genId()),data:payment_date,valor:taxaVal,
+      const taxaVal=Math.round(amount*pct)/100;
+      const taxaId=genId();
+      updates['lancamentos/'+taxaId]={
+        id:taxaId,data:payment_date,valor:taxaVal,
         categoria:'Taxas de Cartão',pagamento:'Transferência',
-        descricao:`Taxa ${parLabel} — ${orc.paciente}`,
+        descricao:`Taxa ${parLabel} - ${orc.paciente}`,
         paciente:orc.paciente,procedimento:primeiroProc,tipo:'despesa',
         usuario:CU,email:CUEmail,criadoEm:now,
         auto_generated:true,linked_orc_id:String(orcId),linked_pay_id:payId
-      });
+      };
     }
   }
 
-  // 4. Atualizar flag no orçamento para compatibilidade (primeiro pagamento = receitaGeradaId legado)
   const pagamentosExistentes=getQuotePayments(orcId);
-  if(pagamentosExistentes.length===0&&!orc.receitaGeradaId){
-    dbRef.child('orcamentos/'+orcId+'/receitaGeradaId').set(lancId);
+  if(pagamentosExistentes.length===0&&!orc.receitaGeradaId)updates['orcamentos/'+orcId+'/receitaGeradaId']=lancId;
+  if((orc.status||'aberto')==='aberto')updates['orcamentos/'+orcId+'/status']='aceito';
+  anexarLogAtualizacao(updates,'PAGAMENTO ORCAMENTO',`R$ ${fN(amount)} (${method}${installments>1?` ${installments}x`:''}) | ${orc.paciente} | Orc #${orcId} | por ${CU}`);
+
+  try{
+    await dbRef.update(updates);
+    const totalPago=calcValorPago(orc)+amount;
+    const quitado=totalPago>=(orc.total||0)-TOLERANCIA_CENTAVO;
+    fecharModalPagamento();
+    showToast(quitado?'Pagamento salvo - orcamento quitado.':'Pagamento salvo. Saldo atualizado.','#27ae60');
+  }catch(err){
+    showToast('Erro ao salvar pagamento: '+(err.message||err),'#e74c3c');
+  }finally{
+    _savingPag=false;
+    if(btn){btn.disabled=false;btn.textContent='Registrar Pagamento';}
   }
-
-  // 5. Auditoria
-  fbAddLog('PAGAMENTO ORÇAMENTO',
-    `R$ ${fN(amount)} (${method}${installments>1?` ${installments}x`:''}) · ${orc.paciente} · Orç #${orcId} · por ${CU}`);
-
-  // 6. Mudar status para aceito se ainda não estava
-  if((orc.status||'aberto')==='aberto')mudarStatusOrc(orcId,'aceito');
-
-  fecharModalPagamento();
-  const stFin=calcStatusFinanceiro({...orc, id:orcId});
-  const msg=stFin==='quitado'?'✅ Pagamento salvo — orçamento QUITADO!':'✓ Pagamento salvo! Saldo atualizado.';
-  showToast(msg,'#27ae60');
 }
 
 function excluirPagamento(payId){
-  // fix 1.6: exclusão em cascata com checkbox
   const pay=DATA.quote_payments&&DATA.quote_payments[payId];if(!pay)return;
   const orc=DATA.orcamentos&&DATA.orcamentos[pay.quote_id];
-
-  // Monta modal customizado com checkbox
-  const chkId='chkCascadeDel_'+payId;
-  const msg=`Excluir pagamento de R$ ${fN(pay.amount)} (${pay.payment_method}) de ${orc?orc.paciente:'?'}?`;
-  const extraHtml=`<label style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;font-size:.86rem;cursor:pointer">
-    <input type="checkbox" id="${chkId}" checked style="margin-top:2px;accent-color:var(--err)">
-    <span>Excluir também a receita e a taxa de cartão vinculadas (soft-delete)</span>
-  </label>`;
-
-  showConfirm(
-    'Excluir Pagamento',
-    msg,
-    ()=>{
-      const now=new Date().toISOString();
-      const cascade=document.getElementById(chkId)?document.getElementById(chkId).checked:true;
-      // Log ANTES da operação
-      fbAddLog('EXCLUSÃO PAGAMENTO',`Pagamento #${payId} R$ ${fN(pay.amount)} excluído por ${CU}${cascade?' (cascata: receita+taxa)':''}`);
-      dbRef.child('quote_payments/'+payId).update({deletedAt:now,deletedBy:CU});
-      if(cascade){
-        // Soft-delete de todos os lançamentos vinculados a este payId
-        const lancs=DATA.lancamentos||{};
-        Object.keys(lancs).forEach(lid=>{
-          const l=lancs[lid];
-          if(l&&l.linked_pay_id===payId&&!l.deletedAt){
-            fbAddLog('EXCLUSÃO CASCATA',`Lançamento #${lid} (${l.tipo} R$ ${fN(l.valor)}) excluído por cascata do pagamento #${payId} por ${CU}`);
-            dbRef.child('lancamentos/'+lid).update({deletedAt:now,deletedBy:CU});
-          }
-        });
-      }
-      showToast(cascade?'Pagamento e lançamentos vinculados excluídos.':'Pagamento excluído.','#e67e22');
-    },
-    null,
-    'Excluir',
-    '#e74c3c',
-    extraHtml
-  );
+  const msg=`Excluir pagamento de R$ ${fN(pay.amount)} (${pay.payment_method}) de ${orc?orc.paciente:'?'}? A receita e a taxa vinculadas serao movidas para a lixeira junto.`;
+  showConfirm('Excluir Pagamento',msg,async()=>{
+    const now=new Date().toISOString();
+    const updates={};
+    updates['quote_payments/'+payId+'/deletedAt']=now;
+    updates['quote_payments/'+payId+'/deletedBy']=CU;
+    const lancamentosVinculados=Object.values(DATA.lancamentos||{}).filter(l=>l&&l.linked_pay_id===payId&&!l.deletedAt);
+    lancamentosVinculados.forEach(lanc=>{
+      updates['lancamentos/'+lanc.id+'/deletedAt']=now;
+      updates['lancamentos/'+lanc.id+'/deletedBy']=CU;
+    });
+    if(orc&&lancamentosVinculados.some(lanc=>String(lanc.id)===String(orc.receitaGeradaId))){
+      updates['orcamentos/'+pay.quote_id+'/receitaGeradaId']=null;
+    }
+    anexarLogAtualizacao(updates,'EXCLUSAO PAGAMENTO',`Pagamento #${payId} R$ ${fN(pay.amount)} excluido por ${CU}; ${lancamentosVinculados.length} lancamento(s) vinculado(s) movido(s) para lixeira.`);
+    try{
+      await dbRef.update(updates);
+      showToast('Pagamento e lancamentos vinculados movidos para a lixeira.','#e67e22');
+    }catch(err){
+      showToast('Erro ao excluir pagamento: '+(err.message||err),'#e74c3c');
+    }
+  },null,'Excluir','#e74c3c');
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -5467,7 +5537,7 @@ function excluirPagamento(payId){
 function renderOrcamentos(){
   const el=document.getElementById('orcList');if(!el)return;
   const sq=(document.getElementById('searchOrc')?.value||'').toLowerCase();
-  const today=new Date().toISOString().split('T')[0];
+  const today=dataLocalISO();
   let all=getOrcamentos();
   if(sq)all=all.filter(o=>(o.paciente||'').toLowerCase().includes(sq)||(o.cpf||'').includes(sq)||(o.servicos||[]).some(s=>(s.proc||'').toLowerCase().includes(sq)));
 
@@ -5519,7 +5589,7 @@ function renderOrcamentos(){
     if(_orcStatusFilter==='expirado')return exp;
     if(_orcStatusFilter==='aberto')return st==='aberto'&&!exp;
     return st===_orcStatusFilter;
-  }).sort((a,b)=>b.id-a.id);
+  }).sort(compararOrcamentosRecentes);
 
   const cardsHtml=filtered.length===0
     ?'<div class="empty" style="padding:14px 0"><div class="ico" style="font-size:1.2rem">📋</div>Nenhum orçamento aqui</div>'
@@ -5559,7 +5629,7 @@ function renderOrcamentos(){
       if(pagamentos.length>0){
         const rows=pagamentos.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-top:1px solid #f0f0f0;font-size:.67rem">
           <span>${_pagIcon(p.payment_method)} ${esc(p.payment_method)}${p.installments>1?' '+p.installments+'x':''} · ${fD(p.payment_date)}</span>
-          <span style="display:flex;align-items:center;gap:4px;font-weight:700">R$ ${fN(p.amount)}<button onclick="excluirPagamento('${p.id}')" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:.75rem;padding:1px 3px;line-height:1" title="Excluir pagamento">✕</button></span>
+          <span style="display:flex;align-items:center;gap:4px;font-weight:700">R$ ${fN(p.amount)}<button onclick="excluirPagamento(${jsArg(p.id)})" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:.75rem;padding:1px 3px;line-height:1" title="Excluir pagamento">✕</button></span>
         </div>`).join('');
         histHtml=`<div style="margin-top:6px;background:#fafafa;border-radius:6px;padding:4px 8px">${rows}</div>`;
       }
@@ -5568,33 +5638,30 @@ function renderOrcamentos(){
       const acoes=[];
       // Editar e Duplicar — sempre disponíveis
       acoes.push(
-        `<button class="btn btn-sm" style="background:#eaf3fb;color:#1a4a8c;border:1px solid #90b8e8" onclick="editarOrcamento('${o.id}')">✏️ Abrir</button>`,
-        `<button class="btn btn-sm" style="background:#e8f0fb;color:#1a56af;border:1px solid #b8cff5" onclick="duplicarOrcamento('${o.id}')">📑 Duplicar</button>`
+        `<button class="btn btn-sm" style="background:#eaf3fb;color:#1a4a8c;border:1px solid #90b8e8" onclick="editarOrcamento(${jsArg(o.id)})">✏️ Abrir</button>`,
+        `<button class="btn btn-sm" style="background:#e8f0fb;color:#1a56af;border:1px solid #b8cff5" onclick="duplicarOrcamento(${jsArg(o.id)})">📑 Duplicar</button>`
       );
       if(st==='aberto')acoes.push(
-        `<button class="btn btn-ok btn-sm" onclick="mudarStatusOrc(${o.id},'aceito')">✓ Aceitar</button>`,
-        `<button class="btn btn-err btn-sm" onclick="mudarStatusOrc(${o.id},'recusado')">✗ Recusar</button>`
+        `<button class="btn btn-ok btn-sm" onclick="mudarStatusOrc(${jsArg(o.id)},'aceito')">✓ Aceitar</button>`,
+        `<button class="btn btn-err btn-sm" onclick="mudarStatusOrc(${jsArg(o.id)},'recusado')">✗ Recusar</button>`
       );
 
       // Botão principal: "+ Pagar" — sempre disponível para aceitos ou abertos
       if(st==='aberto'||st==='aceito'){
         if(stFin!=='quitado'){
-          acoes.push(`<button class="btn btn-sm" style="background:var(--ok);color:#fff;font-weight:700" onclick="abrirModalPagamento(${o.id})">💳 + Pagar</button>`);
+          acoes.push(`<button class="btn btn-sm" style="background:var(--ok);color:#fff;font-weight:700" onclick="abrirModalPagamento(${jsArg(o.id)})">💳 + Pagar</button>`);
         }
       }
 
       // Botão "Lançar receita" legado — mantido APENAS para orçamentos antigos sem nenhum pagamento novo
-      if(st==='aceito'&&!o.receitaGeradaId&&pagamentos.length===0){
-        acoes.push(`<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;font-size:.66rem" onclick="gerarReceitaDeOrcamento(${o.id})" title="Método legado — prefira usar '+ Pagar'">→ Receita (legado)</button>`);
-      }
 
       if(st!=='aberto')acoes.push(
-        `<button class="btn btn-sm" style="background:#f0f4f8;color:var(--muted);border:1px solid var(--brd)" onclick="mudarStatusOrc(${o.id},'aberto')">Reabrir</button>`
+        `<button class="btn btn-sm" style="background:#f0f4f8;color:var(--muted);border:1px solid var(--brd)" onclick="mudarStatusOrc(${jsArg(o.id)},'aberto')">Reabrir</button>`
       );
       acoes.push(
-        `<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef" onclick="gerarPDFOrcamento(${o.id})">📄 PDF</button>`,
-        `<button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7" onclick="imprimirOrcamento(${o.id})" title="Imprimir">🖨</button>`,
-        `<button class="btn btn-err btn-sm" onclick="excluirOrcamento(${o.id})">🗑</button>`
+        `<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef" onclick="gerarPDFOrcamento(${jsArg(o.id)})">📄 PDF</button>`,
+        `<button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7" onclick="imprimirOrcamento(${jsArg(o.id)})" title="Imprimir">🖨</button>`,
+        `<button class="btn btn-err btn-sm" onclick="excluirOrcamento(${jsArg(o.id)})">🗑</button>`
       );
 
       return `<div style="border:1.5px solid ${cfg.brd};border-radius:9px;padding:10px;margin-bottom:7px;background:${cfg.bg2}">
@@ -5678,6 +5745,7 @@ function salvarRecorrente(){
   if(isNaN(valor)||valor<=0){ showToast('Informe um valor válido.','#e74c3c'); return; }
   const isNew = !document.getElementById('recModalId').value;
   const existing = DATA.recorrentes && DATA.recorrentes[id];
+  const frequenciaMudou=!!existing&&existing.frequencia!==frequencia;
   const obj = {
     descricao, valor, categoria, frequencia, obs,
     diaVencimento: frequencia==='quinzenal' ? 1 : Math.min(Math.max(diaVencimento,1),28),
@@ -5685,7 +5753,7 @@ function salvarRecorrente(){
     ativo: existing?.ativo !== undefined ? existing.ativo : true,
     criadoEm: existing?.criadoEm || new Date().toISOString(),
     criadoPor: existing?.criadoPor || CU,
-    ultimoPeriodoGerado: existing?.ultimoPeriodoGerado || null,
+    ultimoPeriodoGerado: frequenciaMudou ? null : (existing?.ultimoPeriodoGerado || null),
   };
   fbAddLog(isNew?'NOVA RECORRENTE':'EDITAR RECORRENTE',
     `${descricao} · R$ ${fN(valor)} · ${frequencia} · ${isNew?'criada':'editada'} por ${CU}`);
@@ -5776,90 +5844,120 @@ function renderRecorrentes(){
 // Chamado após carregar DATA. Verifica períodos faltantes (até 3 meses)
 // e gera lançamentos. Idempotente: checa recorrente_id+periodo antes de criar.
 
-function _processarRecorrentes(){
-  const recs = DATA.recorrentes || {};
-  let totalGerado = 0;
-  const hoje = new Date();
-  Object.entries(recs).forEach(([id, rec]) => {
-    if(!rec || !rec.ativo) return;
-    const periodos = _periodosFaltando(id, rec, hoje);
-    periodos.forEach(p => {
-      if(_lancRecorrenteExiste(id, p.chave)) return; // idempotente
-      _gerarLancRecorrente(id, rec, p);
-      totalGerado++;
-    });
+let _processandoRecorrentes=false;
+
+// A mesma recorrencia e o mesmo periodo sempre apontam para as mesmas chaves RTDB.
+// Isso impede que duas abas ou uma reconexao criem duas despesas para o mesmo periodo.
+function chaveRecorrenciaValida(chave){
+  const texto=String(chave);
+  const tamanhoBytes=new TextEncoder().encode(texto).length;
+  if(tamanhoBytes>768)return false;
+  if(['.','#','$','[',']','/'].some(caractere=>texto.includes(caractere)))return false;
+  return !Array.from(texto).some(caractere=>{
+    const codigo=caractere.charCodeAt(0);
+    return codigo<=31||codigo===127;
   });
-  if(totalGerado > 0)
-    showToast(`🔁 ${totalGerado} lançamento(s) recorrente(s) gerado(s).`, '#27ae60');
+}
+function chaveLancamentoRecorrente(recId,periodoChave){
+  const chave=`recorrente_${String(recId)}_${String(periodoChave)}`;
+  if(!chaveRecorrenciaValida(chave))throw new Error('Chave invalida de recorrencia.');
+  return chave;
+}
+async function _processarRecorrentes(){
+  if(_processandoRecorrentes)return;
+  _processandoRecorrentes=true;
+  const recs=DATA.recorrentes||{};
+  let totalGerado=0;
+  let totalFalhas=0;
+  const hoje=new Date();
+  try{
+    for(const [id,rec] of Object.entries(recs)){
+      if(!rec||!rec.ativo)continue;
+      const periodos=_periodosFaltando(id,rec,hoje);
+      for(const periodo of periodos){
+        if(_lancRecorrenteExiste(id,periodo.chave))continue;
+        try{
+          await _gerarLancRecorrente(id,rec,periodo);
+          totalGerado++;
+        }catch(err){
+          totalFalhas++;
+          console.error('recorrencia '+id+' '+periodo.chave+':',err);
+        }
+      }
+    }
+    if(totalGerado>0)showToast(`🔁 ${totalGerado} lancamento(s) recorrente(s) gerado(s).`,'#27ae60');
+    if(totalFalhas>0)showToast(`Falha ao gerar ${totalFalhas} recorrencia(s). Nenhuma confirmacao foi exibida para esses itens.`,'#e74c3c',6000);
+  }finally{
+    _processandoRecorrentes=false;
+  }
 }
 
-function _lancRecorrenteExiste(recId, periodoChave){
+// Inclui lancamentos soft-deleted: apagar um lancamento gerado nao deve recria-lo sozinho.
+function _lancRecorrenteExiste(recId,periodoChave){
   return Object.values(DATA.lancamentos||{}).some(
-    l => l && l.recorrente_id === recId && l.recorrente_periodo === periodoChave && !l.deletedAt
+    l=>l&&l.recorrente_id===recId&&l.recorrente_periodo===periodoChave
   );
 }
 
-function _periodosFaltando(recId, rec, hoje){
-  const MAX = 3; // meses máximos de retroativo
-  const result = [];
-  const freq = rec.frequencia || 'mensal';
-  const dia = Math.min(Math.max(rec.diaVencimento||1, 1), 28);
-  const ultimo = rec.ultimoPeriodoGerado;
-
-  if(freq === 'mensal'){
-    for(let i = MAX; i >= 0; i--){
-      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      const chave = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      if(ultimo && chave <= ultimo) continue; // já gerado
-      const venc = new Date(d.getFullYear(), d.getMonth(), dia);
-      if(venc > hoje) continue; // dia ainda não chegou
-      const dataStr = `${chave}-${String(dia).padStart(2,'0')}`;
-      result.push({chave, data: dataStr});
+function _periodosFaltando(recId,rec,hoje){
+  const MAX=3;
+  const result=[];
+  const freq=rec.frequencia||'mensal';
+  const dia=Math.min(Math.max(rec.diaVencimento||1,1),28);
+  const ultimo=rec.ultimoPeriodoGerado;
+  if(freq==='mensal'){
+    for(let i=MAX;i>=0;i--){
+      const d=new Date(hoje.getFullYear(),hoje.getMonth()-i,1);
+      const chave=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if(ultimo&&chave<=ultimo)continue;
+      const venc=new Date(d.getFullYear(),d.getMonth(),dia);
+      if(venc>hoje)continue;
+      result.push({chave,data:`${chave}-${String(dia).padStart(2,'0')}`});
     }
-  } else if(freq === 'quinzenal'){
-    for(let i = MAX; i >= 0; i--){
-      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      const ano = d.getFullYear();
-      const mes = d.getMonth()+1;
-      const mesStr = String(mes).padStart(2,'0');
-      const chQ1 = `${ano}-${mesStr}-Q1`;
-      const chQ2 = `${ano}-${mesStr}-Q2`;
-      if(new Date(ano, mes-1, 1) <= hoje && (!ultimo || chQ1 > ultimo))
-        result.push({chave: chQ1, data: `${ano}-${mesStr}-01`});
-      if(new Date(ano, mes-1, 15) <= hoje && (!ultimo || chQ2 > ultimo))
-        result.push({chave: chQ2, data: `${ano}-${mesStr}-15`});
+  }else if(freq==='quinzenal'){
+    for(let i=MAX;i>=0;i--){
+      const d=new Date(hoje.getFullYear(),hoje.getMonth()-i,1);
+      const ano=d.getFullYear();
+      const mes=d.getMonth()+1;
+      const mesStr=String(mes).padStart(2,'0');
+      const chQ1=`${ano}-${mesStr}-Q1`;
+      const chQ2=`${ano}-${mesStr}-Q2`;
+      if(new Date(ano,mes-1,1)<=hoje&&(!ultimo||chQ1>ultimo))result.push({chave:chQ1,data:`${ano}-${mesStr}-01`});
+      if(new Date(ano,mes-1,15)<=hoje&&(!ultimo||chQ2>ultimo))result.push({chave:chQ2,data:`${ano}-${mesStr}-15`});
     }
-  } else if(freq === 'anual'){
-    const mes = rec.mes || '01';
-    for(const ano of [hoje.getFullYear()-1, hoje.getFullYear()]){
-      const chave = `${ano}`;
-      if(ultimo && chave <= ultimo) continue;
-      const dataStr = `${ano}-${mes}-${String(dia).padStart(2,'0')}`;
-      if(new Date(dataStr) <= hoje) result.push({chave, data: dataStr});
+  }else if(freq==='anual'){
+    const mes=rec.mes||'01';
+    for(const ano of [hoje.getFullYear()-1,hoje.getFullYear()]){
+      const chave=`${ano}`;
+      if(ultimo&&chave<=ultimo)continue;
+      const data=`${ano}-${mes}-${String(dia).padStart(2,'0')}`;
+      if(new Date(data)<=hoje)result.push({chave,data});
     }
   }
   return result;
 }
 
-function _gerarLancRecorrente(recId, rec, periodo){
-  const id = genId();
-  const item = {
-    id, data: periodo.data, valor: rec.valor, categoria: rec.categoria,
-    pagamento: 'Transferência', descricao: `🔁 ${rec.descricao}`,
-    tipo: 'despesa', usuario: CU, email: CUEmail,
-    criadoEm: new Date().toISOString(),
-    recorrente_id: recId, recorrente_periodo: periodo.chave,
-    auto_generated: true
+async function _gerarLancRecorrente(recId,rec,periodo){
+  const id=chaveLancamentoRecorrente(recId,periodo.chave);
+  const item={
+    id,data:periodo.data,valor:arredondarCentavos(rec.valor),categoria:rec.categoria,
+    pagamento:'Transferência',descricao:`🔁 ${rec.descricao}`,
+    tipo:'despesa',usuario:CU,email:CUEmail,
+    criadoEm:new Date().toISOString(),
+    recorrente_id:recId,recorrente_periodo:periodo.chave,
+    auto_generated:true
   };
-  // Log ANTES da operação (regra do projeto)
-  fbAddLog('LANÇAMENTO RECORRENTE',
-    `${rec.descricao} · R$ ${fN(rec.valor)} · período ${periodo.chave} gerado por ${CU}`);
-  dbRef.child('lancamentos/'+id).set(item).then(() => {
-    // Atualiza ultimoPeriodoGerado para otimizar próximas verificações
-    dbRef.child('recorrentes/'+recId+'/ultimoPeriodoGerado').set(periodo.chave);
-  });
+  const evento=criarEventoLog(
+    'LANCAMENTO RECORRENTE',
+    `${rec.descricao} | R$ ${fN(rec.valor)} | periodo ${periodo.chave} gerado por ${CU}`
+  );
+  const updates={};
+  updates['lancamentos/'+id]=item;
+  updates['recorrentes/'+recId+'/ultimoPeriodoGerado']=periodo.chave;
+  updates['log/'+evento.id]=evento;
+  await dbRef.update(updates);
+  return item;
 }
-
 // ==================== TABELA HOSPITALAR (ADMIN) ====================
 let _thHospSel='';
 
@@ -6609,13 +6707,18 @@ function imprimirOrcamentoRapido(){
   if(!data){showToast('Informe a data.','#e74c3c');return;}
   const itens=orcItems.filter(s=>s.proc);
   if(!itens.length){showToast('Adicione ao menos um procedimento.','#e74c3c');return;}
-  const subtotal=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0);
-  const desconto=itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0);
-  const hospTotal=orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0);
-  const total=subtotal-desconto+hospTotal;
+  const validacaoHospital=validarHospitaisDoOrcamento(itens,orcHospRows);
+  if(!validacaoHospital.ok){
+    showToast(validacaoHospital.mensagem,'#e74c3c');
+    return;
+  }
+  const subtotal=arredondarCentavos(itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1),0));
+  const desconto=arredondarCentavos(itens.reduce((s,x)=>s+(x.valorUnit||0)*(x.qty||1)*(x.descPct||0)/100,0));
+  const hospTotal=arredondarCentavos(orcHospRows.reduce((s,r)=>_hospRowSub(r)+s,0));
+  const total=arredondarCentavos(subtotal-desconto+hospTotal);
   const hospRows=orcHospRows.map(r=>({
     hospNome:(HOSP_KEYS.find(h=>h.key===r.hospKey)||{}).nome||r.hospKey,
-    procName:r.procName, hospital_cost:r.hospitalCost||0, subtotal:_hospRowSub(r)
+    procName:r.procName, hospital_cost:arredondarCentavos(r.hospitalCost||0), subtotal:arredondarCentavos(_hospRowSub(r))
   }));
   gerarPDFOrcamento({
     paciente:orcPat.nome, cpf:orcPat.cpf||'', rg:orcPat.rg||'',
