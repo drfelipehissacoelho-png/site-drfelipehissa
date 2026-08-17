@@ -31,7 +31,7 @@ Não é prontuário médico. Ainda assim, trata dados pessoais como nome, CPF, R
 - dados sob a raiz RTDB `consultorio`, incluindo lançamentos, orçamentos, pagamentos, pacientes, configurações, procedimentos, preços hospitalares, logs e recorrências;
 - armazenamento local do navegador apenas para funcionalidades de arquivos/PDF quando suportadas.
 
-As regras Firebase e qualquer backend/Cloud Function não estão neste repositório. Não devem ser presumidos como existentes ou seguros sem auditoria específica.
+A cópia declarada das regras RTDB está preservada como não verificada em `firebase.database.rules.unverified.json` desde 2026-07-31. Não há `firebase.json`, `.firebaserc`, Cloud Functions, ambiente de homologação nem confirmação automática de que o arquivo corresponda ao ambiente remoto; os controles continuam sujeitos à auditoria específica.
 
 ## Base de decisão
 

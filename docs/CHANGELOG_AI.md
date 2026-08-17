@@ -139,3 +139,33 @@ Este arquivo registra mudanças efetivamente realizadas por IA neste repositóri
 ### Deliberadamente pendente
 
 - Politica de arredondamento assinado e migracao para centavos inteiros; regras RTDB publicadas, autorizacao, validacao de schema e concorrencia de pagamentos permanecem fora deste lote.
+
+## 2026-07-31 — Fase 3: baseline de regras RTDB
+
+### Adicionado
+
+- `firebase.database.rules.unverified.json`: cópia declarada pelo titular, marcada como não verificada até confirmação comportamental; nenhuma implantação foi executada.
+- `docs/reviews/REVIEW_2026-07-31_fase-3-baseline-regras-rtdb.md`: revisão do cruzamento entre regras e caminhos gravados pelo módulo.
+
+### Confirmado
+
+- `quote_payments` e `recorrentes` não têm regra de escrita e negam, respectivamente, o fluxo atômico de pagamentos e os fluxos de recorrências.
+- A leitura concedida em `consultorio` expõe toda a árvore aos dois usuários autorizados, inclusive custos e dados administrativos.
+- `log/$logId` é append-only, mas não possui validação de autoria ou vínculo obrigatório com a operação registrada.
+
+### Deliberadamente pendente
+
+- Proposta de regras por papel, validações de dados, testes em ambiente isolado e qualquer deploy remoto aguardam revisão independente e autorização explícita.
+
+## 2026-07-31 — Correções do parecer independente da Fase 3
+
+### Alterado
+
+- A baseline foi renomeada para `firebase.database.rules.unverified.json` para não sugerir que sua procedência remota esteja confirmada.
+- `FIREBASE_RTD_RULES_GAP.md` passou a registrar a restauração de backup negada, o risco de indisponibilidade após a atomicidade da Fase 1, o passivo histórico possível, a escrita destrutiva no nível de coleção e a autoria forjável em `log`.
+- `FIREBASE_RTD_RULES_VERIFICATION.md` adiciona roteiro e matriz de evidência para Rules Playground e backup local, sem escrita real nem dados pessoais.
+- `REVIEW_2026-07-31_correcao-parecer-fase-3.md` registra os limites e as perguntas abertas desta rodada.
+
+### Deliberadamente pendente
+
+- Confirmar a baseline contra as regras publicadas; propor permissões por papel; reconciliar eventuais pagamentos históricos; testar regras em ambiente isolado; e publicar qualquer regra remota.

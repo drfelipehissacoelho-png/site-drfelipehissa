@@ -13,7 +13,8 @@ Registros futuros nesta pasta devem identificar data, decisão, contexto, altern
 No estado atual, `genId()` produz chaves `push()` do Firebase RTDB tanto para entidades persistidas quanto para linhas temporárias da interface de orçamento. A escolha mantém compatibilidade imediata e evita colisões, mas acopla o estado transitório da UI ao mecanismo de persistência. Em uma modularização aprovada, avaliar separar `genPersistentId()` de `genUiId()`, com inventário dos handlers inline e compatibilidade para dados legados.
 ## Lacuna de regras RTDB
 
-- [FIREBASE_RTD_RULES_GAP.md](FIREBASE_RTD_RULES_GAP.md): ausência confirmada de regras RTDB versionadas neste repositório; descreve o limite da proteção atual e o pré-requisito para auditoria/implantação remota.
+- [FIREBASE_RTD_RULES_GAP.md](FIREBASE_RTD_RULES_GAP.md): baseline RTDB não verificada, cruzamento com caminhos gravados e lacunas antes de qualquer implantação remota.
+- [FIREBASE_RTD_RULES_VERIFICATION.md](FIREBASE_RTD_RULES_VERIFICATION.md): roteiro manual, sem escrita real, para confirmar a baseline no Rules Playground e no backup local.
 
 ## Arredondamento monetario e valores negativos
 
