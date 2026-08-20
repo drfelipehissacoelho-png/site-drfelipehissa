@@ -169,3 +169,101 @@ Este arquivo registra mudanças efetivamente realizadas por IA neste repositóri
 ### Deliberadamente pendente
 
 - Confirmar a baseline contra as regras publicadas; propor permissões por papel; reconciliar eventuais pagamentos históricos; testar regras em ambiente isolado; e publicar qualquer regra remota.
+
+## 2026-08-19 — Megaavaliação UX/produto + quick wins no analista_financeiro.html
+
+### Adicionado
+
+- `docs/reviews/REVIEW_2026-08-19_megaavaliacao-ux-produto.md`: auditoria A–I com achados P0–P3, fluxos, respostas do titular e roadmap.
+- `docs/reviews/REVIEW_2026-08-19_quick-wins-ux.md`: relatório de implementação das correções e melhorias.
+- `docs/PROMPT_CLAUDE_verificacao-regras-rtdb.md`: prompt para executor independente verificar a baseline de regras RTDB (Rules Playground, sem escrita real) e o passivo histórico (contagens do backup local, sem dados pessoais).
+- Comparativo de propostas: seleção de 2–3 orçamentos (botão ⇄), barra de seleção, modal lado a lado e PDF comparativo em landscape A4 com dados de `getClinica()`.
+- Chips de atalho de custo hospitalar por procedimento (`addHospRowProc`) — um clique cria a linha já vinculada ao procedimento do orçamento.
+
+### Alterado
+
+- `renderCFO`: `META` declarado (aba CFO volta a funcionar).
+- Pacientes: `editarPaciente` com `jsArg`; `id:pid` (sem `+`) em edição e anonimização; `salvarEdicaoPaciente` com `.then()/.catch()` (fim do falso sucesso).
+- CSS: `--txt`, `--card` e `.help-box` definidos.
+- Pagamentos: `PAG_MEIOS`/`PAG_ICONS` como fonte única (TED/Cheque entram na conciliação); opções 11x/12x removidas do payModal; taxa de split grava `linked_group_id` + `auto_generated:true`; `fbAddLog('UI',...)` removido de `addProcLanc`.
+- `gerarPDFOrcamento`: cabeçalho e rodapé passam a usar `getClinica()`.
+- Orçamentos: busca-first — sem busca, só os 5 mais recentes com hint; com busca, varre todos os status com contagem.
+
+### Validado
+
+- `node --check` no script inline extraído (sintaxe OK após cada fase).
+- `git diff --check` limpo (232 inserções, 26 remoções em `analista_financeiro.html`).
+- Autorrevisão de integração: destruturação de `window.jspdf`, `_salvarPdfBlob` recebendo Blob, helpers existentes confirmados.
+
+### Deliberadamente pendente
+
+- Teste em navegador e contra o Firebase real (não executado neste lote).
+- `patient_id`/`case_id` em orçamentos + migração; atomicidade de `salvarLancamento`; anonimização LGPD cobrindo `orcamentos`/`log`; segregação de visões médico vs secretária; verificação das regras RTDB e reconciliação do passivo histórico (aguardam o relatório do executor).
+- Nenhum commit/push/deploy realizado, conforme restrição do titular.
+
+## 2026-08-19 — Resposta à verificação do executor (regras RTDB)
+
+### Adicionado
+
+- `docs/reviews/REVIEW_2026-08-19_resposta-verificacao-executor.md`: reconciliação do relatório do executor independente com o estado real do repositório.
+
+### Confirmado
+
+- O executor rodou conectado a uma pasta plana (deploy/build), não ao repositório — todos os arquivos de entrada existem em `site-drfelipehissa`; o REVIEW dele não está neste repo.
+- D3 parcialmente confirmado: `fbExcluirLanc` (`.remove()` em lancamentos) era código morto sem chamadores — o fluxo real já é soft-delete com Lixeira; `recorrentes` tem hard delete real, mitigado por log prévio, confirmação e restrição ao titular.
+- D4 não confirmado no arquivo atual: `receitaGeradaId` tem escrita única e `genId()` retorna push key (string); leituras tolerantes a tipo. O padrão citado pelo executor pertence a uma cópia antiga fora do repositório.
+- Listener único na raiz `consultorio` confirmado (já P1 na megaavaliação); baseline escrita para `/` vs `/consultorio` entra na matriz de evidência da rerodagem.
+
+### Alterado
+
+- `analista_financeiro.html`: removida `fbExcluirLanc` (hard delete morto). `node --check` e `git diff --check` OK.
+
+### Deliberadamente pendente
+
+- Rerodagem das TAREFAS 1–3 pelo executor apontado ao repositório correto; soft-delete de recorrentes; reconciliação do passivo histórico.
+
+### Alterado (prompt v2)
+
+- `docs/PROMPT_CLAUDE_verificacao-regras-rtdb.md`: v2 com PASSO 0 (confirmação do repositório correto e branch), TAREFA 1b (regras em "/" vs "/consultorio" e impacto no listener único) e nota anti-falso-alarme sobre D3/D4 já reconciliados.
+
+### Adicionado (governança multi-agente)
+
+- `docs/PROMPT_CODEX_auditoria-quick-wins.md`: prompt de auditoria independente (somente-leitura) para o Codex revisar as mudanças de 2026-08-19 via `git diff`, com veredito por frente e checagem da invariante "nenhum caminho novo de escrita no RTDB" (protege o endurecimento de regras em paralelo pelo executor Claude).
+
+## 2026-08-20 — Resposta à execução do executor + guardas V3/V4 + script de contagens
+
+### Adicionado
+
+- `docs/reviews/REVIEW_2026-08-20_resposta-execucao-rules-e-guardas.md`: análise do relatório do executor (baseline 6/6 estática, procedência pendente, risco V1+V2) e sequência acordada para o endurecimento.
+- `tools/contar_passivo_rtdb.js`: script somente-leitura que produz as 5 contagens agregadas da TAREFA 2 + sinal de procedência (quote_payments vazio com orçamentos aceitos ⇒ baseline publicada). Testado com dados sintéticos.
+
+### Alterado
+
+- `importarJSON()`: guarda de titular antes de ler o arquivo (V4 — BACKUP_RESTORE_NODES inclui 6 nós médico-only; secretária disparava operação condenada a falhar em bloco).
+- `excluirRecorrente()`: log de exclusão passa a carregar a definição completa do template (V3 — hard delete mantido como decisão intencional documentada no código; trilha agora permite recriar o template).
+
+### Validado
+
+- `node --check` no script inline e no script de contagens; `git diff --check` limpo. Sem teste em navegador/Firebase real.
+
+### Deliberadamente pendente
+
+- Procedência das regras (Playground) e passivo histórico aguardam o backup exportado pelo titular; endurecimento de regras só após (B) fechar — alça do executor Claude.
+
+## 2026-08-20 — Correções da auditoria de quick wins
+
+### Alterado
+
+- analista_financeiro.html: comparativo usa hospRows com fallbacks legados; recusa orçamentos de pacientes diferentes e remove seleção inativa/lixeira.
+- analista_financeiro.html: chips hospitalares usam jsArg() e sincronizam linhas temporárias quando um procedimento é removido ou trocado.
+- analista_financeiro.html: crédito histórico acima de 10 parcelas preserva a taxa existente em vez de aplicar a taxa de 10x; meios de pagamento passam a derivar de PAG_MEIOS.
+- analista_financeiro.html: edição de paciente e respectivo evento de auditoria passam a usar o mesmo dbRef.update().
+- docs/reviews/REVIEW_2026-08-20_correcoes-auditoria-quick-wins.md: relatório para revisão independente desta rodada.
+
+### Validado
+
+- Sintaxe dos 7 scripts inline, git diff --check e testes isolados de total hospitalar, limpeza de seleção, taxa 11x/12x, sincronização hospitalar, jsArg() e meios de pagamento.
+
+### Deliberadamente pendente
+
+- Teste visual em navegador/PDF e qualquer operação contra Firebase real; modelagem por patient_id/CommercialCase; migração de registros legados; commit, push e deploy.
