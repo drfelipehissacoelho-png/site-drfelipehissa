@@ -267,3 +267,61 @@ Este arquivo registra mudanças efetivamente realizadas por IA neste repositóri
 ### Deliberadamente pendente
 
 - Teste visual em navegador/PDF e qualquer operação contra Firebase real; modelagem por patient_id/CommercialCase; migração de registros legados; commit, push e deploy.
+
+## 2026-08-20 — Correções pós-auditoria Codex (verificação)
+
+### Confirmado
+
+- `docs/reviews/REVIEW_2026-08-20_correcoes-pos-auditoria-codex.md`: verificação item a item dos 10 achados do Codex (1 P0, 5 P1, 4 P2) — todos corrigidos no arquivo vigente. Evidências: `_totalHospitalarOrcamento` (hospRows + fallback legado), `jsArg` nos chips, `_sincronizarHospitaisComItens` em `removeItemOrc`/`updateItemField`, `_orcamentosAtivosDoComparativo` (poda lixeira), bloqueio de comparativo entre pacientes, `getTaxaPct` null para >10x com preservação da taxa histórica em `salvarEdicao`, `preencherMeiosPagamento` (fonte única), trim na busca, page-break no rodapé do PDF, `fbAddLog` com 2 argumentos.
+- `node --check` OK em todos os scripts inline; `git diff --check` limpo.
+
+### Decisão de comportamento a conhecer
+
+- `payMetodo` passou a oferecer os 9 meios de `PAG_MEIOS` (inclui Convênio / Plano e Parcelado). Se indesejado no modal de orçamento, introduzir `PAG_MEIOS_ORCAMENTO` — decisão do titular.
+
+### Deliberadamente pendente
+
+- Rerodagem da auditoria Codex sobre o novo diff (snapshot e970ac0 desatualizado); validação em navegador pelo titular; commit aguarda ambos.
+
+## 2026-08-20 — Contagens do backup + limpeza de procedimentos
+
+### Confirmado (TAREFA 2 — backup do titular)
+
+- quote_payments: 0 · recorrentes: 0 · 50 orçamentos ativos (2 aceitos) · 6 lançamentos com linked_pay_id órfãos · passivo histórico: 50 orçamentos sem quote_payment.
+- Sinal de procedência: evidência forte de que a baseline ESTÁ publicada — pagamento via modal e recorrentes provavelmente quebrados em produção. Endurecimento de regras destravado (adicionar .write/.validate para quote_payments e recorrentes), Playground ainda recomendado antes do deploy.
+
+### Adicionado
+
+- Arquivar/reativar procedimentos custom (📦/♻️ na tabela de config, toggle "Mostrar arquivados", confirmação + log). Campo `active` e caminho já existentes — nenhum caminho novo no RTDB.
+- `_procDisplay()`: nomes em CAIXA ALTA exibidos em formato título (cosmético; chaves/valores intactos) na tabela hospitalar, tabela de config, selects de lançamento/orçamento e chips de hospital.
+- `docs/reviews/REVIEW_2026-08-20_backup-contagens-e-limpeza-procedimentos.md`.
+
+### Validado
+
+- `node --check` OK; `git diff --check` limpo; `_procDisplay` testado com os nomes reais do backup. Cópia do backup removida do repositório após a contagem (dados pessoais fora do git).
+
+### Deliberadamente pendente
+
+- Arquivamento das 2 cópias + variante typo pelo titular na UI; Playground; proposta de regras endurecidas (executor Claude).
+
+### Adicionado (repasse ao executor)
+
+- `docs/PROMPT_CLAUDE_endurecimento-regras-rtdb.md`: prompt de endurecimento com a evidência da TAREFA 2 (procedência quase certa; pagamento e recorrentes indisponíveis em produção), contratos que as regras precisam honrar (extraídos do código), processo obrigatório (Playground antes de propor; regressão de restore v1/v2; sem deploy sem autorização) e entregáveis (firebase.database.rules.proposed.json + matriz + plano de deploy).
+
+## 2026-08-20 — Anonimização LGPD estendida + pendência de cadastro
+
+### Alterado
+
+- `esquecerPaciente()`: cobre agora `orcamentos` (nome → token anônimo; `cpf` gravado no orçamento removido). Log da operação passou para dentro do update atômico (`anexarLogAtualizacao`) — tudo-ou-nada. Modal declara cobertura real e a limitação do log somente-acréscimo.
+
+### Registrado (pendência do titular)
+
+- Cadastro de pacientes: remover campo RG; manter apenas Nome, CPF e Data de Nascimento — esta última FALTA no fluxo de novo cadastro. Não implementado nesta rodada; detalhes e impacto em `docs/reviews/REVIEW_2026-08-20_lgpd-anonimizacao-estendida.md` seção 3.
+
+### Validado
+
+- `node --check` OK; `git diff --check` limpo. Sem teste em navegador.
+
+### Deliberadamente pendente
+
+- Redação de nome em registros antigos do log (exige mudança de regra — entrou no escopo do endurecimento); campos livres com nome digitado; vínculo por nome (resolve com patient_id).

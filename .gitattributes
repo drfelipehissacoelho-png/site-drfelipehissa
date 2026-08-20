@@ -1,0 +1,10 @@
+# Normaliza quebra de linha: evita o churn CRLF que sujou 18 arquivos em 2026-08-20
+* text=auto eol=lf
+
+# Binarios: nunca normalizar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.zip binary
+*.pdf binary

@@ -1,0 +1,13 @@
+backup_*.json
+backup*.json
+*.backup.json
+
+# dumps/exports do RTDB com dados de paciente — nunca versionar
+consultorio*.json
+!firebase.database.rules*.json
+
+# lixo de SO / editor
+Thumbs.db
+Desktop.ini
+.DS_Store
+node_modules/

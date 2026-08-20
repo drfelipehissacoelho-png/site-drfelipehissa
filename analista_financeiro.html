@@ -3149,14 +3149,11 @@ function esquecerPaciente(){
   const nomeOriginal=pat.nome||'Desconhecido';
   showPrompt(
     'LGPD — Direito ao Esquecimento',
-    `Paciente: ${nomeOriginal}\n\nEsta ação:\n  • Apaga nome, CPF, RG, telefone, e-mail e observações\n  • Substitui o nome nos lançamentos por um token anônimo\n  • É IRREVERSÍVEL\n  • Fica registrada no log de auditoria\n\nPara confirmar, digite: ESQUECER`,
+    `Paciente: ${nomeOriginal}\n\nEsta ação:\n  • Apaga nome, CPF, RG, telefone, e-mail e observações do cadastro\n  • Substitui o nome nos lançamentos e orçamentos por um token anônimo\n  • Remove o CPF gravado nos orçamentos\n  • É IRREVERSÍVEL\n  • Fica registrada no log de auditoria (o log é somente-acréscimo: registros antigos que citam o nome não podem ser editados — limitação documentada)\n\nPara confirmar, digite: ESQUECER`,
     'ESQUECER', 'ESQUECER',
     () => {
   const token='Paciente Anônimo #'+String(pid).slice(-6);
-  // 1. Log ANTES de qualquer alteração (regra do projeto: log antes da op destrutiva)
-  fbAddLog('LGPD ESQUECIMENTO',
-    `Paciente esquecido: "${nomeOriginal}" (ID ${pid}) → anonimizado como "${token}" por ${CU}`
-  );
+  const nomeNorm=nomeOriginal.trim();
   // 2. Anonimizar o registro em patients/
   const anonimizado={
     id:pid,
@@ -3169,10 +3166,25 @@ function esquecerPaciente(){
   const updates={['patients/'+pid]:anonimizado};
   // 3. Substituir nome nos lançamentos vinculados (busca pelo nome original)
   Object.entries(DATA.lancamentos||{}).forEach(([lid,l])=>{
-    if(l&&l.paciente&&l.paciente.trim()===nomeOriginal.trim()){
+    if(l&&l.paciente&&l.paciente.trim()===nomeNorm){
       updates['lancamentos/'+lid+'/paciente']=token;
     }
   });
+  // 4. Orçamentos: substituir nome e remover CPF gravado (vínculo por nome —
+  //    enquanto patient_id não existe, a chave de busca é o nome exato)
+  Object.entries(DATA.orcamentos||{}).forEach(([oid,o])=>{
+    if(o&&o.paciente&&String(o.paciente).trim()===nomeNorm){
+      updates['orcamentos/'+oid+'/paciente']=token;
+      if(o.cpf)updates['orcamentos/'+oid+'/cpf']=null;
+    }
+  });
+  // 1. Log DENTRO do mesmo update atômico (regra do projeto: sem log, nada é
+  //    modificado — aqui, se a operação falhar, nenhum dos lados grava).
+  //    Nota LGPD: o registro da operação cita o nome original de propósito
+  //    (prestação de contas da anonimização), em log de acesso restrito.
+  anexarLogAtualizacao(updates,'LGPD ESQUECIMENTO',
+    `Paciente esquecido: "${nomeOriginal}" (ID ${pid}) → anonimizado como "${token}" por ${CU}`
+  );
   dbRef.update(updates).then(()=>{
     showToast(`✅ Paciente anonimizado como "${token}".`,'#27ae60');
     fecharEdicaoPaciente();
@@ -4167,6 +4179,19 @@ function getAllProcs(includeArchived=false){
   return [...normal,...tail];
 }
 
+// Display-only: nomes gravados em CAIXA ALTA aparecem em formato título
+// ("ABDOMINOPLASTIA COM MASTOPEXIA" → "Abdominoplastia com Mastopexia").
+// NÃO altera chaves nem valores — vínculos por nome continuam intactos.
+function _procDisplay(nome){
+  const s=String(nome||'');
+  if(!s||s!==s.toUpperCase()||!/[A-ZÀ-Ú]/.test(s))return s;
+  const minusculas=new Set(['com','de','do','da','dos','das','e','sem','para','a','o']);
+  return s.toLowerCase().split(' ').map((w,i)=>{
+    if(i>0&&minusculas.has(w))return w;
+    return w.charAt(0).toUpperCase()+w.slice(1);
+  }).join(' ');
+}
+
 // Reconstrói o <select> de procedimentos no form de lançamentos com a lista atual
 function populateProcSel(){
   const sel=document.getElementById('fProcSel');if(!sel)return;
@@ -4177,7 +4202,7 @@ function populateProcSel(){
   sel.appendChild(placeholder);
   getAllProcs().filter(p=>p.nome!=='Outros').forEach(p=>{
     const price=getProcConfig(p.nome).patientPrice;
-    sel.appendChild(new Option(p.nome+(price>0?' (R$ '+fN(price)+')':''),p.nome));
+    sel.appendChild(new Option(_procDisplay(p.nome)+(price>0?' (R$ '+fN(price)+')':''),p.nome));
   });
   sel.appendChild(new Option('Outros (sem sugestão de valor)','Outros'));
   if(current)sel.value=current;
@@ -4766,7 +4791,7 @@ function renderItemsOrc(){
         <select class="itbl" onchange="updateItemField(${jsArg(s.id)},'proc',this.value)"
           style="width:100%;padding:5px 6px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px">
           <option value="">Selecione...</option>
-          ${getAllProcs().map(p=>`<option value="${esc(p.nome)}"${s.proc===p.nome?' selected':''}>${esc(p.nome)}</option>`).join('')}
+          ${getAllProcs().map(p=>`<option value="${esc(p.nome)}"${s.proc===p.nome?' selected':''}>${esc(_procDisplay(p.nome))}</option>`).join('')}
         </select>
       </td>
       <td style="text-align:center">
@@ -4894,7 +4919,7 @@ function renderHospRows(){
     chips.innerHTML=faltantes.length
       ?`<span style="font-size:.68rem;color:var(--muted);font-weight:600">Custo hospitalar de:</span>`+faltantes.map(p=>
         `<button onclick="addHospRowProc(${jsArg(p)})" title="Adicionar custo hospitalar de ${esc(p)}"
-          style="background:#eaf3fb;color:#1a4a8c;border:1.5px dashed #90b8e8;border-radius:14px;padding:2px 10px;font-size:.7rem;font-weight:700;cursor:pointer">+ 🏥 ${esc(p)}</button>`
+          style="background:#eaf3fb;color:#1a4a8c;border:1.5px dashed #90b8e8;border-radius:14px;padding:2px 10px;font-size:.7rem;font-weight:700;cursor:pointer">+ 🏥 ${esc(_procDisplay(p))}</button>`
       ).join('')
       :(procsOrc.length?'<span style="font-size:.68rem;color:var(--ok);font-weight:600">✓ Todos os procedimentos já têm linha hospitalar</span>':'');
   }
@@ -6294,7 +6319,7 @@ function _renderThTable(){
           const hasPr=!!prices[p.nome];
           const eid='thpr_'+_thHospSel+'_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
           return `<tr id="row_${eid}">
-            <td style="font-weight:600;font-size:.83rem">${p.nome}</td>
+            <td style="font-weight:600;font-size:.83rem">${esc(_procDisplay(p.nome))}</td>
             <td><input type="text" class="moeda-input th-inp" id="${eid}_hc"
               value="${hcVal?fN(hcVal):''}" placeholder="0,00"
               oninput="maskMoeda(this)" onblur="fmtMoeda(this)"
@@ -6360,10 +6385,12 @@ function salvarTodosPrecos(){
 // ==================== CONFIG DE PROCEDIMENTOS (TABELA UNIFICADA) ====================
 function renderProcedureConfig(){
   const el=document.getElementById('procedureConfigList');if(!el)return;
-  const procs=getAllProcs().filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
+  const procs=getAllProcs(_showArchivedProcs).filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
+  const numArq=getAllProcs(true).filter(p=>p._active===false).length;
   const fv=v=>(+v)?fN(+v):'';
   el.innerHTML=`
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      ${numArq>0?`<button class="btn btn-neu" onclick="_toggleArchivedProcs()" style="font-size:.8rem">${_showArchivedProcs?'🙈 Ocultar':'📦 Mostrar'} arquivados (${numArq})</button>`:''}
       <button class="btn btn-ok" onclick="abrirNovoProc()" style="font-size:.84rem;padding:7px 16px">
         ＋ Novo Procedimento
       </button>
@@ -6390,8 +6417,8 @@ function renderProcedureConfig(){
         const eid='pc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
         const hasCfg=!!(DATA.procedureConfig[p.nome]||DATA.procedureTeamCosts[p.nome]||DATA.procedureCommissionRules[p.nome]);
         const isCustom=!!(DATA.procedures&&Object.values(DATA.procedures).find(d=>d.nome===p.nome));
-        return `<tr style="${hasCfg?'background:#f9fffe':''}${isCustom?' outline:2px solid #d1f5e0;outline-offset:-2px':''}">
-          <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">${p.nome}</td>
+        return `<tr style="${hasCfg?'background:#f9fffe':''}${isCustom?' outline:2px solid #d1f5e0;outline-offset:-2px':''}${p._active===false?';opacity:.55':''}">
+          <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">${esc(_procDisplay(p.nome))}${p._active===false?' <span style="font-size:.62rem;font-weight:700;background:#f5f5f5;color:#616161;border-radius:8px;padding:1px 7px">📦 arquivado</span>':''}</td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_price" value="${fv(cfg.patientPrice)}" placeholder="0,00"
               oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
@@ -6429,6 +6456,11 @@ function renderProcedureConfig(){
           <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
             <button title="Duplicar procedimento" onclick="duplicarProc('${p.nome.replace(/'/g,"\\'")}','${eid}')"
               style="background:none;border:1px solid var(--brd);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem" title="Duplicar">📋</button>
+            ${p._fbKey?(p._active===false
+              ?`<button title="Reativar procedimento" onclick="reativarProc(${jsArg(p._fbKey)},${jsArg(p.nome)})"
+                  style="background:none;border:1px solid #a5d6a7;border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem;margin-left:3px">♻️</button>`
+              :`<button title="Arquivar: some das listas, mas orçamentos e lançamentos antigos são preservados" onclick="arquivarProc(${jsArg(p._fbKey)},${jsArg(p.nome)})"
+                  style="background:none;border:1px solid var(--brd);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem;margin-left:3px">📦</button>`):''}
           </td>
         </tr>`;
       }).join('')}
@@ -6564,6 +6596,39 @@ function duplicarProc(procNome,eid){
     lbl:cfg.managerCommissionLabel,
     act:cfg.commissionActive,
   });
+}
+
+// ==================== ARQUIVAR / REATIVAR PROCEDIMENTOS ====================
+// Arquivar é soft: active=false em procedures/<fbKey> (campo e caminho já
+// existentes — nenhum caminho novo no RTDB). O procedimento some das listas de
+// seleção, mas orçamentos/lançamentos antigos guardam o nome em snapshot e NÃO
+// são alterados. Só procedimentos custom (com _fbKey) podem ser arquivados —
+// os do seed PROC_ORC são estruturais.
+let _showArchivedProcs=false;
+function _toggleArchivedProcs(){ _showArchivedProcs=!_showArchivedProcs; renderProcedureConfig(); }
+
+function arquivarProc(fbKey,nome){
+  showConfirm(
+    'Arquivar procedimento',
+    `Arquivar "${nome}"?\n\nEle some das listas de seleção e da tabela de preços, mas orçamentos e lançamentos antigos NÃO são alterados.\nVocê pode reativar depois em "Mostrar arquivados".`,
+    () => {
+      dbRef.child('procedures/'+fbKey+'/active').set(false)
+        .then(()=>{
+          fbAddLog('ARQUIVAR PROC',`"${nome}" arquivado por ${CU}`);
+          showToast('📦 Procedimento arquivado.','#e67e22');
+        })
+        .catch(e=>showToast('Erro ao arquivar: '+(e.message||e),'#e74c3c'));
+    }, null, 'Arquivar', '#e67e22'
+  );
+}
+
+function reativarProc(fbKey,nome){
+  dbRef.child('procedures/'+fbKey+'/active').set(true)
+    .then(()=>{
+      fbAddLog('REATIVAR PROC',`"${nome}" reativado por ${CU}`);
+      showToast('✓ Procedimento reativado!','#27ae60');
+    })
+    .catch(e=>showToast('Erro ao reativar: '+(e.message||e),'#e74c3c'));
 }
 
 function salvarTodosProcConfig(){
