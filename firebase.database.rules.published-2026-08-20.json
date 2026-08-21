@@ -1,0 +1,30 @@
+{
+  "rules": {
+    "consultorio": {
+      ".read": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com')",
+
+      "lancamentos": {
+        ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com')"
+      },
+      "orcamentos": {
+        ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com')"
+      },
+      "patients": {
+        ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com')"
+      },
+
+      "hospitalPrices":           { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "procedureConfig":          { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "procedures":               { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "procedureTeamCosts":       { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "procedureCommissionRules": { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "config":                   { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+
+      "log": {
+        "$logId": {
+          ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com') && !data.exists()"
+        }
+      }
+    }
+  }
+}

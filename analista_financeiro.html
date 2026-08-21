@@ -32,6 +32,8 @@
   --shadow-lg:0 20px 60px rgba(0,0,0,.18),0 8px 20px rgba(0,0,0,.08);
   --radius:10px;--radius-lg:14px;--radius-xl:18px;
   --transition:.18s ease;
+  /* Aliases usados em trechos antigos do template — mantidos para consistencia */
+  --txt:#1c2b3a;--card:#ffffff;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;}
@@ -260,6 +262,7 @@ tr:hover td{background:#f5f8fb;}
 .ai{background:var(--pl-light);color:#1a4f7a;border-left:4px solid var(--primary);}
 .as{background:var(--ok-light);color:#1e8449;border-left:4px solid var(--ok);}
 .aw{background:var(--warn-light);color:#7d5a00;border-left:4px solid var(--warn);}
+.help-box{background:var(--pl-light);color:#1a4f7a;border-left:4px solid var(--primary);padding:11px 15px;border-radius:8px;margin-bottom:14px;font-size:.82rem;line-height:1.5;}
 
 /* ── Toast ──────────────────────────────────── */
 #toast{
@@ -642,11 +645,7 @@ tr:hover td{background:#f5f8fb;}
             <div>
               <label>Forma</label>
               <select id="fPag" onchange="_onPagChange()"
-                style="width:100%;padding:5px 7px;border:1.5px solid var(--brd);border-radius:7px;font-size:.8rem;font-family:inherit">
-                <option>Dinheiro</option><option>PIX</option><option>Cartão de Débito</option>
-                <option>Cartão de Crédito</option><option>Transferência</option>
-                <option>Convênio / Plano</option><option>Parcelado</option>
-              </select>
+                style="width:100%;padding:5px 7px;border:1.5px solid var(--brd);border-radius:7px;font-size:.8rem;font-family:inherit"></select>
             </div>
           </div>
           <!-- Parcelas — aparece só para Cartão de Crédito -->
@@ -881,6 +880,7 @@ tr:hover td{background:#f5f8fb;}
         </div>
 
         <div id="hospRowsWrap">
+          <div id="hospChips" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px"></div>
           <div style="overflow-x:auto">
             <table class="htbl" id="hospRowsTable" style="display:none">
               <thead>
@@ -940,6 +940,7 @@ tr:hover td{background:#f5f8fb;}
         <input type="text" id="searchOrc" placeholder="Buscar paciente, CPF ou procedimento..." oninput="renderOrcamentos()"
           style="font-size:.8rem;flex:1;min-width:200px;max-width:360px;margin:0">
       </div>
+      <div id="orcCompareBar" style="width:100%"></div>
       <div id="orcList"><div class="empty" style="padding:20px 0"><div class="ico" style="font-size:1.6rem">📋</div>Nenhum orçamento</div></div>
     </div>
 
@@ -1272,11 +1273,7 @@ tr:hover td{background:#f5f8fb;}
       </div>
     </div>
     <div class="fg"><label>Forma de Pagamento</label>
-      <select id="ePag">
-        <option>Dinheiro</option><option>PIX</option><option>Cartão de Débito</option>
-        <option>Cartão de Crédito</option><option>Transferência</option>
-        <option>Convênio / Plano</option><option>Parcelado</option>
-      </select>
+      <select id="ePag"></select>
     </div>
     <div class="fg"><label>Observação</label><textarea id="eDesc" rows="2"></textarea></div>
     <div class="modal-actions">
@@ -1408,6 +1405,24 @@ function getUsuariosConfig(){
 // ==================== CONSTANTES ====================
 const CAT_R = ['Cirurgias Particulares','Consultas e Retornos','Procedimentos Estéticos (Botox/Preenchimento)','Outros'];
 const CAT_E = ['Equipe Cirúrgica','Comissões','Pessoal e Pró-labore','Materiais e Insumos Cirúrgicos','Impostos e Taxas (Simples/CRM)','Aluguel e Infraestrutura','Marketing e Captação','Outros'];
+// Fonte unica de meios de pagamento (modal de pagamento, icones e conciliacao).
+// Inclui TED e Cheque, oferecidos no modal de pagamento de orcamento.
+const PAG_MEIOS=['Dinheiro','PIX','Cartão de Débito','Cartão de Crédito','Transferência','TED','Cheque','Convênio / Plano','Parcelado'];
+const PAG_ICONS={'Dinheiro':'💵','PIX':'⚡','Cartão de Débito':'💳','Cartão de Crédito':'💳','Transferência':'🏦','TED':'🏦','Cheque':'📄','Convênio / Plano':'🏥','Parcelado':'📆'};
+function preencherMeiosPagamento(){
+  ['fPag','ePag','payMetodo'].forEach(id=>{
+    const select=document.getElementById(id);if(!select)return;
+    const atual=select.value;
+    const meios=PAG_MEIOS;
+    select.innerHTML='';
+    meios.forEach(meio=>{
+      const option=document.createElement('option');
+      option.value=meio;option.textContent=meio;
+      select.appendChild(option);
+    });
+    select.value=atual&&meios.includes(atual)?atual:PAG_MEIOS[0];
+  });
+}
 const UCORS = ['#2d7bbf','#27ae60','#9b59b6','#e8a838','#e74c3c','#1abc9c'];
 
 // ==================== ESTADO ====================
@@ -1570,6 +1585,7 @@ let dbListener = null;
 let connListener = null;
 
 function iniciarApp() {
+  preencherMeiosPagamento();
   fillPeriods(); setDate(); setTipo('receita');
   _tentarCarregarLogoAuto(); // tenta carregar logo_v1.png do servidor
 
@@ -1638,7 +1654,6 @@ function anexarLogAtualizacao(updates, acao, detalhe){
   return evento;
 }
 function fbSalvarLanc(item) { return dbRef.child('lancamentos/'+item.id).set(item); }
-function fbExcluirLanc(id)  { return dbRef.child('lancamentos/'+id).remove(); }
 function fbAddLog(acao, detalhe) {
   const evento=criarEventoLog(acao, detalhe);
   return dbRef.child('log/'+evento.id).set(evento);
@@ -1940,7 +1955,7 @@ function salvarLancamento() {
             descricao: `Taxa maquininha ${lblSp} ${spLabel} forma (${pctSp.toFixed(2)}%)${pac?' — '+pac:''}`,
             paciente: pac, procedimento: proc, tipo: 'despesa',
             usuario: CU, email: CUEmail, criadoEm: new Date().toISOString(),
-            auto_generated: true
+            linked_group_id, auto_generated: true
           });
         }
       }
@@ -2229,13 +2244,17 @@ function salvarEdicao(){
         const novoPag    = atualizado.pagamento;
         const parcelas   = original.parcelas || 1;
         const novaTaxaPct= getTaxaPct(novoPag, parcelas);
-        const novaTaxaVal= novaTaxaPct > 0 ? +(novoValor * novaTaxaPct / 100).toFixed(2) : 0;
-        if(Math.round(novaTaxaVal*100) !== Math.round((g.valor||0)*100) || novoPag !== original.pagamento){
-          const parLabel = novoPag === 'Cartão de Débito' ? 'Débito' : `Crédito ${parcelas}x`;
-          recalculos.push(`Taxa cartão (${novaTaxaPct.toFixed(2)}%): R$ ${fN(g.valor)} → R$ ${fN(novaTaxaVal)}`);
-          patch.valor = novaTaxaVal;
-          patch.descricao = `Taxa maquininha ${parLabel} (${novaTaxaPct.toFixed(2)}%)${atualizado.paciente?' → '+atualizado.paciente:''}`;
-          mudou = true;
+        if(novaTaxaPct===null){
+          recalculos.push(`Taxa histórica de ${parcelas}x preservada (sem regra configurada para recálculo).`);
+        }else{
+          const novaTaxaVal= novaTaxaPct > 0 ? +(novoValor * novaTaxaPct / 100).toFixed(2) : 0;
+          if(Math.round(novaTaxaVal*100) !== Math.round((g.valor||0)*100) || novoPag !== original.pagamento){
+            const parLabel = novoPag === 'Cartão de Débito' ? 'Débito' : `Crédito ${parcelas}x`;
+            recalculos.push(`Taxa cartão (${novaTaxaPct.toFixed(2)}%): R$ ${fN(g.valor)} → R$ ${fN(novaTaxaVal)}`);
+            patch.valor = novaTaxaVal;
+            patch.descricao = `Taxa maquininha ${parLabel} (${novaTaxaPct.toFixed(2)}%)${atualizado.paciente?' → '+atualizado.paciente:''}`;
+            mudou = true;
+          }
         }
       }
 
@@ -3011,10 +3030,7 @@ function _renderLancHead(){
   return `<tr>${cells}<th></th></tr>`;
 }
 
-function _pagIcon(p){
-  const icons={'Dinheiro':'💵','PIX':'⚡','Cartão de Débito':'💳','Cartão de Crédito':'💳','Transferência':'🏦','Convênio / Plano':'🏥','Parcelado':'📆'};
-  return icons[p]||'💱';
-}
+function _pagIcon(p){return PAG_ICONS[p]||'💱';}
 function renderLancs(){
   const s=(document.getElementById('searchL')?.value||'').toLowerCase();
   const ft=document.getElementById('ftTipo')?.value||'',fu=document.getElementById('ftUser')?.value||'';
@@ -3133,17 +3149,14 @@ function esquecerPaciente(){
   const nomeOriginal=pat.nome||'Desconhecido';
   showPrompt(
     'LGPD — Direito ao Esquecimento',
-    `Paciente: ${nomeOriginal}\n\nEsta ação:\n  • Apaga nome, CPF, RG, telefone, e-mail e observações\n  • Substitui o nome nos lançamentos por um token anônimo\n  • É IRREVERSÍVEL\n  • Fica registrada no log de auditoria\n\nPara confirmar, digite: ESQUECER`,
+    `Paciente: ${nomeOriginal}\n\nEsta ação:\n  • Apaga nome, CPF, RG, telefone, e-mail e observações do cadastro\n  • Substitui o nome nos lançamentos e orçamentos por um token anônimo\n  • Remove o CPF gravado nos orçamentos\n  • É IRREVERSÍVEL\n  • Fica registrada no log de auditoria (o log é somente-acréscimo: registros antigos que citam o nome não podem ser editados — limitação documentada)\n\nPara confirmar, digite: ESQUECER`,
     'ESQUECER', 'ESQUECER',
     () => {
   const token='Paciente Anônimo #'+String(pid).slice(-6);
-  // 1. Log ANTES de qualquer alteração (regra do projeto: log antes da op destrutiva)
-  fbAddLog('LGPD ESQUECIMENTO',
-    `Paciente esquecido: "${nomeOriginal}" (ID ${pid}) → anonimizado como "${token}" por ${CU}`
-  );
+  const nomeNorm=nomeOriginal.trim();
   // 2. Anonimizar o registro em patients/
   const anonimizado={
-    id:+pid,
+    id:pid,
     nome:token,
     cpf:'',rg:'',tel:'',email:'',obs:'',
     anonimizadoEm:new Date().toISOString(),
@@ -3153,10 +3166,25 @@ function esquecerPaciente(){
   const updates={['patients/'+pid]:anonimizado};
   // 3. Substituir nome nos lançamentos vinculados (busca pelo nome original)
   Object.entries(DATA.lancamentos||{}).forEach(([lid,l])=>{
-    if(l&&l.paciente&&l.paciente.trim()===nomeOriginal.trim()){
+    if(l&&l.paciente&&l.paciente.trim()===nomeNorm){
       updates['lancamentos/'+lid+'/paciente']=token;
     }
   });
+  // 4. Orçamentos: substituir nome e remover CPF gravado (vínculo por nome —
+  //    enquanto patient_id não existe, a chave de busca é o nome exato)
+  Object.entries(DATA.orcamentos||{}).forEach(([oid,o])=>{
+    if(o&&o.paciente&&String(o.paciente).trim()===nomeNorm){
+      updates['orcamentos/'+oid+'/paciente']=token;
+      if(o.cpf)updates['orcamentos/'+oid+'/cpf']=null;
+    }
+  });
+  // 1. Log DENTRO do mesmo update atômico (regra do projeto: sem log, nada é
+  //    modificado — aqui, se a operação falhar, nenhum dos lados grava).
+  //    Nota LGPD: o registro da operação cita o nome original de propósito
+  //    (prestação de contas da anonimização), em log de acesso restrito.
+  anexarLogAtualizacao(updates,'LGPD ESQUECIMENTO',
+    `Paciente esquecido: "${nomeOriginal}" (ID ${pid}) → anonimizado como "${token}" por ${CU}`
+  );
   dbRef.update(updates).then(()=>{
     showToast(`✅ Paciente anonimizado como "${token}".`,'#27ae60');
     fecharEdicaoPaciente();
@@ -3171,7 +3199,7 @@ function salvarEdicaoPaciente(){
   if(!nome){showToast('Informe o nome.','#e74c3c');return;}
   const old=DATA.patients[pid]||{};
   const updated={
-    ...old,id:+pid,nome,
+    ...old,id:pid,nome,
     cpf:document.getElementById('epCPF').value.trim(),
     rg:document.getElementById('epRG').value.trim(),
     tel:document.getElementById('epTel').value.trim(),
@@ -3179,10 +3207,12 @@ function salvarEdicaoPaciente(){
     obs:document.getElementById('epObs').value.trim(),
     updatedAt:new Date().toISOString(),updatedBy:CU
   };
-  dbRef.child('patients/'+pid).set(updated);
-  fbAddLog('EDIÇÃO PACIENTE',`Paciente editado: ${nome} (ID ${pid}) por ${CU}`);
-  fecharEdicaoPaciente();
-  showToast('Paciente atualizado!','#27ae60');
+  const updates={['patients/'+pid]:updated};
+  anexarLogAtualizacao(updates,'EDIÇÃO PACIENTE',`Paciente editado: ${nome} (ID ${pid}) por ${CU}`);
+  dbRef.update(updates).then(()=>{
+    fecharEdicaoPaciente();
+    showToast('Paciente atualizado!','#27ae60');
+  }).catch(e=>showToast('Erro ao atualizar paciente: '+(e.message||e),'#e74c3c'));
 }
 
 function cadastrarNovoPacienteManual(){
@@ -3268,7 +3298,7 @@ function renderPacientes(){
     const orcTags=p.orcs?`<span style="background:#eaf3fb;color:var(--primary);border-radius:5px;padding:1px 7px;font-size:.69rem;font-weight:700">${p.orcs} orç.</span>`:'—';
     const usHtml=p.usuarios.map(u=>`<span style="color:${ucm[u]||'#95a5a6'};font-weight:700;font-size:.76rem">${esc(u)}</span>`).join(', ');
     const editBtn=p.patId
-      ?`<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;white-space:nowrap" onclick="editarPaciente(${p.patId})">✏️ Editar</button>`
+      ?`<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;white-space:nowrap" onclick="editarPaciente(${jsArg(p.patId)})">✏️ Editar</button>`
       :`<button class="btn btn-sm" style="background:#f5f5f5;color:var(--muted);border:1px solid var(--brd);white-space:nowrap;font-size:.72rem" onclick="abrirNovoPatOrc()" title="Cadastrar no sistema">+ Cadastrar</button>`;
     const info=[];
     if(p.cpf)info.push(mascaraCPF(p.cpf));if(p.tel)info.push(p.tel);
@@ -3381,8 +3411,8 @@ function renderConciliacao(){
   const el = document.getElementById('conciliacaoEl');
   if(!el) return;
   const l = getLP();
-  const meios = ['Dinheiro','PIX','Cartão de Débito','Cartão de Crédito','Transferência','Convênio / Plano','Parcelado'];
-  const icons = {'Dinheiro':'💵','PIX':'⚡','Cartão de Débito':'💳','Cartão de Crédito':'💳','Transferência':'🏦','Convênio / Plano':'🏥','Parcelado':'📆'};
+  const meios = PAG_MEIOS;
+  const icons = PAG_ICONS;
 
   // Para cada meio: receitas brutas, taxa de cartão vinculada, líquido
   const rows = meios.map(meio => {
@@ -3581,6 +3611,15 @@ function exportarJSON(){
 }
 
 function importarJSON(inp){
+  // Guarda de papel (V4 do relatório do executor): BACKUP_RESTORE_NODES inclui
+  // nós médico-only (config, procedures, procedureTeamCosts etc.). Sem esta
+  // guarda, a secretária disparava a operação e ela falhava em bloco no servidor.
+  const isTitular = CUEmail === 'drfelipehissacoelho@gmail.com';
+  if(!isTitular){
+    showToast('Apenas o titular pode restaurar backups.','#e74c3c');
+    if(inp)inp.value='';
+    return;
+  }
   const f = inp.files[0]; if(!f) return;
   const r = new FileReader();
   r.onload = e => {
@@ -3711,7 +3750,11 @@ function getTaxaPct(pag, parcelas){
   const t = getTaxasMaquininha();
   if(pag === 'Cartão de Débito')   return +(t.debito   || 0);
   if(pag === 'Cartão de Crédito'){
-    const p = Math.max(1, Math.min(10, parseInt(parcelas)||1));
+    const p=Math.max(1,parseInt(parcelas)||1);
+    // 11x/12x não são mais configuráveis. Para registros históricos, null
+    // informa ao chamador que a taxa original deve ser preservada, nunca
+    // convertida silenciosamente para a taxa de 10x.
+    if(p>10)return null;
     return +(t[`credito${p}x`] || 0);
   }
   return 0;
@@ -3820,7 +3863,7 @@ function _renderSplits(){
           <label>Forma</label>
           <select id="sm_${s.id}" onchange="_onSplitMetChange('${s.id}')"
             style="width:100%;padding:5px 7px;border:1.5px solid var(--brd);border-radius:7px;font-size:.8rem;font-family:inherit">
-            ${['Dinheiro','PIX','Cartão de Débito','Cartão de Crédito','Transferência','Convênio / Plano']
+            ${PAG_MEIOS
               .map(m=>`<option${s.metodo===m?' selected':''}>${m}</option>`).join('')}
           </select>
         </div>
@@ -3983,6 +4026,7 @@ document.addEventListener('keydown', e => {
     ['changePwdModal',() => fecharTrocarSenha()],
     ['editModal',     () => fecharEdicao()],
     ['novoProcModal', () => fecharNovoProc()],
+    ['compareModal',  () => fecharComparacao()],
   ];
   for(const [id, fn] of modalFns){
     const el = document.getElementById(id);
@@ -4135,6 +4179,19 @@ function getAllProcs(includeArchived=false){
   return [...normal,...tail];
 }
 
+// Display-only: nomes gravados em CAIXA ALTA aparecem em formato título
+// ("ABDOMINOPLASTIA COM MASTOPEXIA" → "Abdominoplastia com Mastopexia").
+// NÃO altera chaves nem valores — vínculos por nome continuam intactos.
+function _procDisplay(nome){
+  const s=String(nome||'');
+  if(!s||s!==s.toUpperCase()||!/[A-ZÀ-Ú]/.test(s))return s;
+  const minusculas=new Set(['com','de','do','da','dos','das','e','sem','para','a','o']);
+  return s.toLowerCase().split(' ').map((w,i)=>{
+    if(i>0&&minusculas.has(w))return w;
+    return w.charAt(0).toUpperCase()+w.slice(1);
+  }).join(' ');
+}
+
 // Reconstrói o <select> de procedimentos no form de lançamentos com a lista atual
 function populateProcSel(){
   const sel=document.getElementById('fProcSel');if(!sel)return;
@@ -4145,7 +4202,7 @@ function populateProcSel(){
   sel.appendChild(placeholder);
   getAllProcs().filter(p=>p.nome!=='Outros').forEach(p=>{
     const price=getProcConfig(p.nome).patientPrice;
-    sel.appendChild(new Option(p.nome+(price>0?' (R$ '+fN(price)+')':''),p.nome));
+    sel.appendChild(new Option(_procDisplay(p.nome)+(price>0?' (R$ '+fN(price)+')':''),p.nome));
   });
   sel.appendChild(new Option('Outros (sem sugestão de valor)','Outros'));
   if(current)sel.value=current;
@@ -4465,7 +4522,6 @@ function addProcLanc(){
   document.getElementById('teamPrevCard').style.display='none';
   // Atualiza commission hint para o primeiro proc
   _updateCommissionHint();
-  fbAddLog('UI','Procedimento adicionado ao lançamento: '+nome);
 }
 
 function removeProcLanc(i){
@@ -4681,7 +4737,9 @@ function addItemOrc(){
 
 function removeItemOrc(id){
   orcItems=orcItems.filter(x=>x.id!==id);
+  _sincronizarHospitaisComItens();
   renderItemsOrc();
+  renderHospRows();
 }
 
 function updateItemField(id,field,val){
@@ -4691,8 +4749,10 @@ function updateItemField(id,field,val){
     // Use configured patient price (falls back to PROC_ORC seed if not yet configured)
     const price=getProcConfig(val).patientPrice;
     if(price>0)item.valorUnit=price;
+    _sincronizarHospitaisComItens();
   }
   renderItemsOrc();
+  if(field==='proc')renderHospRows();
 }
 
 function updateItemValor(id,rawVal){
@@ -4731,7 +4791,7 @@ function renderItemsOrc(){
         <select class="itbl" onchange="updateItemField(${jsArg(s.id)},'proc',this.value)"
           style="width:100%;padding:5px 6px;font-size:.8rem;border:1.5px solid var(--brd);border-radius:6px">
           <option value="">Selecione...</option>
-          ${getAllProcs().map(p=>`<option value="${esc(p.nome)}"${s.proc===p.nome?' selected':''}>${esc(p.nome)}</option>`).join('')}
+          ${getAllProcs().map(p=>`<option value="${esc(p.nome)}"${s.proc===p.nome?' selected':''}>${esc(_procDisplay(p.nome))}</option>`).join('')}
         </select>
       </td>
       <td style="text-align:center">
@@ -4768,6 +4828,15 @@ function addHospRow(){
   renderHospRows();
 }
 
+// Atalho: adiciona linha hospitalar já vinculada ao procedimento do orçamento.
+// O custo hospitalar é POR PROCEDIMENTO — ao escolher o hospital, o usuário não
+// deve precisar procurar o procedimento de novo numa lista genérica.
+function addHospRowProc(procName){
+  if(window._orcSalvoId)_esconderBannerOrcSalvo();
+  orcHospRows.push({id:genId(),hospKey:'',procName:procName||'',hospitalCost:0,manual:false});
+  renderHospRows();
+}
+
 function removeHospRow(id){
   orcHospRows=orcHospRows.filter(x=>x.id!==id);
   renderHospRows();
@@ -4801,6 +4870,13 @@ function updateHospValor(id,field,rawVal){
 function _hospRowSub(row){
   return row.hospitalCost||0;
 }
+function _sincronizarHospitaisComItens(){
+  const procedimentos=new Set(orcItems.map(item=>item.proc).filter(Boolean));
+  // Linhas sem procedimento são intencionais enquanto o operador as preenche.
+  // Linhas vinculadas a um procedimento removido deixam de ser válidas e saem
+  // do estado temporário antes que possam bloquear o salvamento.
+  orcHospRows=orcHospRows.filter(row=>!row.procName||procedimentos.has(row.procName));
+}
 function validarHospitaisDoOrcamento(itens, linhas){
   const procedimentos=new Set(itens.map(item=>item.proc).filter(Boolean));
   const incompletas=linhas.filter(row=>(row.hospKey||row.procName||row.hospitalCost)&&(!row.hospKey||!row.procName));
@@ -4831,6 +4907,23 @@ function renderHospRows(){
   const table=document.getElementById('hospRowsTable');
   const empty=document.getElementById('hospRowsEmpty');
   if(!tbody)return;
+
+  // Chips de atalho: um botão por procedimento do orçamento que ainda NÃO tem
+  // linha hospitalar. Um clique cria a linha já com o procedimento preenchido —
+  // falta só escolher o hospital (o custo vem da tabela por procedimento).
+  const chips=document.getElementById('hospChips');
+  if(chips){
+    const procsOrc=[...new Set(orcItems.map(item=>item.proc).filter(Boolean))];
+    const jaCobertos=new Set(orcHospRows.map(r=>r.procName).filter(Boolean));
+    const faltantes=procsOrc.filter(p=>!jaCobertos.has(p));
+    chips.innerHTML=faltantes.length
+      ?`<span style="font-size:.68rem;color:var(--muted);font-weight:600">Custo hospitalar de:</span>`+faltantes.map(p=>
+        `<button onclick="addHospRowProc(${jsArg(p)})" title="Adicionar custo hospitalar de ${esc(p)}"
+          style="background:#eaf3fb;color:#1a4a8c;border:1.5px dashed #90b8e8;border-radius:14px;padding:2px 10px;font-size:.7rem;font-weight:700;cursor:pointer">+ 🏥 ${esc(_procDisplay(p))}</button>`
+      ).join('')
+      :(procsOrc.length?'<span style="font-size:.68rem;color:var(--ok);font-weight:600">✓ Todos os procedimentos já têm linha hospitalar</span>':'');
+  }
+
   if(!orcHospRows.length){
     if(table)table.style.display='none';
     if(empty)empty.style.display='block';
@@ -5289,6 +5382,9 @@ function excluirOrcamento(id){
       anexarLogAtualizacao(updates,'EXCLUSAO ORCAMENTO',`Orcamento de ${orc.paciente} R$ ${fN(orc.total)} movido para lixeira por ${CU}`);
       try{
         await dbRef.update(updates);
+        _orcCompare=_orcCompare.filter(orcId=>orcId!==String(id));
+        _compareOrcs=_compareOrcs.filter(orcamento=>String(orcamento.id)!==String(id));
+        renderCompareBar();
         showToast('Orcamento movido para a lixeira.','#e67e22');
       }catch(err){
         showToast('Erro ao mover orcamento: '+(err.message||err),'#e74c3c');
@@ -5335,6 +5431,8 @@ function purgarOrcamento(id){
 
 // Estado do filtro de status na aba Orçamentos
 let _orcStatusFilter='todos';
+// Orçamentos selecionados para comparativo de propostas (máx 3)
+let _orcCompare=[];
 
 function _setOrcFilter(f){ _orcStatusFilter=f; renderOrcamentos(); }
 
@@ -5536,7 +5634,7 @@ function excluirPagamento(payId){
 
 function renderOrcamentos(){
   const el=document.getElementById('orcList');if(!el)return;
-  const sq=(document.getElementById('searchOrc')?.value||'').toLowerCase();
+  const sq=(document.getElementById('searchOrc')?.value||'').trim().toLowerCase();
   const today=dataLocalISO();
   let all=getOrcamentos();
   if(sq)all=all.filter(o=>(o.paciente||'').toLowerCase().includes(sq)||(o.cpf||'').includes(sq)||(o.servicos||[]).some(s=>(s.proc||'').toLowerCase().includes(sq)));
@@ -5575,14 +5673,18 @@ function renderOrcamentos(){
   const tabsHtml=tabs.map(t=>{
     const lbl=t==='todos'?'Todos':(ST[t]?.label||t);
     const cnt=cnts[t]||0;
-    const act=_orcStatusFilter===t;
+    const act=!sq&&_orcStatusFilter===t;
     return `<button onclick="_setOrcFilter('${t}')" style="padding:3px 8px;border-radius:6px;border:1.5px solid ${act?'var(--primary)':'var(--brd)'};background:${act?'var(--primary)':'#fff'};color:${act?'#fff':'var(--muted)'};font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap">${lbl}${cnt>0?` (${cnt})`:''}</button>`;
   }).join('');
 
   const statsHtml=total>0?`<div style="font-size:.71rem;color:var(--muted);padding:5px 8px;background:#f7f9fb;border-radius:6px;margin:5px 0;line-height:1.7"><span style="color:var(--ok);font-weight:700">${aceitos}</span>/${total} aceitos · conversão <b>${taxa}%</b>${valAceito>0?' · R$ '+fN(valAceito):''}</div>`:'';
 
   // Filtrar para exibição
+  // Com busca ativa: ignora o filtro de status e varre TODOS os orçamentos
+  // (a busca pelo nome da paciente é o caminho principal — a lista completa
+  // sem busca é poluente e pouco útil, então mostramos só os 5 mais recentes).
   let filtered=all.filter(o=>{
+    if(sq)return true;
     if(_orcStatusFilter==='todos')return true;
     const st=o.status||'aberto';
     const exp=st==='aberto'&&o.validade&&o.validade<today;
@@ -5590,6 +5692,15 @@ function renderOrcamentos(){
     if(_orcStatusFilter==='aberto')return st==='aberto'&&!exp;
     return st===_orcStatusFilter;
   }).sort(compararOrcamentosRecentes);
+
+  let hintHtml='';
+  if(sq){
+    hintHtml=`<div style="font-size:.71rem;color:var(--muted);padding:4px 8px;background:#eaf3fb;border-radius:6px;margin:5px 0">🔎 ${filtered.length} orçamento(s) encontrado(s) para a busca — em todos os status.</div>`;
+  }else if(filtered.length>5){
+    const totalFiltrado=filtered.length;
+    filtered=filtered.slice(0,5);
+    hintHtml=`<div style="font-size:.71rem;color:var(--muted);padding:4px 8px;background:#f7f9fb;border-radius:6px;margin:5px 0">Mostrando os <b>5 mais recentes</b> de ${totalFiltrado}. <b>Busque pelo nome da paciente</b>, CPF ou procedimento para ver todos os orçamentos dela.</div>`;
+  }
 
   const cardsHtml=filtered.length===0
     ?'<div class="empty" style="padding:14px 0"><div class="ico" style="font-size:1.2rem">📋</div>Nenhum orçamento aqui</div>'
@@ -5609,6 +5720,11 @@ function renderOrcamentos(){
 
       // Badge financeiro
       const badgeFin=`<span style="padding:1px 6px;border-radius:9px;font-size:.63rem;font-weight:700;background:${sfCfg.bg};color:${sfCfg.fg}">${sfCfg.em} ${sfCfg.label}</span>`;
+
+      // Botão de comparativo (⇄) — seleciona até 3 orçamentos para comparar lado a lado
+      const oid=String(o.id);
+      const cmpOn=_orcCompare.includes(oid);
+      const btnCompare=`<button onclick="toggleCompararOrc(${jsArg(o.id)})" title="${cmpOn?'Remover do comparativo':'Adicionar ao comparativo (máx. 3)'}" style="margin-left:auto;background:${cmpOn?'var(--primary)':'#fff'};color:${cmpOn?'#fff':'var(--muted)'};border:1.5px solid ${cmpOn?'var(--primary)':'var(--brd)'};border-radius:7px;font-size:.72rem;padding:1px 7px;cursor:pointer;line-height:1.5">⇄</button>`;
 
       // Barra de progresso de pagamento
       const pct=o.total>0?Math.min(100,Math.round(valorPago/o.total*100)):0;
@@ -5671,6 +5787,7 @@ function renderOrcamentos(){
         <span style="font-weight:700;font-size:.87rem">${esc(o.paciente)}</span>
         <span style="padding:1px 7px;border-radius:9px;font-size:.66rem;font-weight:700;background:${cfg.bg};color:${cfg.fg}">${cfg.em} ${cfg.label}</span>
         ${badgeFin}
+        ${btnCompare}
       </div>
       <div style="font-size:.7rem;color:var(--muted);margin-top:2px">${fD(o.data)}${o.validade?' · val. '+fD(o.validade):''} · <b>${esc(o.usuario)}</b></div>
       <div style="font-size:.72rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${primeiroProc}</div>
@@ -5687,7 +5804,179 @@ function renderOrcamentos(){
     }
     }).join('');
 
-  el.innerHTML=`<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">${tabsHtml}</div>${statsHtml}${cardsHtml}`;
+  el.innerHTML=`<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">${tabsHtml}</div>${statsHtml}${hintHtml}${cardsHtml}`;
+  renderCompareBar();
+}
+
+// ==================== COMPARATIVO DE PROPOSTAS ====================
+// Resolve o caso real: paciente pede orçamento de mamoplastia, depois de
+// abdominoplastia, depois das duas juntas — em vez de 3 impressões separadas,
+// seleciona 2–3 orçamentos com ⇄ e gera UM comparativo lado a lado (tela + PDF).
+
+function toggleCompararOrc(id){
+  const sid=String(id);
+  const i=_orcCompare.indexOf(sid);
+  if(i>=0)_orcCompare.splice(i,1);
+  else{
+    if(_orcCompare.length>=3){ showToast('Máximo de 3 propostas no comparativo. Remova uma para adicionar outra.','#e67e22'); return; }
+    _orcCompare.push(sid);
+  }
+  renderOrcamentos();
+}
+
+function _orcamentosAtivosDoComparativo(){
+  const orcamentos=DATA.orcamentos||{};
+  _orcCompare=_orcCompare.filter(id=>{
+    const orc=orcamentos[id];
+    return !!(orc&&!orc.deletedAt);
+  });
+  return _orcCompare.map(id=>orcamentos[id]);
+}
+
+function _totalHospitalarOrcamento(orc){
+  const linhas=Array.isArray(orc?.hospRows)&&orc.hospRows.length
+    ?orc.hospRows
+    :(Array.isArray(orc?.hospitais)?orc.hospitais:[]);
+  if(linhas.length){
+    return linhas.reduce((sum,row)=>sum+(Number(row.hospital_cost??row.hospitalCost??row.subtotal)||0),0);
+  }
+  return Number(orc?.hospTotal??orc?.hospVal??0)||0;
+}
+
+function renderCompareBar(){
+  const bar=document.getElementById('orcCompareBar');
+  if(!bar)return;
+  _orcamentosAtivosDoComparativo();
+  if(_orcCompare.length===0){ bar.innerHTML=''; return; }
+  const nomes=_orcCompare.map(id=>{
+    const o=DATA.orcamentos&&DATA.orcamentos[id];
+    return o?`<span style="background:#fff;border:1px solid #b8cff5;border-radius:12px;padding:1px 9px;font-size:.7rem;font-weight:700;color:#1a4a8c">${esc(o.paciente||'?')} · ${esc((o.servicos||[])[0]?.proc||'—')}</span>`:'';
+  }).join('');
+  bar.innerHTML=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#eaf3fb;border:1.5px solid #b8cff5;border-radius:9px;padding:6px 10px;margin:6px 0">
+    <span style="font-size:.72rem;font-weight:700;color:#1a4a8c">⇄ Comparativo (${_orcCompare.length}/3):</span>
+    ${nomes}
+    <span style="margin-left:auto;display:flex;gap:5px">
+      <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-weight:700;${_orcCompare.length<2?'opacity:.45;cursor:not-allowed':''}" ${_orcCompare.length<2?'disabled':''} onclick="abrirComparacao()">Comparar</button>
+      <button class="btn btn-sm" style="background:#fff;color:var(--muted);border:1px solid var(--brd)" onclick="_orcCompare=[];renderOrcamentos()">Limpar</button>
+    </span>
+  </div>`;
+}
+
+let _compareOrcs=[];
+
+function abrirComparacao(){
+  _compareOrcs=_orcamentosAtivosDoComparativo();
+  if(_compareOrcs.length<2){ showToast('Selecione pelo menos 2 orçamentos para comparar.','#e67e22'); return; }
+  const paciente=_compareOrcs[0].paciente||'';
+  const mesmaPaciente=_compareOrcs.every(o=>(o.paciente||'')===paciente);
+  if(!mesmaPaciente){
+    showToast('O comparativo só pode reunir orçamentos da mesma paciente.','#e74c3c',5000);
+    return;
+  }
+  document.getElementById('compareTitulo').textContent=`⇄ Comparativo de Propostas${mesmaPaciente?' — '+paciente:''}`;
+
+  const cols=_compareOrcs.map((o,i)=>{
+    const letra=String.fromCharCode(65+i);
+    const itens=(o.servicos||[]).map(s=>{
+      const sub=s.subtotal||(s.valorUnit*s.qty)||0;
+      return `<div style="display:flex;justify-content:space-between;gap:6px;font-size:.72rem;padding:2px 0"><span>${esc(s.proc||'—')}${s.qty>1?' ×'+s.qty:''}</span><b>R$ ${fN(sub)}</b></div>`;
+    }).join('')||'<div style="font-size:.72rem;color:var(--muted)">Sem procedimentos</div>';
+    const honor=(o.servicos||[]).reduce((sum,s)=>sum+(s.subtotal||(s.valorUnit*s.qty)||0),0);
+    const hosp=_totalHospitalarOrcamento(o);
+    const desc=o.desconto||0;
+    return `<div style="flex:1;min-width:220px;border:1.5px solid var(--brd);border-radius:10px;padding:10px;background:#fff">
+      <div style="font-weight:800;font-size:.85rem;color:var(--primary);margin-bottom:2px">Proposta ${letra}</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-bottom:6px">${fD(o.data)}${o.validade?' · val. '+fD(o.validade):''} · ${esc(o.usuario||'')}</div>
+      ${!mesmaPaciente?`<div style="font-size:.72rem;font-weight:700;margin-bottom:4px">${esc(o.paciente||'')}</div>`:''}
+      ${itens}
+      <div style="border-top:1px dashed var(--brd);margin-top:6px;padding-top:6px;font-size:.72rem;display:flex;justify-content:space-between"><span>Honorários</span><b>R$ ${fN(honor)}</b></div>
+      <div style="font-size:.72rem;display:flex;justify-content:space-between;padding:2px 0"><span>Custos hospitalares</span><b>R$ ${fN(hosp)}</b></div>
+      ${desc>0?`<div style="font-size:.72rem;display:flex;justify-content:space-between;padding:2px 0;color:#c0392b"><span>Desconto</span><b>− R$ ${fN(desc)}</b></div>`:''}
+      <div style="border-top:2px solid var(--primary);margin-top:6px;padding-top:6px;display:flex;justify-content:space-between;font-size:.92rem;font-weight:800;color:var(--primary)"><span>TOTAL</span><span>R$ ${fN(o.total||0)}</span></div>
+      ${o.obs?`<div style="font-size:.66rem;color:var(--muted);margin-top:6px;font-style:italic">${esc(o.obs)}</div>`:''}
+      <div style="display:flex;gap:4px;margin-top:8px">
+        <button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef;flex:1" onclick="gerarPDFOrcamento(${jsArg(o.id)})">📄 PDF</button>
+        <button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7" onclick="imprimirOrcamento(${jsArg(o.id)})" title="Imprimir">🖨</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('compareContent').innerHTML=`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:stretch">${cols}</div>
+    <div style="font-size:.68rem;color:var(--muted);margin-top:10px;line-height:1.6">💡 Valores finais válidos somente após avaliação médica presencial. Custos hospitalares são estimativas sujeitas a confirmação com o hospital.</div>`;
+  document.getElementById('compareModal').style.display='flex';
+}
+
+function fecharComparacao(){
+  document.getElementById('compareModal').style.display='none';
+}
+
+function gerarPDFComparativo(){
+  _compareOrcs=_orcamentosAtivosDoComparativo();
+  if(_compareOrcs.length<2){ showToast('Nada para gerar — selecione 2 ou 3 orçamentos.','#e67e22'); return; }
+  const CL=getClinica();
+  const paciente=_compareOrcs[0].paciente||'';
+  const mesmaPaciente=_compareOrcs.every(o=>(o.paciente||'')===paciente);
+  if(!mesmaPaciente){ showToast('O comparativo só pode reunir orçamentos da mesma paciente.','#e74c3c',5000); return; }
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  const ACCENT=[26,74,140];
+
+  // Cabeçalho
+  doc.setFillColor(...ACCENT);
+  doc.rect(0,0,W,26,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(15);doc.setFont(undefined,'bold');
+  doc.text('COMPARATIVO DE PROPOSTAS',14,11);
+  doc.setFontSize(9);doc.setFont(undefined,'normal');
+  doc.text(CL.medico+' — CRM '+CL.crm+' · '+CL.especialidade,14,18);
+  doc.text('Emitido em '+fD(dataLocalISO()),W-14,11,{align:'right'});
+  if(mesmaPaciente)doc.text('Paciente: '+paciente,W-14,18,{align:'right'});
+
+  // Monta linhas do comparativo
+  const head=[['Item',..._compareOrcs.map((o,i)=>'Proposta '+String.fromCharCode(65+i))]];
+  const linha=(label,fn)=>[label,..._compareOrcs.map(fn)];
+  const procs=_compareOrcs.map(o=>(o.servicos||[]).map(s=>s.proc+(s.qty>1?' ×'+s.qty:'')).join('\n')||'—');
+  const honor=_compareOrcs.map(o=>(o.servicos||[]).reduce((s,x)=>s+(x.subtotal||(x.valorUnit*x.qty)||0),0));
+  const hosp=_compareOrcs.map(_totalHospitalarOrcamento);
+  const body=[
+    mesmaPaciente?null:linha('Paciente',o=>o.paciente||'—'),
+    linha('Data / validade',o=>fD(o.data)+(o.validade?' · val. '+fD(o.validade):'')),
+    ['Procedimentos',...procs],
+    linha('Total honorários',(o,i)=>'R$ '+fN(honor[i])),
+    linha('Custos hospitalares',(o,i)=>'R$ '+fN(hosp[i])),
+    linha('Desconto',o=>o.desconto>0?'− R$ '+fN(o.desconto):'—'),
+    linha('TOTAL GERAL',o=>'R$ '+fN(o.total||0)),
+    linha('Observações',o=>o.obs||'—'),
+  ].filter(Boolean);
+
+  doc.autoTable({
+    startY:32,
+    head:head,
+    body:body,
+    theme:'grid',
+    styles:{fontSize:9,cellPadding:2.5,valign:'top'},
+    headStyles:{fillColor:ACCENT,textColor:255,fontStyle:'bold'},
+    columnStyles:{0:{fontStyle:'bold',cellWidth:42}},
+  });
+
+  // Observações finais: se a tabela ocupar o fim da página, cria uma página
+  // nova em vez de escrever fora da área imprimível.
+  const finalY=doc.lastAutoTable.finalY;
+  doc.setFontSize(8);doc.setTextColor(90,90,90);
+  const notaFinal=doc.splitTextToSize('Valores finais válidos somente após avaliação médica presencial. Custos hospitalares são estimativas sujeitas a confirmação com o hospital.',W-28);
+  const rodapeLinhas=[...notaFinal,CL.endereco+' · '+CL.telefone+' · '+CL.email,CL.medico.toUpperCase()+' · CRM '+CL.crm+' · '+CL.especialidade];
+  let rodapeY=finalY+7;
+  if(rodapeY+(rodapeLinhas.length-1)*5>doc.internal.pageSize.getHeight()-14){
+    doc.addPage();
+    rodapeY=14;
+  }
+  rodapeLinhas.forEach((linha,i)=>doc.text(linha,14,rodapeY+i*5));
+
+  const nomePdf=sanitizeFileName('comparativo_'+(mesmaPaciente?paciente:'propostas')+'_'+dataLocalISO()+'.pdf');
+  _salvarPdfBlob(doc.output('blob'),nomePdf);
+  fbAddLog('PDF COMPARATIVO',`${_compareOrcs.length} proposta(s) | orçamentos: ${_compareOrcs.map(o=>String(o.id)).join(', ')}`);
+  showToast('PDF comparativo gerado!','#27ae60');
 }
 
 
@@ -5783,7 +6072,11 @@ function excluirRecorrente(id){
     'Excluir recorrente',
     `Excluir "${r.descricao}" (R$ ${fN(r.valor)} · ${r.frequencia})?\n\nOs lançamentos já gerados NÃO serão excluídos.`,
     () => {
-      fbAddLog('EXCLUSÃO RECORRENTE', `${r.descricao} · R$ ${fN(r.valor)} excluída por ${CU}`);
+      // Hard delete é deliberado para recorrentes: são templates de geração,
+      // não registros financeiros (os lançamentos gerados são preservados).
+      // Em compensação, o log carrega a definição COMPLETA do template (V3 do
+      // relatório do executor) — suficiente para recriá-lo manualmente.
+      fbAddLog('EXCLUSÃO RECORRENTE', `${r.descricao} · R$ ${fN(r.valor)} · cat ${r.categoria||'—'} · ${r.frequencia||'—'} · dia ${r.diaVencimento||'—'}${r.mes?' · mês '+r.mes:''} · ${r.ativo===false?'inativa':'ativa'} · obs "${r.obs||''}" · excluída por ${CU}`);
       dbRef.child('recorrentes/'+id).remove()
         .then(()=>showToast('Recorrente excluída.','#e67e22'))
         .catch(e=>showToast('Erro: '+(e.message||e),'#e74c3c'));
@@ -6026,7 +6319,7 @@ function _renderThTable(){
           const hasPr=!!prices[p.nome];
           const eid='thpr_'+_thHospSel+'_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
           return `<tr id="row_${eid}">
-            <td style="font-weight:600;font-size:.83rem">${p.nome}</td>
+            <td style="font-weight:600;font-size:.83rem">${esc(_procDisplay(p.nome))}</td>
             <td><input type="text" class="moeda-input th-inp" id="${eid}_hc"
               value="${hcVal?fN(hcVal):''}" placeholder="0,00"
               oninput="maskMoeda(this)" onblur="fmtMoeda(this)"
@@ -6092,10 +6385,12 @@ function salvarTodosPrecos(){
 // ==================== CONFIG DE PROCEDIMENTOS (TABELA UNIFICADA) ====================
 function renderProcedureConfig(){
   const el=document.getElementById('procedureConfigList');if(!el)return;
-  const procs=getAllProcs().filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
+  const procs=getAllProcs(_showArchivedProcs).filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
+  const numArq=getAllProcs(true).filter(p=>p._active===false).length;
   const fv=v=>(+v)?fN(+v):'';
   el.innerHTML=`
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      ${numArq>0?`<button class="btn btn-neu" onclick="_toggleArchivedProcs()" style="font-size:.8rem">${_showArchivedProcs?'🙈 Ocultar':'📦 Mostrar'} arquivados (${numArq})</button>`:''}
       <button class="btn btn-ok" onclick="abrirNovoProc()" style="font-size:.84rem;padding:7px 16px">
         ＋ Novo Procedimento
       </button>
@@ -6122,8 +6417,8 @@ function renderProcedureConfig(){
         const eid='pc_'+p.nome.replace(/[^a-zA-Z0-9]/g,'_');
         const hasCfg=!!(DATA.procedureConfig[p.nome]||DATA.procedureTeamCosts[p.nome]||DATA.procedureCommissionRules[p.nome]);
         const isCustom=!!(DATA.procedures&&Object.values(DATA.procedures).find(d=>d.nome===p.nome));
-        return `<tr style="${hasCfg?'background:#f9fffe':''}${isCustom?' outline:2px solid #d1f5e0;outline-offset:-2px':''}">
-          <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">${p.nome}</td>
+        return `<tr style="${hasCfg?'background:#f9fffe':''}${isCustom?' outline:2px solid #d1f5e0;outline-offset:-2px':''}${p._active===false?';opacity:.55':''}">
+          <td style="padding:6px 8px;font-weight:600;font-size:.82rem;border-bottom:1px solid var(--brd)">${esc(_procDisplay(p.nome))}${p._active===false?' <span style="font-size:.62rem;font-weight:700;background:#f5f5f5;color:#616161;border-radius:8px;padding:1px 7px">📦 arquivado</span>':''}</td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--brd)">
             <input type="text" class="moeda-input" id="${eid}_price" value="${fv(cfg.patientPrice)}" placeholder="0,00"
               oninput="maskMoeda(this)" onblur="fmtMoeda(this)" style="text-align:right;font-size:.79rem;padding:4px 6px;border:1.5px solid var(--brd);border-radius:5px;width:100%">
@@ -6161,6 +6456,11 @@ function renderProcedureConfig(){
           <td style="text-align:center;padding:5px 8px;border-bottom:1px solid var(--brd)">
             <button title="Duplicar procedimento" onclick="duplicarProc('${p.nome.replace(/'/g,"\\'")}','${eid}')"
               style="background:none;border:1px solid var(--brd);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem" title="Duplicar">📋</button>
+            ${p._fbKey?(p._active===false
+              ?`<button title="Reativar procedimento" onclick="reativarProc(${jsArg(p._fbKey)},${jsArg(p.nome)})"
+                  style="background:none;border:1px solid #a5d6a7;border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem;margin-left:3px">♻️</button>`
+              :`<button title="Arquivar: some das listas, mas orçamentos e lançamentos antigos são preservados" onclick="arquivarProc(${jsArg(p._fbKey)},${jsArg(p.nome)})"
+                  style="background:none;border:1px solid var(--brd);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.8rem;margin-left:3px">📦</button>`):''}
           </td>
         </tr>`;
       }).join('')}
@@ -6298,6 +6598,39 @@ function duplicarProc(procNome,eid){
   });
 }
 
+// ==================== ARQUIVAR / REATIVAR PROCEDIMENTOS ====================
+// Arquivar é soft: active=false em procedures/<fbKey> (campo e caminho já
+// existentes — nenhum caminho novo no RTDB). O procedimento some das listas de
+// seleção, mas orçamentos/lançamentos antigos guardam o nome em snapshot e NÃO
+// são alterados. Só procedimentos custom (com _fbKey) podem ser arquivados —
+// os do seed PROC_ORC são estruturais.
+let _showArchivedProcs=false;
+function _toggleArchivedProcs(){ _showArchivedProcs=!_showArchivedProcs; renderProcedureConfig(); }
+
+function arquivarProc(fbKey,nome){
+  showConfirm(
+    'Arquivar procedimento',
+    `Arquivar "${nome}"?\n\nEle some das listas de seleção e da tabela de preços, mas orçamentos e lançamentos antigos NÃO são alterados.\nVocê pode reativar depois em "Mostrar arquivados".`,
+    () => {
+      dbRef.child('procedures/'+fbKey+'/active').set(false)
+        .then(()=>{
+          fbAddLog('ARQUIVAR PROC',`"${nome}" arquivado por ${CU}`);
+          showToast('📦 Procedimento arquivado.','#e67e22');
+        })
+        .catch(e=>showToast('Erro ao arquivar: '+(e.message||e),'#e74c3c'));
+    }, null, 'Arquivar', '#e67e22'
+  );
+}
+
+function reativarProc(fbKey,nome){
+  dbRef.child('procedures/'+fbKey+'/active').set(true)
+    .then(()=>{
+      fbAddLog('REATIVAR PROC',`"${nome}" reativado por ${CU}`);
+      showToast('✓ Procedimento reativado!','#27ae60');
+    })
+    .catch(e=>showToast('Erro ao reativar: '+(e.message||e),'#e74c3c'));
+}
+
 function salvarTodosProcConfig(){
   const procs=getAllProcs().filter(p=>p.nome!=='Retorno'&&p.nome!=='Outros');
   let count=0;
@@ -6429,6 +6762,7 @@ function renderCFO(){
   if(acoes.length===0)acoes.push('Manter mix atual de procedimentos — está funcionando bem.','Monitorar margem mensalmente. Alarme se cair abaixo de 30%.','Avaliar expansão de capacidade operacional (mais horários ou segundo consultório).');
 
   // ======================== HTML ========================
+  const META=getMeta();
   el.innerHTML=`
   <div style="background:#fff;border-radius:12px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
     <div style="width:88px;height:88px;border-radius:50%;border:5px solid ${scoreC};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 0 3px ${scoreC}22">
@@ -6829,6 +7163,7 @@ function gerarPDFOrcamento(id, options){
   const ML=14,MR=196,PW=210,PH=297;
   const NAVY=[26,79,122],STEEL=[44,62,80],MUTED=[120,130,140],LIGHT=[240,244,248],WHITE=[255,255,255];
   const ACCENT=[26,79,122];
+  const CL=getClinica(); // dados do medico/clinica vem da aba Config (com fallback)
 
   // ======================== LOGO TOPO ========================
   let y = _oPdfInsertLogo(doc, ML, 8);
@@ -6841,11 +7176,11 @@ function gerarPDFOrcamento(id, options){
   // Paciente (esq) | Médico (dir)
   const C2=108;
   _oPdfTxt(doc,(orc.paciente||'').toUpperCase(),ML,y,11,true,...NAVY);
-  _oPdfTxt(doc,'Dr. Felipe Hissa Coelho',C2,y,9,true,...STEEL);y+=5;
+  _oPdfTxt(doc,CL.medico,C2,y,9,true,...STEEL);y+=5;
   _oPdfTxt(doc,'CPF: '+(orc.cpf||'nao informado'),ML,y,8.5,false,...MUTED);
-  _oPdfTxt(doc,'CRM-PE 15420',C2,y,8.5,false,...MUTED);y+=4.5;
+  _oPdfTxt(doc,CL.crm,C2,y,8.5,false,...MUTED);y+=4.5;
   _oPdfTxt(doc,'RG: '+(orc.rg||'nao informado'),ML,y,8.5,false,...MUTED);
-  _oPdfTxt(doc,'Cirurgia Plastica',C2,y,8.5,false,...MUTED);y+=4.5;
+  _oPdfTxt(doc,CL.especialidade,C2,y,8.5,false,...MUTED);y+=4.5;
   if(orc.tel){_oPdfTxt(doc,'Tel: '+orc.tel,ML,y,8.5,false,...MUTED);y+=4.5;}
   _oPdfTxt(doc,'Data: '+fD(orc.data)+'    Validade: '+fD(orc.validade),ML,y,8.5,false,...MUTED);y+=3;
   _oPdfLine(doc,y,ML,MR,.5,...NAVY);y+=8;
@@ -6970,13 +7305,13 @@ function gerarPDFOrcamento(id, options){
     if(PDF_LOGO_DATA){doc.addImage(PDF_LOGO_DATA,'PNG',ML,fy+1,18,11,'','FAST');}
     else{_oPdfLogo(doc,ML,fy+1,.42);}
     const wx=ML+20;
-    _oPdfTxt(doc,'CRM 15420',wx,fy+3,5.5,false,...MUTED);
-    _oPdfTxt(doc,'FELIPE',wx,fy+8,8.5,true,...STEEL);
-    _oPdfTxt(doc,'HISSA',wx,fy+14.5,8.5,true,...STEEL);
+    _oPdfTxt(doc,CL.crm,wx,fy+3,5.5,false,...MUTED);
+    _oPdfTxt(doc,(CL.medico||'').toUpperCase(),wx,fy+8,8.5,true,...STEEL);
+    _oPdfTxt(doc,CL.especialidade||'',wx,fy+14.5,8.5,true,...STEEL);
     const cx=wx+30;
-    _oPdfTxt(doc,'(c)  81 99479-5101',cx,fy+5,7.5,false,...MUTED);
-    _oPdfTxt(doc,'(e)  contato@drfelipehissa.com.br',cx,fy+10,7.5,false,...MUTED);
-    _oPdfTxt(doc,'(a)  R. Gen. Joaquim Inacio, 830, Sala 707 - Recife/PE',cx,fy+15,7.5,false,...MUTED);
+    _oPdfTxt(doc,'(c)  '+CL.telefone,cx,fy+5,7.5,false,...MUTED);
+    _oPdfTxt(doc,'(e)  '+CL.email,cx,fy+10,7.5,false,...MUTED);
+    _oPdfTxt(doc,'(a)  '+CL.endereco,cx,fy+15,7.5,false,...MUTED);
     // Número de página
     _oPdfTxt(doc,'Pag. '+pg+'/'+totalPags,MR,fy+15,7,false,...MUTED,'right');
   }
@@ -7056,15 +7391,7 @@ function gerarPDFOrcamento(id, options){
 
       <div>
         <label style="font-size:.8rem;font-weight:600;color:var(--muted)">Forma de Pagamento *</label>
-        <select id="payMetodo" style="width:100%;box-sizing:border-box" onchange="_payMetodoChange()">
-          <option>PIX</option>
-          <option>Dinheiro</option>
-          <option>Cartão de Débito</option>
-          <option>Cartão de Crédito</option>
-          <option>Transferência</option>
-          <option>TED</option>
-          <option>Cheque</option>
-        </select>
+        <select id="payMetodo" style="width:100%;box-sizing:border-box" onchange="_payMetodoChange()"></select>
       </div>
 
       <div id="payParcelasWrap" style="display:none">
@@ -7074,7 +7401,6 @@ function gerarPDFOrcamento(id, options){
           <option value="2">2x</option><option value="3">3x</option><option value="4">4x</option>
           <option value="5">5x</option><option value="6">6x</option><option value="7">7x</option>
           <option value="8">8x</option><option value="9">9x</option><option value="10">10x</option>
-          <option value="11">11x</option><option value="12">12x</option>
         </select>
       </div>
 
@@ -7180,6 +7506,18 @@ function gerarPDFOrcamento(id, options){
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn btn-neu" onclick="fecharRecModal()">Cancelar</button>
       <button class="btn" onclick="salvarRecorrente()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: COMPARATIVO DE PROPOSTAS ===== -->
+<div class="modal-overlay" id="compareModal" style="display:none" onclick="if(event.target===this)fecharComparacao()">
+  <div class="modal-box" style="max-width:900px">
+    <h3 id="compareTitulo">⇄ Comparativo de Propostas</h3>
+    <div id="compareContent" style="max-height:65vh;overflow-y:auto;padding-right:4px"></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="btn btn-neu" onclick="fecharComparacao()">Fechar</button>
+      <button class="btn" style="background:var(--primary);color:#fff;font-weight:700" onclick="gerarPDFComparativo()">📄 PDF comparativo</button>
     </div>
   </div>
 </div>

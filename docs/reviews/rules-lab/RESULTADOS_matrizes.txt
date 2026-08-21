@@ -1,0 +1,154 @@
+Execucao: 2026-08-20 | motor: targaryen@3.1.0 (offline, sem contato com producao)
+Regras testadas: firebase.database.rules.unverified.json (baseline) e out/firebase.database.rules.proposed.json
+
+
+=== MATRIZ A — BASELINE (firebase.database.rules.unverified.json) ===
+┌─────────┬───────┬─────────────────────────────────────────────────────────────┬───────────────────────┬──────────┬─────────┬──────┐
+│ (index) │ id    │ desc                                                        │ auth                  │ esperado │ obtido  │ ok   │
+├─────────┼───────┼─────────────────────────────────────────────────────────────┼───────────────────────┼──────────┼─────────┼──────┤
+│ 0       │ 'B-a' │ 'write consultorio/quote_payments/teste-fase3 (medico)'     │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 1       │ 'B-a' │ 'write consultorio/quote_payments/teste-fase3 (secretaria)' │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 2       │ 'B-b' │ 'write consultorio/recorrentes/teste-fase3 (medico)'        │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 3       │ 'B-b' │ 'write consultorio/recorrentes/teste-fase3 (secretaria)'    │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 4       │ 'B-c' │ 'write consultorio/lancamentos/teste-fase3 (medico)'        │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 5       │ 'B-c' │ 'write consultorio/lancamentos/teste-fase3 (secretaria)'    │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 6       │ 'B-d' │ 'write consultorio/orcamentos/<id>/status (medico)'         │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 7       │ 'B-d' │ 'write consultorio/orcamentos/<id>/status (secretaria)'     │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 8       │ 'B-e' │ 'write consultorio/log/teste-fase3 (no novo) (medico)'      │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 9       │ 'B-e' │ 'write consultorio/log/teste-fase3 (no novo) (secretaria)'  │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 10      │ 'B-f' │ 'write consultorio/log/<id existente> (medico)'             │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 11      │ 'B-f' │ 'write consultorio/log/<id existente> (secretaria)'         │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 12      │ 'B-g' │ 'read /consultorio (medico)'                                │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 13      │ 'B-g' │ 'read /consultorio (secretaria)'                            │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 14      │ 'B-h' │ 'read /consultorio (terceiro autenticado)'                  │ 'terceiro'            │ 'DENY'   │ 'DENY'  │ true │
+│ 15      │ 'B-i' │ 'read /consultorio (anonimo)'                               │ 'anonimo'             │ 'DENY'   │ 'DENY'  │ true │
+│ 16      │ 'B-j' │ 'UPDATE ATOMICO de pagamento (5 caminhos) (medico)'         │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 17      │ 'B-j' │ 'UPDATE ATOMICO de pagamento (5 caminhos) (secretaria)'     │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 18      │ 'B-k' │ 'RESTAURACAO backup v2 (11 nos) (medico)'                   │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+└─────────┴───────┴─────────────────────────────────────────────────────────────┴───────────────────────┴──────────┴─────────┴──────┘
+divergencias vs. previsto: 0
+
+
+=== MATRIZ B — REGRA PROPOSTA ===
+┌─────────┬────────┬─────────────────────────────────────────────────────────────────────────────────────────────┬───────────────────────┬──────────┬─────────┬──────┐
+│ (index) │ id     │ desc                                                                                        │ auth                  │ esperado │ obtido  │ ok   │
+├─────────┼────────┼─────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┼──────────┼─────────┼──────┤
+│ 0       │ '1.1'  │ 'read /consultorio (medico)'                                                                │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 1       │ '1.2'  │ 'read /consultorio (secretaria)'                                                            │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 2       │ '1.3'  │ 'read /consultorio (terceiro autenticado)'                                                  │ 'terceiro'            │ 'DENY'   │ 'DENY'  │ true │
+│ 3       │ '1.4'  │ 'read /consultorio (anonimo)'                                                               │ 'anonimo'             │ 'DENY'   │ 'DENY'  │ true │
+│ 4       │ '1.5'  │ 'read /consultorio/procedureTeamCosts (secretaria) — segregacao NAO tentada'                │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 5       │ '2.1'  │ 'pagamento atomico 5 caminhos (secretaria)'                                                 │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 6       │ '2.2'  │ 'pagamento atomico 5 caminhos (medico)'                                                     │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 7       │ '2.3'  │ 'pagamento atomico (terceiro autenticado)'                                                  │ 'terceiro'            │ 'DENY'   │ 'DENY'  │ true │
+│ 8       │ '2.4'  │ 'pagamento atomico (anonimo)'                                                               │ 'anonimo'             │ 'DENY'   │ 'DENY'  │ true │
+│ 9       │ '2.5'  │ 'pagamento cartao com taxa — 6 caminhos (secretaria)'                                       │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 10      │ '2.6'  │ 'pagamento com amount = 0 (secretaria)'                                                     │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 11      │ '2.7'  │ 'pagamento com amount negativo (secretaria)'                                                │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 12      │ '2.8'  │ 'pagamento com amount string (secretaria)'                                                  │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 13      │ '2.9'  │ 'pagamento sem campos obrigatorios (secretaria)'                                            │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 14      │ '2.10' │ 'pagamento com id != $payId (secretaria)'                                                   │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 15      │ '2.11' │ 'pagamento ORFAO — quote_id inexistente (secretaria)'                                       │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 16      │ '2.12' │ 'pagamento com status invalido (secretaria)'                                                │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 17      │ '2.13' │ 'pagamento avulso valido em orcamento existente (secretaria)'                               │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 18      │ '3.1'  │ 'estorno: deletedAt/By em quote_payments + lancamentos + receitaGeradaId=null (secretaria)' │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 19      │ '3.2'  │ 'hard delete de quote_payments/$id (secretaria)'                                            │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 20      │ '3.3'  │ 'hard delete de quote_payments/$id (medico)'                                                │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 21      │ '4.1'  │ 'criar recorrente (medico)'                                                                 │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 22      │ '4.2'  │ 'criar recorrente (secretaria)'                                                             │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 23      │ '4.3'  │ 'editar recorrente existente (medico)'                                                      │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 24      │ '4.4'  │ 'toggle ativo (medico)'                                                                     │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 25      │ '4.5'  │ 'toggle ativo (secretaria)'                                                                 │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 26      │ '4.6'  │ 'hard delete de recorrente (medico) — decisao registrada'                                   │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 27      │ '4.7'  │ 'hard delete de recorrente (secretaria)'                                                    │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 28      │ '4.8'  │ 'recorrente com valor 0 (medico)'                                                           │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 29      │ '4.9'  │ 'recorrente com frequencia invalida (medico)'                                               │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 30      │ '4.10' │ 'recorrente sem campos obrigatorios (medico)'                                               │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 31      │ '4.11' │ 'recorrente com diaVencimento 31 (medico)'                                                  │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 32      │ '4.12' │ 'recorrente com ativo string (medico)'                                                      │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 33      │ '4.13' │ 'geracao automatica de recorrente — 3 caminhos (secretaria)'                                │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 34      │ '4.14' │ 'geracao automatica de recorrente — 3 caminhos (medico)'                                    │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 35      │ '4.15' │ 'secretaria tenta criar recorrente pelo atalho ultimoPeriodoGerado'                         │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 36      │ '5.1'  │ 'criar lancamento (medico)'                                                                 │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 37      │ '5.1'  │ 'criar lancamento (secretaria)'                                                             │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 38      │ '5.2'  │ 'soft-delete de lancamento (medico)'                                                        │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 39      │ '5.2'  │ 'soft-delete de lancamento (secretaria)'                                                    │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 40      │ '5.3'  │ 'restaurar da lixeira — deletedAt=null (medico)'                                            │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 41      │ '5.3'  │ 'restaurar da lixeira — deletedAt=null (secretaria)'                                        │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 42      │ '5.4'  │ 'PURGA de lancamento por $id (medico)'                                                      │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 43      │ '5.5'  │ 'PURGA de lancamento por $id (secretaria) — restricao proposta'                             │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 44      │ '5.6'  │ 'set(null) na COLECAO lancamentos (secretaria)'                                             │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 45      │ '5.7'  │ 'set(null) na COLECAO lancamentos (medico) — inerente ao restore'                           │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 46      │ '5.8'  │ 'lancamento com valor string (secretaria)'                                                  │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 47      │ '5.9'  │ 'lancamento com tipo invalido (secretaria)'                                                 │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 48      │ '5.10' │ 'editar valor de lancamento existente (secretaria)'                                         │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 49      │ '5.11' │ 'anonimizacao LGPD: patients/$id + lancamentos/$id/paciente (medico)'                       │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 50      │ '6.1'  │ 'criar orcamento (medico)'                                                                  │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 51      │ '6.1'  │ 'criar orcamento (secretaria)'                                                              │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 52      │ '6.2'  │ 'mudar status para aceito (medico)'                                                         │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 53      │ '6.2'  │ 'mudar status para aceito (secretaria)'                                                     │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 54      │ '6.3'  │ 'status invalido (medico)'                                                                  │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 55      │ '6.4'  │ 'total como string (medico)'                                                                │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 56      │ '6.5'  │ 'PURGA de orcamento (medico)'                                                               │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 57      │ '6.6'  │ 'PURGA de orcamento (secretaria) — restricao proposta'                                      │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 58      │ '6.7'  │ 'soft-delete de orcamento (secretaria)'                                                     │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 59      │ '7.1'  │ 'criar evento de log com o proprio email (medico)'                                          │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 60      │ '7.1'  │ 'criar evento de log com o proprio email (secretaria)'                                      │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 61      │ '7.2'  │ 'secretaria cria log assinado como o medico'                                                │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 62      │ '7.3'  │ 'medico cria log assinado como a secretaria'                                                │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 63      │ '7.4'  │ 'sobrescrever evento de log existente (medico)'                                             │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 64      │ '7.4'  │ 'sobrescrever evento de log existente (secretaria)'                                         │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 65      │ '7.5'  │ 'apagar evento de log existente (medico)'                                                   │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 66      │ '7.5'  │ 'apagar evento de log existente (secretaria)'                                               │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 67      │ '7.6'  │ 'log com id != $logId (medico)'                                                             │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 68      │ '7.7'  │ 'log sem campos minimos (medico)'                                                           │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 69      │ '7.8'  │ 'set(null) na COLECAO log (medico)'                                                         │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 70      │ '8.1'  │ 'config/meta (medico)'                                                                      │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 71      │ '8.2'  │ 'config/meta (secretaria)'                                                                  │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 72      │ '8.3'  │ 'procedures/<key>/active (medico)'                                                          │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 73      │ '8.4'  │ 'procedures/<key>/active (secretaria)'                                                      │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 74      │ '8.5'  │ 'hospitalPrices (secretaria)'                                                               │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 75      │ '8.6'  │ 'patients/$id (secretaria)'                                                                 │ 'simonefrancape'      │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 76      │ '8.7'  │ 'set(null) na COLECAO patients (secretaria)'                                                │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+└─────────┴────────┴─────────────────────────────────────────────────────────────────────────────────────────────┴───────────────────────┴──────────┴─────────┴──────┘
+total de casos: 77 | divergencias: 0
+
+
+=== MATRIZ C — REGRESSAO DE RESTAURACAO DE BACKUP ===
+┌─────────┬───────┬───────────────────────────────────────────────────────────────────────────────────────────────┬───────────────────────┬──────────┬─────────┬──────┐
+│ (index) │ id    │ desc                                                                                          │ auth                  │ esperado │ obtido  │ ok   │
+├─────────┼───────┼───────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┼──────────┼─────────┼──────┤
+│ 0       │ 'R1'  │ 'RESTAURACAO backup v1 (so lancamentos, registros incompletos) — medico'                      │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 1       │ 'R2'  │ 'RESTAURACAO backup v1 — secretaria (guarda de papel agora tambem no servidor)'               │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 2       │ 'R3'  │ 'RESTAURACAO backup v2 (11 nos) — medico'                                                     │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 3       │ 'R4'  │ 'RESTAURACAO backup v2 — secretaria'                                                          │ 'simonefrancape'      │ 'DENY'   │ 'DENY'  │ true │
+│ 4       │ 'R5'  │ 'v2 com quote_payment criado pela OUTRA pessoa (autoria nao e exigida em quote_payments)'     │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 5       │ 'R6'  │ 'v2 onde o orcamento do pagamento vem no MESMO payload (integridade referencial via newData)' │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 6       │ 'R7'  │ 'v2 com quote_payment ORFAO (orcamento ausente do payload e do banco)'                        │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 7       │ 'R8'  │ 'v2 com lancamento de valor STRING (tipo legado divergente)'                                  │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 8       │ 'R9'  │ 'v2 com recorrente sem categoria (hasChildren)'                                               │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 9       │ 'R10' │ 'v2 com orcamento de status fora do enum'                                                     │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+│ 10      │ 'R11' │ 'v1 parcial (update NAO apaga nos ausentes) — medico'                                         │ 'drfelipehissacoelho' │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 11      │ 'R12' │ 'restauracao tentando incluir log (fora do contrato do cliente)'                              │ 'drfelipehissacoelho' │ 'DENY'   │ 'DENY'  │ true │
+└─────────┴───────┴───────────────────────────────────────────────────────────────────────────────────────────────┴───────────────────────┴──────────┴─────────┴──────┘
+total: 12 | divergencias vs. esperado: 0
+
+=== RESTAURACAO DO BACKUP REAL (2026-08-20) ===
+backup v2 | lancamentos:190 orcamentos:52 quote_payments:0 patients:51 hospitalPrices:4 procedureConfig:32 procedures:15 procedureTeamCosts:16 procedureCommissionRules:3 config:3 recorrentes:0
+
+┌─────────┬──────────────────────────────┬──────────────┬──────────┬─────────┬──────┐
+│ (index) │ cenario                      │ papel        │ esperado │ obtido  │ ok   │
+├─────────┼──────────────────────────────┼──────────────┼──────────┼─────────┼──────┤
+│ 0       │ 'banco vazio'                │ 'medico'     │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 1       │ 'banco vazio'                │ 'secretaria' │ 'DENY'   │ 'DENY'  │ true │
+│ 2       │ 'banco com o conteudo atual' │ 'medico'     │ 'ALLOW'  │ 'ALLOW' │ true │
+│ 3       │ 'banco com o conteudo atual' │ 'secretaria' │ 'DENY'   │ 'DENY'  │ true │
+└─────────┴──────────────────────────────┴──────────────┴──────────┴─────────┴──────┘
+divergencias: 0
+
+=== CHECADOR DE PREDICADOS ===
+backup versao: 2
+contagens → lancamentos: 190 | orcamentos: 52 | quote_payments: 0 | recorrentes: 0 | patients: 51
+
+✅ APROVADO — todos os registros passam nos .validate da regra proposta.
+   A restauracao deste backup NAO seria bloqueada pelas novas regras.

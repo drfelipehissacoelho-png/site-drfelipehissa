@@ -1,0 +1,107 @@
+{
+  "rules": {
+    "consultorio": {
+      ".read": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com')",
+
+      "lancamentos": {
+        ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'",
+        "$lancId": {
+          ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com') && newData.exists()",
+          "valor": { ".validate": "newData.isNumber()" },
+          "tipo": { ".validate": "newData.isString() && (newData.val() == 'receita' || newData.val() == 'despesa')" },
+          "data": { ".validate": "newData.isString()" },
+          "criadoEm": { ".validate": "newData.isString()" },
+          "deletedAt": { ".validate": "newData.isString()" },
+          "deletedBy": { ".validate": "newData.isString()" },
+          "linked_pay_id": { ".validate": "newData.isString()" },
+          "linked_orc_id": { ".validate": "newData.isString()" }
+        }
+      },
+
+      "orcamentos": {
+        ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'",
+        "$orcId": {
+          ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com') && newData.exists()",
+          "total": { ".validate": "newData.isNumber()" },
+          "subtotal": { ".validate": "newData.isNumber()" },
+          "desconto": { ".validate": "newData.isNumber()" },
+          "hospTotal": { ".validate": "newData.isNumber()" },
+          "status": { ".validate": "newData.isString() && (newData.val() == 'aberto' || newData.val() == 'aceito' || newData.val() == 'recusado' || newData.val() == 'expirado')" },
+          "receitaGeradaId": { ".validate": "newData.isString()" },
+          "data": { ".validate": "newData.isString()" },
+          "deletedAt": { ".validate": "newData.isString()" },
+          "deletedBy": { ".validate": "newData.isString()" }
+        }
+      },
+
+      "quote_payments": {
+        ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'",
+        "$payId": {
+          ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com') && newData.exists()",
+          ".validate": "newData.hasChildren(['id', 'quote_id', 'amount', 'payment_date', 'payment_method', 'status'])",
+          "id": { ".validate": "newData.isString() && newData.val() == $payId" },
+          "quote_id": { ".validate": "newData.isString() && (newData.parent().parent().parent().child('orcamentos').child(newData.val()).exists() || root.child('consultorio').child('orcamentos').child(newData.val()).exists())" },
+          "amount": { ".validate": "newData.isNumber() && newData.val() > 0" },
+          "payment_date": { ".validate": "newData.isString()" },
+          "payment_method": { ".validate": "newData.isString()" },
+          "installments": { ".validate": "newData.isNumber() && newData.val() >= 1" },
+          "status": { ".validate": "newData.isString() && (newData.val() == 'confirmado' || newData.val() == 'estornado')" },
+          "created_at": { ".validate": "newData.isString()" },
+          "updated_at": { ".validate": "newData.isString()" },
+          "deletedAt": { ".validate": "newData.isString()" },
+          "deletedBy": { ".validate": "newData.isString()" }
+        }
+      },
+
+      "recorrentes": {
+        ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'",
+        "$recId": {
+          ".validate": "newData.hasChildren(['descricao', 'valor', 'categoria', 'frequencia'])",
+          "descricao": { ".validate": "newData.isString() && newData.val().length > 0" },
+          "valor": { ".validate": "newData.isNumber() && newData.val() > 0" },
+          "categoria": { ".validate": "newData.isString()" },
+          "frequencia": { ".validate": "newData.isString() && (newData.val() == 'mensal' || newData.val() == 'quinzenal' || newData.val() == 'anual')" },
+          "diaVencimento": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 28" },
+          "mes": { ".validate": "newData.isString()" },
+          "ativo": { ".validate": "newData.isBoolean()" },
+          "criadoEm": { ".validate": "newData.isString()" },
+          "criadoPor": { ".validate": "newData.isString()" },
+          "ultimoPeriodoGerado": {
+            ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com') && data.parent().exists()",
+            ".validate": "newData.isString()"
+          }
+        }
+      },
+
+      "patients": {
+        ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'",
+        "$patId": {
+          ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com') && newData.exists()",
+          "nome": { ".validate": "newData.isString() && newData.val().length > 0" },
+          "criadoEm": { ".validate": "newData.isString()" },
+          "consentimentoLGPD": { ".validate": "newData.isString()" }
+        }
+      },
+
+      "hospitalPrices": { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "procedureConfig": { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "procedures": { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "procedureTeamCosts": { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "procedureCommissionRules": { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+      "config": { ".write": "auth != null && auth.token.email == 'drfelipehissacoelho@gmail.com'" },
+
+      "log": {
+        "$logId": {
+          ".write": "auth != null && (auth.token.email == 'drfelipehissacoelho@gmail.com' || auth.token.email == 'simonefrancape@gmail.com') && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['id', 'data', 'usuario', 'email', 'acao'])",
+          "id": { ".validate": "newData.isString() && newData.val() == $logId" },
+          "email": { ".validate": "newData.isString() && newData.val() == auth.token.email" },
+          "usuario": { ".validate": "newData.isString() && newData.val().length > 0" },
+          "acao": { ".validate": "newData.isString() && newData.val().length > 0" },
+          "data": { ".validate": "newData.isString()" },
+          "detalhe": { ".validate": "newData.isString()" }
+        }
+      }
+    }
+  }
+}
