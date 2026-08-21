@@ -54,3 +54,16 @@ Isso elimina concorrência humana entre dois registradores de pagamento, mas nã
 Executar o roteiro em [FIREBASE_RTD_RULES_VERIFICATION.md](FIREBASE_RTD_RULES_VERIFICATION.md) sem escrita real. Até que os resultados allow/deny coincidam com a baseline, não se deve propor nem implantar regras por papel.
 
 Se confirmado, a próxima proposta deverá incluir escopo por `$id`, escrita mínima da secretária para o pagamento atômico, validação de autoria de log e um plano separado de reconciliação histórica. Este documento não é uma regra implantável nem autorização para deploy.
+
+---
+
+## ATUALIZAÇÃO 2026-08-20 — Baseline substituída (deploy executado)
+
+**A baseline documentada neste arquivo deixou de ser a regra vigente em 2026-08-20.**
+
+- Questão B (procedência) fechada: a baseline ERA a regra publicada — provado por leitura direta do texto no Console + 12/12 simulações (ver `docs/reviews/REVIEW_2026-08-20_regras-propostas.md` §2).
+- Estado antes do deploy: pagamento de orçamento, geração de recorrentes e restauração de backup **negados em bloco** (quote_payments e recorrentes sem `.write`).
+- Deploy executado pelo titular em 2026-08-20 ~21h, seguindo o plano da §9 do relatório: publicação de `firebase.database.rules.proposed.json` no Console, smoke test com dados de teste **aprovado** (pagamento de orçamento salva e baixa saldo — operação antes quebrada).
+- Artefato de rollback: `firebase.database.rules.published-2026-08-20.json` (estado anterior, sem dados).
+- Verificação pós-deploy: pendente registrar aqui o resultado das 24h de observação.
+- Seguem pendentes e documentados na §8 do relatório: segregação de leitura por papel (exige refatoração do cliente), migração para `auth.uid`, reconciliação dos 6 lançamentos órfãos e dos 50 orçamentos sem quote_payment (rodada própria).

@@ -325,3 +325,48 @@ Este arquivo registra mudanças efetivamente realizadas por IA neste repositóri
 ### Deliberadamente pendente
 
 - Redação de nome em registros antigos do log (exige mudança de regra — entrou no escopo do endurecimento); campos livres com nome digitado; vínculo por nome (resolve com patient_id).
+
+### Corrigido
+
+- `_procDisplay()`: entradas "(cópia)" ficavam em CAPS porque o sufixo em minúsculas reprovava o teste "100% maiúsculo". O sufixo agora é avaliado à parte — "ABDOMINOPLASTIA ... (cópia)" exibe como "Abdominoplastia ... (cópia)".
+
+## 2026-08-20 (noite) — Deploy das regras + cadastro de pacientes + guarda de purga
+
+### Implantado (pelo titular)
+
+- Regras RTDB propostas publicadas no Console (~21h). Smoke test aprovado: pagamento de orçamento voltou a funcionar em produção. `FIREBASE_RTD_RULES_GAP.md` atualizado — baseline substituída, rollback documentado.
+
+### Alterado
+
+- Cadastro de pacientes: campo RG removido da UI (novo e editar); **data de nascimento** adicionada (`nascimento`); RG de registros antigos preservado no schema; anonimização LGPD zera `nascimento`.
+- `purgarLancamento`/`purgarOrcamento`: guarda de titular no cliente (RR5) — secretária recebe toast orientativo em vez de erro do servidor.
+- `_procDisplay`: sufixo "(cópia)" avaliado à parte (cópias não ficam mais em CAPS).
+
+### Validado
+
+- `node --check` OK; `git diff --check` limpo; RG com zero ocorrências na UI. Sem teste em navegador.
+
+### Deliberadamente pendente
+
+- 24h de observação pós-deploy; reconciliação histórica (6 órfãos + 50 orçamentos); atomicidade de `salvarLancamento`; `patient_id`; guarda em `_processarRecorrentes`.
+
+## 2026-08-20 (noite, 2a leva) — Redesign compacto da aba Lançamentos
+
+### Alterado
+
+- `analista_financeiro.html`, aba Lançamentos:
+  - Formulário "Novo Lançamento" agora é **colapsável** (botão "⟨ Recolher" no form; "＋ Novo Lançamento" no header da lista). Estado persiste em `localStorage` (`lancFormCollapsed`). Colapsado, a lista ocupa a largura toda — fim do split-screen permanente que desconcentrava na hora de lançar.
+  - Tabela com classe `lanc-tbl`: células mais baixas (padding 6px), números tabulares, linha única por lançamento — paciente + badge de grupo + tag de procedimento na mesma linha com ellipsis (sem nomes quebrando em 3 linhas); coluna usuário truncada em 88px com tooltip; valor e forma de pagamento em spans compactos (`.val`/`.val-sub`).
+  - Tag de procedimento passa por `_procDisplay` (normaliza CAPS, ex.: "BOTOX" → "Botox").
+  - Pills de categoria (`#catPillsBar`): trilha horizontal com scroll (`flex-wrap:nowrap; overflow-x:auto`) em vez de quebrar em várias linhas.
+- Edição de lançamento continua no modal (`editModal`) — não depende do form lateral, então funciona com o form recolhido.
+
+### Validado
+
+- Sintaxe do script inline extraído: `node --check` aprovado (1 script).
+- `git diff --check`: limpo. Apenas `analista_financeiro.html` modificado (+53/-12).
+- Sem teste em navegador — validação visual pendente do titular.
+
+### Deliberadamente pendente
+
+- Pendências anteriores mantidas (reconciliação histórica, atomicidade, `patient_id`, Convênio/Parcelado no payModal, guarda em `_processarRecorrentes`).
