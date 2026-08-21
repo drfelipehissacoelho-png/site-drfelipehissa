@@ -227,6 +227,25 @@ th{
 td{padding:9px 11px;border-bottom:1px solid var(--brd);color:var(--text2);}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:#f5f8fb;}
+
+/* ==== Lançamentos: redesign compacto (2026-08-20) ==== */
+/* Form colapsável: por padrão a lista respira; o form abre sob demanda */
+#page-lancamentos .g2{grid-template-columns:minmax(360px,420px) 1fr;align-items:start;}
+#page-lancamentos .g2.form-collapsed{grid-template-columns:1fr;}
+#page-lancamentos .g2.form-collapsed #lancFormSec{display:none;}
+#btnShowLancForm{display:none;}
+#page-lancamentos .g2.form-collapsed #btnShowLancForm{display:inline-block;}
+/* Tabela compacta: 1 linha por lançamento, números tabulares */
+.lanc-tbl td{padding:6px 10px;vertical-align:middle;}
+.lanc-tbl .c-pac{max-width:230px;}
+.lanc-tbl .c-pac .nm{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
+.lanc-tbl .c-user{max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lanc-tbl .val{font-weight:800;font-size:.86rem;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.lanc-tbl .val-sub{font-size:.66rem;color:var(--muted);white-space:nowrap;}
+.lanc-tbl .ptag{margin-top:0;margin-left:6px;}
+/* Pills de categoria: trilha horizontal com scroll, sem quebrar em 3 linhas */
+#catPillsBar{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:thin;}
+#catPillsBar button{flex-shrink:0;}
 .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.68rem;font-weight:700;letter-spacing:.2px;}
 .br{background:var(--ok-light);color:var(--ok);}
 .be{background:var(--err-light);color:var(--err);}
@@ -558,8 +577,11 @@ tr:hover td{background:#f5f8fb;}
 <!-- LANÇAMENTOS -->
 <div id="page-lancamentos" class="page">
   <div class="g2">
-    <div class="sec">
-      <h3>➕ Novo Lançamento</h3>
+    <div class="sec" id="lancFormSec">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin-bottom:13px">➕ Novo Lançamento</h3>
+        <button type="button" class="btn btn-neu btn-sm" style="margin-bottom:13px" onclick="_toggleLancForm()" title="Recolher formulário">⟨ Recolher</button>
+      </div>
       <div class="tt">
         <button class="tb ar" id="btnRec" onclick="setTipo('receita')">💰 Receita</button>
         <button class="tb" id="btnExp" onclick="setTipo('despesa')">💸 Despesa</button>
@@ -684,7 +706,10 @@ tr:hover td{background:#f5f8fb;}
       <button class="btn btn-ok" style="width:100%;font-size:.91rem;padding:12px;letter-spacing:.3px;border-radius:9px;box-shadow:0 4px 14px rgba(39,174,96,.25)" onclick="salvarLancamento()">✅ Registrar Lançamento</button>
     </div>
     <div class="sec">
-      <h3>📋 Lançamentos do Período</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>📋 Lançamentos do Período</h3>
+        <button type="button" class="btn btn-ok" id="btnShowLancForm" style="font-size:.8rem;padding:6px 14px" onclick="_toggleLancForm()">＋ Novo Lançamento</button>
+      </div>
       <div id="lancRangeBar" class="range-bar" style="display:none">
         <label>📅 De:</label>
         <input type="date" id="lancRangeDE" onchange="_onRangeLancChange()">
@@ -703,7 +728,7 @@ tr:hover td{background:#f5f8fb;}
         <button class="btn btn-neu" id="btnToggleRangeLanc" style="font-size:.76rem;padding:4px 11px;white-space:nowrap" onclick="_toggleRangeLanc()" title="Filtrar por intervalo de datas">📅 Range</button>
       </div>
       <div class="tw">
-        <table>
+        <table class="lanc-tbl">
           <thead id="tLancHead"></thead>
           <tbody id="tLanc"></tbody>
         </table>
@@ -3033,7 +3058,21 @@ function _renderLancHead(){
 }
 
 function _pagIcon(p){return PAG_ICONS[p]||'💱';}
+// ---- Form de lançamento colapsável (redesign 2026-08-20) ----
+// Estado persiste em localStorage: quem trabalha só consultando a lista
+// não precisa desviar o olho do formulário a cada render.
+function _toggleLancForm(){
+  const g=document.querySelector('#page-lancamentos .g2');if(!g)return;
+  const c=g.classList.toggle('form-collapsed');
+  try{localStorage.setItem('lancFormCollapsed',c?'1':'0');}catch(e){}
+}
+function _applyLancFormState(){
+  const g=document.querySelector('#page-lancamentos .g2');if(!g)return;
+  let c='0';try{c=localStorage.getItem('lancFormCollapsed')||'0';}catch(e){}
+  g.classList.toggle('form-collapsed',c==='1');
+}
 function renderLancs(){
+  _applyLancFormState();
   const s=(document.getElementById('searchL')?.value||'').toLowerCase();
   const ft=document.getElementById('ftTipo')?.value||'',fu=document.getElementById('ftUser')?.value||'';
   // Usa getLP() que já lida com range vs mês — evita duplicar lógica
@@ -3061,25 +3100,27 @@ function renderLancs(){
     //     ou "Botox + 4 bio" sejam confundidas com nome de paciente real.
     let desc;
     if(x.tipo==='receita' && x.paciente){
-      desc = `<div>${esc(x.paciente)}${grpBadge}</div><span class="ptag">${esc(x.procedimento||x.categoria)}</span>`;
+      // Linha única: NOME + badge de grupo + tag do procedimento, com ellipsis
+      // (_procDisplay normaliza CAPS: "BOTOX" -> "Botox")
+      desc = `<span class="nm" title="${esc(x.paciente)} — ${esc(x.procedimento||x.categoria||'')}">${esc(x.paciente)}${grpBadge}<span class="ptag">${esc(_procDisplay(x.procedimento||x.categoria))}</span></span>`;
     } else if(x.descricao){
       const txt = x.descricao.length>30 ? x.descricao.slice(0,30)+'…' : x.descricao;
-      desc = `<span style="font-style:italic;color:var(--muted);font-size:.85em" title="${esc(x.descricao)}">${esc(txt)}</span>${grpBadge}`;
+      desc = `<span class="nm" style="font-weight:400;font-style:italic;color:var(--muted);font-size:.85em" title="${esc(x.descricao)}">${esc(txt)}${grpBadge}</span>`;
     } else {
       desc = '<span style="color:var(--muted);font-style:italic;font-size:.85em">— sem descrição —</span>';
     }
     // Cor verde/vermelho do valor + sinal +/- ja diferenciam tipo intuitivamente
     const userCell = showUser
-      ? `<td><span style="font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${esc(x.usuario||'—')}</span></td>`
+      ? `<td class="c-user"><span title="${esc(x.usuario||'—')}" style="display:block;max-width:88px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${esc(x.usuario||'—')}</span></td>`
       : '';
     return`<tr${x.auto_generated?' style="background:#fefdf5"':''}>`
-      +`<td>${fD(x.data)}</td>`
-      +`<td>${desc}</td>`
+      +`<td style="white-space:nowrap">${fD(x.data)}</td>`
+      +`<td class="c-pac">${desc}</td>`
       +`<td>${_catChip(x.categoria)}</td>`
       +userCell
-      +`<td style="text-align:right">
-         <div style="font-weight:800;font-size:.88rem;color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">${x.tipo==='receita'?'+':'-'} R$ ${fN(x.valor)}</div>
-         <div style="font-size:.68rem;color:var(--muted);margin-top:1px">${_pagIcon(x.pagamento)} ${esc(x.pagamento||'')}${x.parcelas&&x.parcelas>1?' · '+x.parcelas+'x':''}</div>
+      +`<td style="text-align:right;white-space:nowrap">
+         <span class="val" style="color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">${x.tipo==='receita'?'+':'-'} R$ ${fN(x.valor)}</span><br>
+         <span class="val-sub">${_pagIcon(x.pagamento)} ${esc(x.pagamento||'')}${x.parcelas&&x.parcelas>1?' · '+x.parcelas+'x':''}</span>
        </td>`
       +`<td style="white-space:nowrap;text-align:right">
          <button class="btn btn-sm" style="background:var(--pl-light);color:var(--primary);border:1px solid #c0d8ef;margin-right:4px;border-radius:6px" title="Editar" onclick="editarLancamento(${jsArg(x.id)})">✏️</button>

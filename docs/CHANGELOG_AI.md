@@ -349,3 +349,24 @@ Este arquivo registra mudanças efetivamente realizadas por IA neste repositóri
 ### Deliberadamente pendente
 
 - 24h de observação pós-deploy; reconciliação histórica (6 órfãos + 50 orçamentos); atomicidade de `salvarLancamento`; `patient_id`; guarda em `_processarRecorrentes`.
+
+## 2026-08-20 (noite, 2a leva) — Redesign compacto da aba Lançamentos
+
+### Alterado
+
+- `analista_financeiro.html`, aba Lançamentos:
+  - Formulário "Novo Lançamento" agora é **colapsável** (botão "⟨ Recolher" no form; "＋ Novo Lançamento" no header da lista). Estado persiste em `localStorage` (`lancFormCollapsed`). Colapsado, a lista ocupa a largura toda — fim do split-screen permanente que desconcentrava na hora de lançar.
+  - Tabela com classe `lanc-tbl`: células mais baixas (padding 6px), números tabulares, linha única por lançamento — paciente + badge de grupo + tag de procedimento na mesma linha com ellipsis (sem nomes quebrando em 3 linhas); coluna usuário truncada em 88px com tooltip; valor e forma de pagamento em spans compactos (`.val`/`.val-sub`).
+  - Tag de procedimento passa por `_procDisplay` (normaliza CAPS, ex.: "BOTOX" → "Botox").
+  - Pills de categoria (`#catPillsBar`): trilha horizontal com scroll (`flex-wrap:nowrap; overflow-x:auto`) em vez de quebrar em várias linhas.
+- Edição de lançamento continua no modal (`editModal`) — não depende do form lateral, então funciona com o form recolhido.
+
+### Validado
+
+- Sintaxe do script inline extraído: `node --check` aprovado (1 script).
+- `git diff --check`: limpo. Apenas `analista_financeiro.html` modificado (+53/-12).
+- Sem teste em navegador — validação visual pendente do titular.
+
+### Deliberadamente pendente
+
+- Pendências anteriores mantidas (reconciliação histórica, atomicidade, `patient_id`, Convênio/Parcelado no payModal, guarda em `_processarRecorrentes`).
