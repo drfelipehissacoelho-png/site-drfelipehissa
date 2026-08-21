@@ -4182,14 +4182,19 @@ function getAllProcs(includeArchived=false){
 // Display-only: nomes gravados em CAIXA ALTA aparecem em formato título
 // ("ABDOMINOPLASTIA COM MASTOPEXIA" → "Abdominoplastia com Mastopexia").
 // NÃO altera chaves nem valores — vínculos por nome continuam intactos.
+// O sufixo "(cópia)" (caixa mista) é avaliado à parte para não reprovar o teste.
 function _procDisplay(nome){
   const s=String(nome||'');
-  if(!s||s!==s.toUpperCase()||!/[A-ZÀ-Ú]/.test(s))return s;
+  if(!s)return s;
+  const m=s.match(/^(.*?)(\s*\(cópia\))$/i);
+  const base=m?m[1]:s;
+  const suf=m?m[2]:'';
+  if(base!==base.toUpperCase()||!/[A-ZÀ-Ú]/.test(base))return s;
   const minusculas=new Set(['com','de','do','da','dos','das','e','sem','para','a','o']);
-  return s.toLowerCase().split(' ').map((w,i)=>{
+  return base.toLowerCase().split(' ').map((w,i)=>{
     if(i>0&&minusculas.has(w))return w;
     return w.charAt(0).toUpperCase()+w.slice(1);
-  }).join(' ');
+  }).join(' ')+suf;
 }
 
 // Reconstrói o <select> de procedimentos no form de lançamentos com a lista atual

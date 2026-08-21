@@ -325,3 +325,7 @@ Este arquivo registra mudanças efetivamente realizadas por IA neste repositóri
 ### Deliberadamente pendente
 
 - Redação de nome em registros antigos do log (exige mudança de regra — entrou no escopo do endurecimento); campos livres com nome digitado; vínculo por nome (resolve com patient_id).
+
+### Corrigido
+
+- `_procDisplay()`: entradas "(cópia)" ficavam em CAPS porque o sufixo em minúsculas reprovava o teste "100% maiúsculo". O sufixo agora é avaliado à parte — "ABDOMINOPLASTIA ... (cópia)" exibe como "Abdominoplastia ... (cópia)".
