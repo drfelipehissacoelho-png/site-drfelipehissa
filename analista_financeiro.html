@@ -229,19 +229,21 @@ tr:last-child td{border-bottom:none;}
 tr:hover td{background:#f5f8fb;}
 
 /* ==== Lançamentos: redesign compacto (2026-08-20) ==== */
-/* Form colapsável: por padrão a lista respira; o form abre sob demanda */
-#page-lancamentos .g2{grid-template-columns:minmax(360px,420px) 1fr;align-items:start;}
-#page-lancamentos .g2.form-collapsed{grid-template-columns:1fr;}
+/* Layout vertical: LANÇAR é a função primária (form no topo);
+   a lista fica abaixo, em largura total. Form pode ser recolhido. */
+#page-lancamentos .g2{grid-template-columns:1fr;}
 #page-lancamentos .g2.form-collapsed #lancFormSec{display:none;}
 #btnShowLancForm{display:none;}
 #page-lancamentos .g2.form-collapsed #btnShowLancForm{display:inline-block;}
-/* Tabela compacta: 1 linha por lançamento, números tabulares */
+/* Form: campos básicos lado a lado para reduzir altura */
+#lancFormSec{max-width:860px;}
+#lancFormSec .fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* Tabela compacta: 1 linha por lançamento, números tabulares, fonte quieta */
 .lanc-tbl td{padding:6px 10px;vertical-align:middle;}
-.lanc-tbl .c-pac{max-width:230px;}
+.lanc-tbl .c-pac{max-width:280px;}
 .lanc-tbl .c-pac .nm{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
-.lanc-tbl .c-user{max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.lanc-tbl .val{font-weight:800;font-size:.86rem;font-variant-numeric:tabular-nums;white-space:nowrap;}
-.lanc-tbl .val-sub{font-size:.66rem;color:var(--muted);white-space:nowrap;}
+.lanc-tbl .val{font-weight:700;font-size:.88rem;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.lanc-tbl .val-sub{font-size:.66rem;color:var(--muted);white-space:nowrap;font-weight:400;}
 .lanc-tbl .ptag{margin-top:0;margin-left:6px;}
 /* Pills de categoria: trilha horizontal com scroll, sem quebrar em 3 linhas */
 #catPillsBar{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:thin;}
@@ -586,10 +588,12 @@ tr:hover td{background:#f5f8fb;}
         <button class="tb ar" id="btnRec" onclick="setTipo('receita')">💰 Receita</button>
         <button class="tb" id="btnExp" onclick="setTipo('despesa')">💸 Despesa</button>
       </div>
-      <div class="fg">
-        <label>Data</label><input type="date" id="fData">
+      <div class="fg-row">
+        <div class="fg">
+          <label>Data</label><input type="date" id="fData">
+        </div>
+        <div class="fg"><label>Categoria</label><select id="fCategoria"></select></div>
       </div>
-      <div class="fg"><label>Categoria</label><select id="fCategoria"></select></div>
       <div id="camposPac">
         <!-- Paciente autocomplete -->
         <div class="fg" style="margin-bottom:9px">
@@ -3033,12 +3037,10 @@ function _sortLancs(items){
   });
 }
 
-// Retorna as colunas que devem aparecer AGORA. Se so existe 1 usuario
-// nos dados, omite a coluna Usuario (todas as linhas mostrariam o mesmo
-// nome — virou ruido). Reaparece automaticamente quando 2o usuario lancar.
+// Coluna Usuário removida da tabela (2026-08-20): com só 2 usuários virava
+// ruído visual. Quem lançou aparece no tooltip da linha (hover) — ver renderLancs.
 function _activeLancCols(){
-  const showUser = getUsuarios().length > 1;
-  return LANC_COLS.filter(c => c.key !== 'usuario' || showUser);
+  return LANC_COLS.filter(c => c.key !== 'usuario');
 }
 
 function _renderLancHead(){
@@ -3088,11 +3090,12 @@ function renderLancs(){
   const tb=document.getElementById('tLanc'),em=document.getElementById('emptyL');if(!tb)return;
   if(!l.length){tb.innerHTML='';if(em)em.style.display='block';return;}
   if(em)em.style.display='none';
-  const ucm={};getUsuarios().forEach((u,i)=>{ucm[u]=UCORS[i%UCORS.length];});
-  // Sincroniza visibilidade da coluna Usuario entre header e body
-  const showUser = getUsuarios().length > 1;
   tb.innerHTML=l.map(x=>{
     const grpBadge=x.linked_group_id?`<span class="linked-badge" title="Grupo: ${esc(x.linked_group_id)}">${x.commission?'💼 comissão':x.auto_generated?'🤖 auto':'🔗 grupo'}</span>`:'';
+    // Tag de procedimento ao lado do nome SÓ quando difere da categoria
+    // (evita redundância "Consulta ... Consulta").
+    const proc=x.procedimento?_procDisplay(x.procedimento):'';
+    const showProc=proc && proc.toLowerCase()!==String(x.categoria||'').toLowerCase();
     // Coluna Paciente/Desc:
     //   - Receita com paciente -> NOME (bold) + tag azul do procedimento  (formato "pessoa")
     //   - Resto (despesa, ou receita sem paciente) -> descricao em italico+cinza
@@ -3100,26 +3103,22 @@ function renderLancs(){
     //     ou "Botox + 4 bio" sejam confundidas com nome de paciente real.
     let desc;
     if(x.tipo==='receita' && x.paciente){
-      // Linha única: NOME + badge de grupo + tag do procedimento, com ellipsis
-      // (_procDisplay normaliza CAPS: "BOTOX" -> "Botox")
-      desc = `<span class="nm" title="${esc(x.paciente)} — ${esc(x.procedimento||x.categoria||'')}">${esc(x.paciente)}${grpBadge}<span class="ptag">${esc(_procDisplay(x.procedimento||x.categoria))}</span></span>`;
+      // Linha única: NOME + badge de grupo + tag do procedimento (se não redundante), com ellipsis
+      desc = `<span class="nm" title="${esc(x.paciente)}${showProc?' — '+esc(proc):''}">${esc(x.paciente)}${grpBadge}${showProc?`<span class="ptag">${esc(proc)}</span>`:''}</span>`;
     } else if(x.descricao){
       const txt = x.descricao.length>30 ? x.descricao.slice(0,30)+'…' : x.descricao;
       desc = `<span class="nm" style="font-weight:400;font-style:italic;color:var(--muted);font-size:.85em" title="${esc(x.descricao)}">${esc(txt)}${grpBadge}</span>`;
     } else {
       desc = '<span style="color:var(--muted);font-style:italic;font-size:.85em">— sem descrição —</span>';
     }
-    // Cor verde/vermelho do valor + sinal +/- ja diferenciam tipo intuitivamente
-    const userCell = showUser
-      ? `<td class="c-user"><span title="${esc(x.usuario||'—')}" style="display:block;max-width:88px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.74rem;font-weight:700;color:${ucm[x.usuario]||'#95a5a6'}">${esc(x.usuario||'—')}</span></td>`
-      : '';
-    return`<tr${x.auto_generated?' style="background:#fefdf5"':''}>`
+    // Autor do lançamento: só no tooltip da linha (hover), sem coluna própria.
+    // Cor verde/vermelho do valor ja diferencia tipo — sem sinais +/-
+    return`<tr${x.auto_generated?' style="background:#fefdf5"':''} title="Lançado por ${esc(x.usuario||'—')}">`
       +`<td style="white-space:nowrap">${fD(x.data)}</td>`
       +`<td class="c-pac">${desc}</td>`
       +`<td>${_catChip(x.categoria)}</td>`
-      +userCell
       +`<td style="text-align:right;white-space:nowrap">
-         <span class="val" style="color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">${x.tipo==='receita'?'+':'-'} R$ ${fN(x.valor)}</span><br>
+         <span class="val" style="color:${x.tipo==='receita'?'var(--ok)':'var(--err)'}">R$ ${fN(x.valor)}</span><br>
          <span class="val-sub">${_pagIcon(x.pagamento)} ${esc(x.pagamento||'')}${x.parcelas&&x.parcelas>1?' · '+x.parcelas+'x':''}</span>
        </td>`
       +`<td style="white-space:nowrap;text-align:right">
@@ -5417,7 +5416,16 @@ function excluirOrcamento(id){
   const orc=DATA.orcamentos&&DATA.orcamentos[id];if(!orc)return;
   const temPagamentos=temPagamentosVinculadosAoOrcamento(id);
   if(temPagamentos){
-    showToast('Este orcamento possui pagamentos. Exclua ou estorne os pagamentos antes de move-lo para a lixeira.','#e74c3c',5000);
+    // Diálogo orientativo (no lugar do toast): explica O QUE fazer e ONDE.
+    const pagamentos=getQuotePayments(id);
+    const totPag=pagamentos.reduce((s,p)=>s+(p.amount||0),0);
+    showConfirm(
+      'Orçamento com pagamentos',
+      `Este orçamento de ${orc.paciente} tem ${pagamentos.length} pagamento(s) registrado(s) (total R$ ${fN(totPag)}).\n\n`+
+      `Para movê-lo para a lixeira, exclua antes cada pagamento no histórico do próprio cartão — botão ✕ ao lado de cada pagamento, aqui na aba Orçamentos.\n\n`+
+      `Essa ordem garante que o caixa e o DRE continuem batendo.`,
+      null,null,'Entendi'
+    );
     return;
   }
   showConfirm(
@@ -5707,9 +5715,9 @@ function renderOrcamentos(){
 
   // Config visual de status FINANCEIRO (pendente/parcial/quitado)
   const SF={
-    pendente:{label:'PENDENTE', bg:'#fef3cd',fg:'#856404',em:'⏳'},
-    parcial: {label:'PARCIAL',  bg:'#fff3e0',fg:'#e65100',em:'⚡'},
-    quitado: {label:'QUITADO',  bg:'#d4edda',fg:'#155724',em:'✅'},
+    pendente:{label:'Pendente', bg:'#fef3cd',fg:'#856404',em:'⏳'},
+    parcial: {label:'Parcial',  bg:'#fff3e0',fg:'#e65100',em:'⚡'},
+    quitado: {label:'Quitado',  bg:'#d4edda',fg:'#155724',em:'✅'},
   };
 
   // Contagem por status
@@ -5761,7 +5769,9 @@ function renderOrcamentos(){
       const expired=stRaw==='aberto'&&o.validade&&o.validade<today;
       const st=expired?'expirado':stRaw;
       const cfg=ST[st]||ST.aberto;
-      const primeiroProc=esc((o.servicos||[])[0]?.proc||'—');
+      const servicos=o.servicos||[];
+      const primeiroProc=esc(_procDisplay(servicos[0]?.proc||'—'));
+      const extraProcs=servicos.length>1?` <span style="color:var(--muted);font-size:.64rem;font-weight:400">+${servicos.length-1}</span>`:'';
 
       // ── Status financeiro (multipagamento) ──
       const pagamentos=getQuotePayments(o.id);
@@ -5802,16 +5812,17 @@ function renderOrcamentos(){
         histHtml=`<div style="margin-top:6px;background:#fafafa;border-radius:6px;padding:4px 8px">${rows}</div>`;
       }
 
-      // Ações do orçamento
+      // Ações do orçamento — hierarquia visual: primárias sólidas, secundárias "ghost"
+      const gBtn='background:#fff;color:var(--muted);border:1px solid var(--brd)';
       const acoes=[];
       // Editar e Duplicar — sempre disponíveis
       acoes.push(
         `<button class="btn btn-sm" style="background:#eaf3fb;color:#1a4a8c;border:1px solid #90b8e8" onclick="editarOrcamento(${jsArg(o.id)})">✏️ Abrir</button>`,
-        `<button class="btn btn-sm" style="background:#e8f0fb;color:#1a56af;border:1px solid #b8cff5" onclick="duplicarOrcamento(${jsArg(o.id)})">📑 Duplicar</button>`
+        `<button class="btn btn-sm" style="${gBtn}" onclick="duplicarOrcamento(${jsArg(o.id)})">📑 Duplicar</button>`
       );
       if(st==='aberto')acoes.push(
         `<button class="btn btn-ok btn-sm" onclick="mudarStatusOrc(${jsArg(o.id)},'aceito')">✓ Aceitar</button>`,
-        `<button class="btn btn-err btn-sm" onclick="mudarStatusOrc(${jsArg(o.id)},'recusado')">✗ Recusar</button>`
+        `<button class="btn btn-sm" style="${gBtn}color:var(--err)" onclick="mudarStatusOrc(${jsArg(o.id)},'recusado')">✗ Recusar</button>`
       );
 
       // Botão principal: "+ Pagar" — sempre disponível para aceitos ou abertos
@@ -5824,15 +5835,15 @@ function renderOrcamentos(){
       // Botão "Lançar receita" legado — mantido APENAS para orçamentos antigos sem nenhum pagamento novo
 
       if(st!=='aberto')acoes.push(
-        `<button class="btn btn-sm" style="background:#f0f4f8;color:var(--muted);border:1px solid var(--brd)" onclick="mudarStatusOrc(${jsArg(o.id)},'aberto')">Reabrir</button>`
+        `<button class="btn btn-sm" style="${gBtn}" onclick="mudarStatusOrc(${jsArg(o.id)},'aberto')">Reabrir</button>`
       );
       acoes.push(
-        `<button class="btn btn-sm" style="background:#eaf3fb;color:var(--primary);border:1px solid #c0d8ef" onclick="gerarPDFOrcamento(${jsArg(o.id)})">📄 PDF</button>`,
-        `<button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7" onclick="imprimirOrcamento(${jsArg(o.id)})" title="Imprimir">🖨</button>`,
-        `<button class="btn btn-err btn-sm" onclick="excluirOrcamento(${jsArg(o.id)})">🗑</button>`
+        `<button class="btn btn-sm" style="${gBtn}" onclick="gerarPDFOrcamento(${jsArg(o.id)})">📄 PDF</button>`,
+        `<button class="btn btn-sm" style="${gBtn}" onclick="imprimirOrcamento(${jsArg(o.id)})" title="Imprimir">🖨</button>`,
+        `<button class="btn btn-sm" style="${gBtn}color:var(--err)" title="Mover para a lixeira" onclick="excluirOrcamento(${jsArg(o.id)})">🗑</button>`
       );
 
-      return `<div style="border:1.5px solid ${cfg.brd};border-radius:9px;padding:10px;margin-bottom:7px;background:${cfg.bg2}">
+      return `<div title="Criado por ${esc(o.usuario||'—')}" style="border:1.5px solid ${cfg.brd};border-radius:9px;padding:10px;margin-bottom:7px;background:${cfg.bg2}">
   <div style="display:flex;justify-content:space-between;align-items:start;gap:6px">
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
@@ -5841,8 +5852,8 @@ function renderOrcamentos(){
         ${badgeFin}
         ${btnCompare}
       </div>
-      <div style="font-size:.7rem;color:var(--muted);margin-top:2px">${fD(o.data)}${o.validade?' · val. '+fD(o.validade):''} · <b>${esc(o.usuario)}</b></div>
-      <div style="font-size:.72rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${primeiroProc}</div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:2px">${fD(o.data)}${o.validade?' · val. '+fD(o.validade):''}</div>
+      <div style="font-size:.72rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${primeiroProc}${extraProcs}</div>
       ${finResumo}
       ${progressBar}
     </div>

@@ -50,3 +50,30 @@ Pedido: "app premium elegante", menos informação simultânea, sem letras enorm
 
 - Em telas estreitas (< ~900px) o grid `.g2` original já quebrava para 1 coluna; o novo `minmax(360px,420px) 1fr` mantém comportamento responsivo herdado do `.g2` base — se houver media query específica, ela prevalece.
 - `localStorage` indisponível (modo anônimo restrito): funções têm `try/catch` e degradam para "sempre expandido".
+
+---
+
+# Adendo — Refino pós-feedback (mesma noite, 3ª leva)
+
+## Feedback do titular (com print comparando com o app "Finanças" do consultório)
+
+1. Diferença de fonte/elegância em relação à referência (tipografia quieta, 1 informação por coluna).
+2. Redundância: "Consulta" ao lado do nome do paciente **e** "Consulta" na coluna Categoria.
+3. Coluna USUÁRIO desnecessária (só 2 usuários) — autor deve aparecer só no hover, em letras pequenas.
+4. Verde/vermelho dispensa os sinais +/−.
+5. A função da aba é **lançar** (primário); ver o que entrou é secundário → lista abaixo ou oculta, nunca ao lado.
+
+## O que mudou nesta leva
+
+- **Layout vertical**: `#page-lancamentos .g2` vira 1 coluna. Formulário (max-width 860px) no topo; lista em largura total abaixo. Data e Categoria em `.fg-row` (2 colunas) para encurtar o form. O toggle recolher/expandir continua funcionando.
+- **Dedup da tag**: em `renderLancs`, `showProc = proc && proc.toLowerCase() !== categoria.toLowerCase()` — ptag só renderiza quando o procedimento difere da categoria.
+- **Coluna USUÁRIO fora**: `_activeLancCols()` sempre filtra `usuario`; autor vai para `title` do `<tr>` ("Lançado por …"). `ucm`/cores de usuário removidos do render.
+- **Valor sem sinal**: `R$ ${fN(x.valor)}` puro; cor mantém a semântica. Peso 700.
+
+## Incidente
+
+- A leva foi perdida na troca de branch com mudanças descommitadas e reaplicada nesta mesma sessão a partir do registro. Regra prática reforçada com o titular: commitar antes de trocar de branch.
+
+## Validação
+
+- `node --check`: OK. `git diff --check`: limpo. Sem teste em navegador — validação visual do titular.

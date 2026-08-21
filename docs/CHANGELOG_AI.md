@@ -370,3 +370,46 @@ Este arquivo registra mudanças efetivamente realizadas por IA neste repositóri
 ### Deliberadamente pendente
 
 - Pendências anteriores mantidas (reconciliação histórica, atomicidade, `patient_id`, Convênio/Parcelado no payModal, guarda em `_processarRecorrentes`).
+
+## 2026-08-20 (noite, 3a leva) — Refino do redesign: layout vertical + limpeza visual
+
+### Alterado
+
+- `analista_financeiro.html`, aba Lançamentos (feedback do titular após o 1º deploy, usando como referência o app "Finanças" do próprio consultório):
+  - **Layout vertical**: o split-screen acabou de vez. Formulário no topo (função primária: lançar), lista abaixo em largura total (função secundária: conferir). Data e Categoria lado a lado para reduzir a altura do form. Recolher/expandir mantido.
+  - **Tag duplicada removida**: procedimento ao lado do nome só aparece quando difere da categoria (sem mais "Consulta … Consulta").
+  - **Coluna USUÁRIO removida**: só 2 usuários, era ruído. Autor do lançamento agora aparece no tooltip da linha (hover), sem ocupar coluna.
+  - **Sinais +/− removidos** do valor — verde/vermelho já diferencia receita/despesa.
+  - Tipografia do valor mais quieta (peso 700, não 800).
+- `_activeLancCols` simplificada (sem lógica condicional de usuário); `ucm` (mapa de cores de usuário) removido de `renderLancs` por não ter mais uso.
+
+### Incidente registrado
+
+- Esta leva chegou a ser escrita e validada, mas se perdeu quando o repositório trocou de branch (`claude/add-claude-documentation-ixTUK`, que não contém `analista_financeiro.html`) com as mudanças ainda descommitadas (~21:57). Reaplicada integralmente a partir do registro da sessão. **Lição: commitar cada leva antes de qualquer troca de branch.**
+
+### Validado
+
+- `node --check` no script inline: aprovado. `git diff --check`: limpo. Sem teste em navegador.
+
+### Deliberadamente pendente
+
+- Pendências anteriores mantidas (reconciliação, atomicidade, `patient_id`, payModal, `_processarRecorrentes`).
+
+## 2026-08-20 (noite, 4a leva) — Orçamentos: mesma linguagem visual + fluxo de exclusão claro
+
+### Alterado
+
+- `analista_financeiro.html`, aba Orçamentos:
+  - **Exclusão com pagamentos**: o toast confuso ("Exclua ou estorne os pagamentos antes...") virou um **diálogo orientativo** — mostra quantos pagamentos existem e o total, e explica onde agir (botão ✕ no histórico do próprio cartão). Botão "Entendi".
+  - **CAPS**: procedimento do cartão passa por `_procDisplay` ("BRAQUIOPLASTIA" → "Braquioplastia"); badges financeiros em title case ("Pendente/Parcial/Quitado").
+  - **Múltiplos serviços**: indicador "+N" ao lado do primeiro procedimento.
+  - **Autor**: sai da linha de meta — aparece no tooltip do cartão (hover), mesmo padrão dos Lançamentos.
+  - **Botões com hierarquia**: primários sólidos (Abrir, Aceitar, + Pagar), secundários "ghost" brancos (Duplicar, Recusar, Reabrir, PDF, 🖨, 🗑).
+
+### Validado
+
+- `node --check` no script inline: aprovado. `git diff --check`: limpo. Sem teste em navegador.
+
+### Deliberadamente pendente
+
+- Pendências anteriores mantidas (reconciliação, atomicidade, `patient_id`, payModal, `_processarRecorrentes`).
