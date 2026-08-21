@@ -1182,7 +1182,7 @@ tr:hover td{background:#f5f8fb;}
     <div class="fg"><label>Nome completo *</label><input type="text" id="epNome" placeholder="Nome do paciente"></div>
     <div class="fr">
       <div><label>CPF</label><input type="text" id="epCPF" placeholder="000.000.000-00"></div>
-      <div><label>RG</label><input type="text" id="epRG" placeholder="0.000.000"></div>
+      <div><label>Data de nascimento</label><input type="date" id="epNasc"></div>
     </div>
     <div class="fr">
       <div><label>Telefone</label><input type="text" id="epTel" placeholder="(99) 99999-9999"></div>
@@ -1211,7 +1211,7 @@ tr:hover td{background:#f5f8fb;}
     </div>
     <div class="fr">
       <div><label>CPF</label><input type="text" id="npCPF" placeholder="000.000.000-00"></div>
-      <div><label>RG</label><input type="text" id="npRG" placeholder="0.000.000"></div>
+      <div><label>Data de nascimento</label><input type="date" id="npNasc"></div>
     </div>
     <div class="fr">
       <div><label>Telefone</label><input type="text" id="npTel" placeholder="(99) 99999-9999"></div>
@@ -2137,6 +2137,8 @@ function restaurarLancamento(id){
 
 // Purga (apaga PERMANENTEMENTE) item da Lixeira. Sem volta. Double-confirm.
 function purgarLancamento(id){
+  // Guarda de papel (RR5): purga é titular-only nas regras de 2026-08-20.
+  if(CUEmail!=='drfelipehissacoelho@gmail.com'){showToast('Apenas o titular pode apagar permanentemente. Use "Restaurar" ou fale com o Dr. Felipe.','#e74c3c',5000);return;}
   const item = DATA.lancamentos[id];
   if(!item){ showToast('Lancamento nao encontrado.', '#e74c3c'); return; }
   if(!item.deletedAt){ showToast('Item precisa estar na Lixeira para purgar.', '#e74c3c'); return; }
@@ -3094,7 +3096,7 @@ function editarPaciente(pid){
   document.getElementById('epId').value=pid;
   document.getElementById('epNome').value=p.nome||'';
   document.getElementById('epCPF').value=p.cpf||'';
-  document.getElementById('epRG').value=p.rg||'';
+  document.getElementById('epNasc').value=p.nascimento||'';
   document.getElementById('epTel').value=p.tel||'';
   document.getElementById('epEmail').value=p.email||'';
   document.getElementById('epObs').value=p.obs||'';
@@ -3149,7 +3151,7 @@ function esquecerPaciente(){
   const nomeOriginal=pat.nome||'Desconhecido';
   showPrompt(
     'LGPD — Direito ao Esquecimento',
-    `Paciente: ${nomeOriginal}\n\nEsta ação:\n  • Apaga nome, CPF, RG, telefone, e-mail e observações do cadastro\n  • Substitui o nome nos lançamentos e orçamentos por um token anônimo\n  • Remove o CPF gravado nos orçamentos\n  • É IRREVERSÍVEL\n  • Fica registrada no log de auditoria (o log é somente-acréscimo: registros antigos que citam o nome não podem ser editados — limitação documentada)\n\nPara confirmar, digite: ESQUECER`,
+    `Paciente: ${nomeOriginal}\n\nEsta ação:\n  • Apaga nome, CPF, data de nascimento, telefone, e-mail e observações do cadastro\n  • Substitui o nome nos lançamentos e orçamentos por um token anônimo\n  • Remove o CPF gravado nos orçamentos\n  • É IRREVERSÍVEL\n  • Fica registrada no log de auditoria (o log é somente-acréscimo: registros antigos que citam o nome não podem ser editados — limitação documentada)\n\nPara confirmar, digite: ESQUECER`,
     'ESQUECER', 'ESQUECER',
     () => {
   const token='Paciente Anônimo #'+String(pid).slice(-6);
@@ -3158,7 +3160,7 @@ function esquecerPaciente(){
   const anonimizado={
     id:pid,
     nome:token,
-    cpf:'',rg:'',tel:'',email:'',obs:'',
+    cpf:'',rg:'',nascimento:'',tel:'',email:'',obs:'',
     anonimizadoEm:new Date().toISOString(),
     anonimizadoPor:CU,
     consentimentoLGPD:pat.consentimentoLGPD||null
@@ -3201,7 +3203,8 @@ function salvarEdicaoPaciente(){
   const updated={
     ...old,id:pid,nome,
     cpf:document.getElementById('epCPF').value.trim(),
-    rg:document.getElementById('epRG').value.trim(),
+    rg:old.rg||'', // RG preservado de registros antigos; campo saiu da UI
+    nascimento:document.getElementById('epNasc').value,
     tel:document.getElementById('epTel').value.trim(),
     email:document.getElementById('epEmail').value.trim(),
     obs:document.getElementById('epObs').value.trim(),
@@ -4665,7 +4668,7 @@ function abrirNovoPatPara(contexto, prefilledName){
   _newPatContext = (contexto === 'lanc') ? 'lanc' : 'orc';
   document.getElementById('newPatModal').style.display='flex';
   // Limpa todos os campos primeiro
-  ['npNome','npCPF','npRG','npTel','npEmail'].forEach(id=>{
+  ['npNome','npCPF','npNasc','npTel','npEmail'].forEach(id=>{
     const e=document.getElementById(id); if(e) e.value='';
   });
   // Pre-preenche nome se veio do autocomplete
@@ -4685,7 +4688,7 @@ function abrirNovoPatPara(contexto, prefilledName){
 
 function fecharNovoPatOrc(){
   document.getElementById('newPatModal').style.display='none';
-  ['npNome','npCPF','npRG','npTel','npEmail'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';})
+  ['npNome','npCPF','npNasc','npTel','npEmail'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';})
   const npC=document.getElementById('npConsentimento');if(npC)npC.checked=false;
 }
 
@@ -4710,7 +4713,7 @@ function salvarNovoPatOrc(){
   const consentido=document.getElementById('npConsentimento')?.checked;
   const p={id:pid,nome,
     cpf:document.getElementById('npCPF').value.trim(),
-    rg:document.getElementById('npRG').value.trim(),
+    nascimento:document.getElementById('npNasc').value,
     tel:document.getElementById('npTel').value.trim(),
     email:document.getElementById('npEmail').value.trim(),
     criadoEm:new Date().toISOString(),usuario:CU,
@@ -5414,6 +5417,9 @@ function restaurarOrcamento(id){
   });
 }
 function purgarOrcamento(id){
+  // Guarda de papel (RR5): com as regras de 2026-08-20, a purga é titular-only
+  // no servidor. Melhor bloquear aqui com mensagem clara do que erro do servidor.
+  if(CUEmail!=='drfelipehissacoelho@gmail.com'){showToast('Apenas o titular pode apagar permanentemente. Use "Restaurar" ou fale com o Dr. Felipe.','#e74c3c',5000);return;}
   const orc=DATA.orcamentos&&DATA.orcamentos[id];
   if(!orc||!orc.deletedAt){showToast('Orcamento precisa estar na lixeira para ser apagado.','#e74c3c');return;}
   const temPagamentos=temPagamentosVinculadosAoOrcamento(id);

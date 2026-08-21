@@ -329,3 +329,23 @@ Este arquivo registra mudanças efetivamente realizadas por IA neste repositóri
 ### Corrigido
 
 - `_procDisplay()`: entradas "(cópia)" ficavam em CAPS porque o sufixo em minúsculas reprovava o teste "100% maiúsculo". O sufixo agora é avaliado à parte — "ABDOMINOPLASTIA ... (cópia)" exibe como "Abdominoplastia ... (cópia)".
+
+## 2026-08-20 (noite) — Deploy das regras + cadastro de pacientes + guarda de purga
+
+### Implantado (pelo titular)
+
+- Regras RTDB propostas publicadas no Console (~21h). Smoke test aprovado: pagamento de orçamento voltou a funcionar em produção. `FIREBASE_RTD_RULES_GAP.md` atualizado — baseline substituída, rollback documentado.
+
+### Alterado
+
+- Cadastro de pacientes: campo RG removido da UI (novo e editar); **data de nascimento** adicionada (`nascimento`); RG de registros antigos preservado no schema; anonimização LGPD zera `nascimento`.
+- `purgarLancamento`/`purgarOrcamento`: guarda de titular no cliente (RR5) — secretária recebe toast orientativo em vez de erro do servidor.
+- `_procDisplay`: sufixo "(cópia)" avaliado à parte (cópias não ficam mais em CAPS).
+
+### Validado
+
+- `node --check` OK; `git diff --check` limpo; RG com zero ocorrências na UI. Sem teste em navegador.
+
+### Deliberadamente pendente
+
+- 24h de observação pós-deploy; reconciliação histórica (6 órfãos + 50 orçamentos); atomicidade de `salvarLancamento`; `patient_id`; guarda em `_processarRecorrentes`.
